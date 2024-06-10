@@ -454,7 +454,11 @@ typedef uintmax_t timestamp_t;
 #include <paths.h>
 #endif
 #ifndef _PATH_DEFPATH
+#ifndef __amigaos4__
 #define _PATH_DEFPATH "/usr/local/bin:/usr/bin:/bin"
+#else
+#define _PATH_DEFPATH "C:;SDK:C"
+#endif
 #endif
 
 #ifndef platform_core_config
@@ -654,7 +658,7 @@ NORETURN void die(const char *err, ...) __attribute__((format (printf, 1, 2)));
 NORETURN void die_errno(const char *err, ...) __attribute__((format (printf, 1, 2)));
 int die_message(const char *err, ...) __attribute__((format (printf, 1, 2)));
 int die_message_errno(const char *err, ...) __attribute__((format (printf, 1, 2)));
-int error(const char *err, ...) __attribute__((format (printf, 1, 2)));
+int _error(const char *err, ...) __attribute__((format (printf, 1, 2)));
 int error_errno(const char *err, ...) __attribute__((format (printf, 1, 2)));
 void warning(const char *err, ...) __attribute__((format (printf, 1, 2)));
 void warning_errno(const char *err, ...) __attribute__((format (printf, 1, 2)));
@@ -683,7 +687,7 @@ static inline int const_error(void)
 {
 	return -1;
 }
-#define error(...) (error(__VA_ARGS__), const_error())
+#define error(...) (_error(__VA_ARGS__), const_error())
 #define error_errno(...) (error_errno(__VA_ARGS__), const_error())
 #endif
 
@@ -1382,6 +1386,9 @@ int git_regcomp(regex_t *preg, const char *pattern, int cflags);
 #ifdef USE_ST_TIMESPEC
 #define ST_CTIME_NSEC(st) ((unsigned int)((st).st_ctimespec.tv_nsec))
 #define ST_MTIME_NSEC(st) ((unsigned int)((st).st_mtimespec.tv_nsec))
+#elif defined(__amigaos4__)
+#define ST_CTIME_NSEC(st) ((unsigned int)((st).st_ctime))
+#define ST_MTIME_NSEC(st) ((unsigned int)((st).st_mtime))
 #else
 #define ST_CTIME_NSEC(st) ((unsigned int)((st).st_ctim.tv_nsec))
 #define ST_MTIME_NSEC(st) ((unsigned int)((st).st_mtim.tv_nsec))
@@ -1570,5 +1577,10 @@ static inline void *container_of_or_null_offset(void *ptr, size_t offset)
 #define OFFSETOF_VAR(ptr, member) \
 	((uintptr_t)&(ptr)->member - (uintptr_t)(ptr))
 #endif /* !__GNUC__ */
+
+#ifdef __amigaos4__
+static inline pid_t getpgid(pid_t pid)
+{ return pid == 0 ? getpid() : pid; }
+#endif
 
 #endif

@@ -2319,7 +2319,7 @@ static int handle_revision_opt(struct rev_info *revs, int argc, const char **arg
 		revs->no_walk = 0;
 	} else if (!strcmp(arg, "-n")) {
 		if (argc <= 1)
-			return error("-n requires an argument");
+			return _error("-n requires an argument");
 		revs->max_count = parse_count(argv[1]);
 		revs->no_walk = 0;
 		return 2;
@@ -2366,17 +2366,17 @@ static int handle_revision_opt(struct rev_info *revs, int argc, const char **arg
 		revs->limited = 1;
 
 		if (repo_get_oid_committish(revs->repo, optarg, &oid))
-			return error(msg, optarg);
+			return _error(msg, optarg);
 		get_reference(revs, optarg, &oid, ANCESTRY_PATH);
 		c = lookup_commit_reference(revs->repo, &oid);
 		if (!c)
-			return error(msg, optarg);
+			return _error(msg, optarg);
 		commit_list_insert(c, &revs->ancestry_path_bottoms);
 	} else if (!strcmp(arg, "-g") || !strcmp(arg, "--walk-reflogs")) {
 		init_reflog_walk(&revs->reflog_info);
 	} else if (!strcmp(arg, "--default")) {
 		if (argc <= 1)
-			return error("bad --default argument");
+			return _error("bad --default argument");
 		revs->def = argv[1];
 		return 2;
 	} else if (!strcmp(arg, "--merge")) {
@@ -2684,7 +2684,7 @@ void parse_revision_opt(struct rev_info *revs, struct parse_opt_ctx_t *ctx,
 	int n = handle_revision_opt(revs, ctx->argc, ctx->argv,
 				    &ctx->cpidx, ctx->out, NULL);
 	if (n <= 0) {
-		error("unknown option `%s'", ctx->argv[0]);
+		_error("unknown option `%s'", ctx->argv[0]);
 		usage_with_options(usagestr, options);
 	}
 	ctx->argv += n;
@@ -2765,7 +2765,7 @@ static int handle_revision_pseudo_opt(struct rev_info *revs,
 		clear_ref_exclusions(&revs->ref_excludes);
 	} else if (!strcmp(arg, "--branches")) {
 		if (revs->ref_excludes.hidden_refs_configured)
-			return error(_("options '%s' and '%s' cannot be used together"),
+			return _error(_("options '%s' and '%s' cannot be used together"),
 				     "--exclude-hidden", "--branches");
 		handle_refs(refs, revs, *flags, refs_for_each_branch_ref);
 		clear_ref_exclusions(&revs->ref_excludes);
@@ -2777,13 +2777,13 @@ static int handle_revision_pseudo_opt(struct rev_info *revs,
 		revs->bisect = 1;
 	} else if (!strcmp(arg, "--tags")) {
 		if (revs->ref_excludes.hidden_refs_configured)
-			return error(_("options '%s' and '%s' cannot be used together"),
+			return _error(_("options '%s' and '%s' cannot be used together"),
 				     "--exclude-hidden", "--tags");
 		handle_refs(refs, revs, *flags, refs_for_each_tag_ref);
 		clear_ref_exclusions(&revs->ref_excludes);
 	} else if (!strcmp(arg, "--remotes")) {
 		if (revs->ref_excludes.hidden_refs_configured)
-			return error(_("options '%s' and '%s' cannot be used together"),
+			return _error(_("options '%s' and '%s' cannot be used together"),
 				     "--exclude-hidden", "--remotes");
 		handle_refs(refs, revs, *flags, refs_for_each_remote_ref);
 		clear_ref_exclusions(&revs->ref_excludes);
@@ -2803,7 +2803,7 @@ static int handle_revision_pseudo_opt(struct rev_info *revs,
 	} else if (skip_prefix(arg, "--branches=", &optarg)) {
 		struct all_refs_cb cb;
 		if (revs->ref_excludes.hidden_refs_configured)
-			return error(_("options '%s' and '%s' cannot be used together"),
+			return _error(_("options '%s' and '%s' cannot be used together"),
 				     "--exclude-hidden", "--branches");
 		init_all_refs_cb(&cb, revs, *flags);
 		refs_for_each_glob_ref_in(get_main_ref_store(the_repository),
@@ -2813,7 +2813,7 @@ static int handle_revision_pseudo_opt(struct rev_info *revs,
 	} else if (skip_prefix(arg, "--tags=", &optarg)) {
 		struct all_refs_cb cb;
 		if (revs->ref_excludes.hidden_refs_configured)
-			return error(_("options '%s' and '%s' cannot be used together"),
+			return _error(_("options '%s' and '%s' cannot be used together"),
 				     "--exclude-hidden", "--tags");
 		init_all_refs_cb(&cb, revs, *flags);
 		refs_for_each_glob_ref_in(get_main_ref_store(the_repository),
@@ -2823,7 +2823,7 @@ static int handle_revision_pseudo_opt(struct rev_info *revs,
 	} else if (skip_prefix(arg, "--remotes=", &optarg)) {
 		struct all_refs_cb cb;
 		if (revs->ref_excludes.hidden_refs_configured)
-			return error(_("options '%s' and '%s' cannot be used together"),
+			return _error(_("options '%s' and '%s' cannot be used together"),
 				     "--exclude-hidden", "--remotes");
 		init_all_refs_cb(&cb, revs, *flags);
 		refs_for_each_glob_ref_in(get_main_ref_store(the_repository),
@@ -2851,7 +2851,7 @@ static int handle_revision_pseudo_opt(struct rev_info *revs,
 		else if (!strcmp(optarg, "unsorted"))
 			revs->unsorted_input = 1;
 		else
-			return error("invalid argument to --no-walk");
+			return _error("invalid argument to --no-walk");
 	} else if (!strcmp(arg, "--do-walk")) {
 		revs->no_walk = 0;
 	} else if (!strcmp(arg, "--single-worktree")) {

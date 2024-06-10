@@ -129,7 +129,7 @@ static void *get_data(unsigned long size)
 		if (stream.total_out == size && ret == Z_STREAM_END)
 			break;
 		if (ret != Z_OK) {
-			error("inflate returned %d", ret);
+			_error("inflate returned %d", ret);
 			FREE_AND_NULL(buf);
 			if (!recover)
 				exit(1);
@@ -513,7 +513,7 @@ static void unpack_delta_entry(enum object_type type, unsigned long delta_size,
 	base = repo_read_object_file(the_repository, &base_oid, &type,
 				     &base_size);
 	if (!base) {
-		error("failed to read delta-pack base object %s",
+		_error("failed to read delta-pack base object %s",
 		      oid_to_hex(&base_oid));
 		if (!recover)
 			exit(1);
@@ -564,7 +564,7 @@ static void unpack_one(unsigned nr)
 		unpack_delta_entry(type, size, nr);
 		return;
 	default:
-		error("bad object type %d", type);
+		_error("bad object type %d", type);
 		has_errors = 1;
 		if (recover)
 			return;

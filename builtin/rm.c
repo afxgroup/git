@@ -65,7 +65,7 @@ static void print_error_files(struct string_list *files_list,
 				    files_list->items[i].string);
 		if (advice_enabled(ADVICE_RM_HINTS))
 			strbuf_addstr(&err_msg, hints_msg);
-		*errs = error("%s", err_msg.buf);
+		*errs = _error("%s", err_msg.buf);
 		strbuf_release(&err_msg);
 	}
 }

@@ -90,7 +90,7 @@ static int for_each_tag_name(const char **argv, each_tag_name_fn fn,
 		strbuf_reset(&ref);
 		strbuf_addf(&ref, "refs/tags/%s", *p);
 		if (refs_read_ref(get_main_ref_store(the_repository), ref.buf, &oid)) {
-			error(_("tag '%s' not found."), *p);
+			_error(_("tag '%s' not found."), *p);
 			had_error = 1;
 			continue;
 		}
@@ -265,10 +265,10 @@ static int build_tag_object(struct strbuf *buf, int sign, struct object_id *resu
 {
 	struct object_id *compat_oid = NULL, compat_oid_buf;
 	if (sign && do_sign(buf, &compat_oid, &compat_oid_buf) < 0)
-		return error(_("unable to sign the tag"));
+		return _error(_("unable to sign the tag"));
 	if (write_object_file_flags(buf->buf, buf->len, OBJ_TAG, result,
 				    compat_oid, 0) < 0)
-		return error(_("unable to write tag file"));
+		return _error(_("unable to write tag file"));
 	return 0;
 }
 

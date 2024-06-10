@@ -174,14 +174,14 @@ static int set_recommended_config(int reconfigure)
 
 	for (i = 0; config[i].key; i++) {
 		if (set_scalar_config(config + i, reconfigure))
-			return error(_("could not configure %s=%s"),
+			return _error(_("could not configure %s=%s"),
 				     config[i].key, config[i].value);
 	}
 
 	if (have_fsmonitor_support()) {
 		struct scalar_config fsmonitor = { "core.fsmonitor", "true" };
 		if (set_scalar_config(&fsmonitor, reconfigure))
-			return error(_("could not configure %s=%s"),
+			return _error(_("could not configure %s=%s"),
 				     fsmonitor.key, fsmonitor.value);
 	}
 
@@ -195,7 +195,7 @@ static int set_recommended_config(int reconfigure)
 		if (git_config_set_multivar_gently("log.excludeDecoration",
 						   "refs/prefetch/*",
 						   CONFIG_REGEX_NONE, 0))
-			return error(_("could not configure "
+			return _error(_("could not configure "
 				       "log.excludeDecoration"));
 	} else {
 		trace2_data_string("scalar", the_repository,
@@ -259,16 +259,16 @@ static int stop_fsmonitor_daemon(void)
 static int register_dir(void)
 {
 	if (add_or_remove_enlistment(1))
-		return error(_("could not add enlistment"));
+		return _error(_("could not add enlistment"));
 
 	if (set_recommended_config(0))
-		return error(_("could not set recommended config"));
+		return _error(_("could not set recommended config"));
 
 	if (toggle_maintenance(1))
 		warning(_("could not turn on maintenance"));
 
 	if (have_fsmonitor_support() && start_fsmonitor_daemon()) {
-		return error(_("could not start the FSMonitor daemon"));
+		return _error(_("could not start the FSMonitor daemon"));
 	}
 
 	return 0;
@@ -279,10 +279,10 @@ static int unregister_dir(void)
 	int res = 0;
 
 	if (toggle_maintenance(0))
-		res = error(_("could not turn off maintenance"));
+		res = _error(_("could not turn off maintenance"));
 
 	if (add_or_remove_enlistment(0))
-		res = error(_("could not remove enlistment"));
+		res = _error(_("could not remove enlistment"));
 
 	return res;
 }
@@ -336,7 +336,7 @@ static char *remote_default_branch(const char *url)
 				return branch;
 			}
 
-			error(_("remote HEAD is not a branch: '%.*s'"),
+			_error(_("remote HEAD is not a branch: '%.*s'"),
 			      (int)(eol - p), p);
 			strbuf_release(&out);
 			return NULL;
@@ -355,7 +355,7 @@ static char *remote_default_branch(const char *url)
 	}
 
 	strbuf_release(&out);
-	error(_("failed to get default branch name"));
+	_error(_("failed to get default branch name"));
 	return NULL;
 }
 
@@ -366,7 +366,7 @@ static int delete_enlistment(struct strbuf *enlistment)
 	char *path_sep;
 
 	if (unregister_dir())
-		return error(_("failed to unregister repository"));
+		return _error(_("failed to unregister repository"));
 
 	/*
 	 * Change the current directory to one outside of the enlistment so
@@ -384,10 +384,10 @@ static int delete_enlistment(struct strbuf *enlistment)
 	strbuf_release(&parent);
 
 	if (have_fsmonitor_support() && stop_fsmonitor_daemon())
-		return error(_("failed to stop the FSMonitor daemon"));
+		return _error(_("failed to stop the FSMonitor daemon"));
 
 	if (remove_dir_recursively(enlistment, 0))
-		return error(_("failed to delete enlistment directory"));
+		return _error(_("failed to delete enlistment directory"));
 
 	return 0;
 }
@@ -484,7 +484,7 @@ static int cmd_clone(int argc, const char **argv)
 	trace2_def_repo(the_repository);
 
 	if (!branch && !(branch = remote_default_branch(url))) {
-		res = error(_("failed to get default branch for '%s'"), url);
+		res = _error(_("failed to get default branch for '%s'"), url);
 		goto cleanup;
 	}
 
@@ -495,7 +495,7 @@ static int cmd_clone(int argc, const char **argv)
 		       single_branch ? branch : "*") ||
 	    set_config("remote.origin.promisor=true") ||
 	    set_config("remote.origin.partialCloneFilter=blob:none")) {
-		res = error(_("could not configure remote in '%s'"), dir);
+		res = _error(_("could not configure remote in '%s'"), dir);
 		goto cleanup;
 	}
 
@@ -504,7 +504,7 @@ static int cmd_clone(int argc, const char **argv)
 		goto cleanup;
 
 	if (set_recommended_config(0))
-		return error(_("could not configure '%s'"), dir);
+		return _error(_("could not configure '%s'"), dir);
 
 	if ((res = run_git("fetch", "--quiet",
 				show_progress ? "--progress" : "--no-progress",
@@ -513,7 +513,7 @@ static int cmd_clone(int argc, const char **argv)
 
 		if (set_config("remote.origin.promisor") ||
 		    set_config("remote.origin.partialCloneFilter")) {
-			res = error(_("could not configure for full clone"));
+			res = _error(_("could not configure for full clone"));
 			goto cleanup;
 		}
 
@@ -676,7 +676,7 @@ static int cmd_reconfigure(int argc, const char **argv)
 
 			strbuf_addstr(&buf, dir);
 			if (remove_deleted_enlistment(&buf))
-				error(_("could not remove stale "
+				_error(_("could not remove stale "
 					"scalar.repo '%s'"), dir);
 			else {
 				warning(_("removed stale scalar.repo '%s'"),
@@ -772,7 +772,7 @@ static int cmd_run(int argc, const char **argv)
 			; /* keep looking for the task */
 
 		if (i > 0 && !tasks[i].arg) {
-			error(_("no such task: '%s'"), argv[0]);
+			_error(_("no such task: '%s'"), argv[0]);
 			usage_with_options(usagestr, options);
 		}
 	}
@@ -866,7 +866,7 @@ static int cmd_delete(int argc, const char **argv)
 	setup_enlistment_directory(argc, argv, usage, options, &enlistment);
 
 	if (dir_inside_of(cwd, enlistment.buf) >= 0)
-		res = error(_("refusing to delete current working directory"));
+		res = _error(_("refusing to delete current working directory"));
 	else {
 		close_object_store(the_repository->objects);
 		res = delete_enlistment(&enlistment);

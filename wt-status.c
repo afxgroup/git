@@ -2652,15 +2652,15 @@ int require_clean_work_tree(struct repository *r,
 
 	if (has_unstaged_changes(r, ignore_submodules)) {
 		/* TRANSLATORS: the action is e.g. "pull with rebase" */
-		error(_("cannot %s: You have unstaged changes."), _(action));
+		_error(_("cannot %s: You have unstaged changes."), _(action));
 		err = 1;
 	}
 
 	if (has_uncommitted_changes(r, ignore_submodules)) {
 		if (err)
-			error(_("additionally, your index contains uncommitted changes."));
+			_error(_("additionally, your index contains uncommitted changes."));
 		else
-			error(_("cannot %s: Your index contains uncommitted changes."),
+			_error(_("cannot %s: Your index contains uncommitted changes."),
 			      _(action));
 		err = 1;
 	}
@@ -2670,7 +2670,7 @@ int require_clean_work_tree(struct repository *r,
 			if (!*hint)
 				BUG("empty hint passed to require_clean_work_tree();"
 				    " use NULL instead");
-			error("%s", hint);
+			_error("%s", hint);
 		}
 		if (!gently)
 			exit(128);

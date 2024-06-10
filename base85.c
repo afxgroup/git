@@ -51,17 +51,17 @@ int decode_85(char *dst, const char *buffer, int len)
 			ch = *buffer++;
 			de = de85[ch];
 			if (--de < 0)
-				return error("invalid base85 alphabet %c", ch);
+				return _error("invalid base85 alphabet %c", ch);
 			acc = acc * 85 + de;
 		} while (--cnt);
 		ch = *buffer++;
 		de = de85[ch];
 		if (--de < 0)
-			return error("invalid base85 alphabet %c", ch);
+			return _error("invalid base85 alphabet %c", ch);
 		/* Detect overflow. */
 		if (0xffffffff / 85 < acc ||
 		    0xffffffff - de < (acc *= 85))
-			return error("invalid base85 sequence %.5s", buffer-5);
+			return _error("invalid base85 sequence %.5s", buffer-5);
 		acc += de;
 		say1(" %08x", acc);
 

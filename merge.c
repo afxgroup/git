@@ -106,6 +106,6 @@ int checkout_fast_forward(struct repository *r,
 	clear_unpack_trees_porcelain(&opts);
 
 	if (write_locked_index(r->index, &lock_file, COMMIT_LOCK))
-		return error(_("unable to write new index file"));
+		return _error(_("unable to write new index file"));
 	return 0;
 }

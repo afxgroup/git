@@ -642,7 +642,7 @@ FILE *mingw_fopen (const char *filename, const char *otype)
 		return NULL;
 
 	if (hide && !access(filename, F_OK) && set_hidden_flag(wfilename, 0)) {
-		error("could not unhide %s", filename);
+		_error("could not unhide %s", filename);
 		return NULL;
 	}
 	file = _wfopen(wfilename, wotype);
@@ -671,7 +671,7 @@ FILE *mingw_freopen (const char *filename, const char *otype, FILE *stream)
 		return NULL;
 
 	if (hide && !access(filename, F_OK) && set_hidden_flag(wfilename, 0)) {
-		error("could not unhide %s", filename);
+		_error("could not unhide %s", filename);
 		return NULL;
 	}
 	file = _wfreopen(wfilename, wotype, stream);
@@ -1666,7 +1666,7 @@ static pid_t mingw_spawnve_fd(const char *cmd, const char **argv, char **deltaen
 	if (strace_env) {
 		char *p = path_lookup("strace.exe", 1);
 		if (!p)
-			return error("strace not found!");
+			return _error("strace not found!");
 		if (xutftowcs_path(wcmd, p) < 0) {
 			free(p);
 			return -1;
@@ -2087,7 +2087,7 @@ int mingw_socket(int domain, int type, int protocol)
 	/* convert into a file descriptor */
 	if ((sockfd = _open_osfhandle(s, O_RDWR|O_BINARY)) < 0) {
 		closesocket(s);
-		return error("unable to make a socket file descriptor: %s",
+		return _error("unable to make a socket file descriptor: %s",
 			strerror(errno));
 	}
 	return sockfd;
@@ -2140,7 +2140,7 @@ int mingw_accept(int sockfd1, struct sockaddr *sa, socklen_t *sz)
 	if ((sockfd2 = _open_osfhandle(s2, O_RDWR|O_BINARY)) < 0) {
 		int err = errno;
 		closesocket(s2);
-		return error("unable to make a socket file descriptor: %s",
+		return _error("unable to make a socket file descriptor: %s",
 			strerror(err));
 	}
 	return sockfd2;
@@ -2318,10 +2318,10 @@ static int start_timer_thread(void)
 		timer_thread = (HANDLE) _beginthreadex(NULL, 0, ticktack, NULL, 0, NULL);
 		if (!timer_thread )
 			return errno = ENOMEM,
-				error("cannot start timer thread");
+				_error("cannot start timer thread");
 	} else
 		return errno = ENOMEM,
-			error("cannot allocate resources for timer");
+			_error("cannot allocate resources for timer");
 	return 0;
 }
 
@@ -2332,9 +2332,9 @@ static void stop_timer_thread(void)
 	if (timer_thread) {
 		int rc = WaitForSingleObject(timer_thread, 10000);
 		if (rc == WAIT_TIMEOUT)
-			error("timer thread did not terminate timely");
+			_error("timer thread did not terminate timely");
 		else if (rc != WAIT_OBJECT_0)
-			error("waiting for timer thread failed: %lu",
+			_error("waiting for timer thread failed: %lu",
 			      GetLastError());
 		CloseHandle(timer_thread);
 	}
@@ -2356,11 +2356,11 @@ int setitimer(int type, struct itimerval *in, struct itimerval *out)
 
 	if (out)
 		return errno = EINVAL,
-			error("setitimer param 3 != NULL not implemented");
+			_error("setitimer param 3 != NULL not implemented");
 	if (!is_timeval_eq(&in->it_interval, &zero) &&
 	    !is_timeval_eq(&in->it_interval, &in->it_value))
 		return errno = EINVAL,
-			error("setitimer: it_interval must be zero or eq it_value");
+			_error("setitimer: it_interval must be zero or eq it_value");
 
 	if (timer_thread)
 		stop_timer_thread();
@@ -2382,10 +2382,10 @@ int sigaction(int sig, struct sigaction *in, struct sigaction *out)
 {
 	if (sig != SIGALRM)
 		return errno = EINVAL,
-			error("sigaction only implemented for SIGALRM");
+			_error("sigaction only implemented for SIGALRM");
 	if (out)
 		return errno = EINVAL,
-			error("sigaction: param 3 != NULL not implemented");
+			_error("sigaction: param 3 != NULL not implemented");
 
 	timer_fn = in->sa_handler;
 	return 0;
@@ -2683,7 +2683,7 @@ static PSID get_current_user_sid(void)
 			len = GetLengthSid(info->User.Sid);
 			result = xmalloc(len);
 			if (!CopySid(len, result, info->User.Sid)) {
-				error(_("failed to copy SID (%ld)"),
+				_error(_("failed to copy SID (%ld)"),
 				      GetLastError());
 				FREE_AND_NULL(result);
 			}
@@ -2769,7 +2769,7 @@ int is_path_owned_by_current_sid(const char *path, struct strbuf *report)
 				    &sid, NULL, NULL, NULL, &descriptor);
 
 	if (err != ERROR_SUCCESS)
-		error(_("failed to get owner for '%s' (%ld)"), path, err);
+		_error(_("failed to get owner for '%s' (%ld)"), path, err);
 	else if (sid && IsValidSid(sid)) {
 		/* Now, verify that the SID matches the current user's */
 		static PSID current_user_sid;

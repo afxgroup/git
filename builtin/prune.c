@@ -30,7 +30,7 @@ static int prune_tmp_file(const char *fullpath)
 {
 	struct stat st;
 	if (lstat(fullpath, &st))
-		return error("Could not stat '%s'", fullpath);
+		return _error("Could not stat '%s'", fullpath);
 	if (st.st_mtime > expire)
 		return 0;
 	if (S_ISDIR(st.st_mode)) {
@@ -89,7 +89,7 @@ static int prune_object(const struct object_id *oid, const char *fullpath,
 
 	if (lstat(fullpath, &st)) {
 		/* report errors, but do not stop pruning */
-		error("Could not stat '%s'", fullpath);
+		_error("Could not stat '%s'", fullpath);
 		return 0;
 	}
 	if (st.st_mtime > expire)

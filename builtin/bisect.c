@@ -192,11 +192,11 @@ static int check_term_format(const char *term, const char *orig_term)
 	free(new_term);
 
 	if (res)
-		return error(_("'%s' is not a valid term"), term);
+		return _error(_("'%s' is not a valid term"), term);
 
 	if (one_of(term, "help", "start", "skip", "next", "reset",
 			"visualize", "view", "replay", "log", "run", "terms", NULL))
-		return error(_("can't use the builtin command '%s' as a term"), term);
+		return _error(_("can't use the builtin command '%s' as a term"), term);
 
 	/*
 	 * In theory, nothing prevents swapping completely good and bad,
@@ -206,7 +206,7 @@ static int check_term_format(const char *term, const char *orig_term)
 
 	if ((strcmp(orig_term, "bad") && one_of(term, "bad", "new", NULL)) ||
 		 (strcmp(orig_term, "good") && one_of(term, "good", "old", NULL)))
-		return error(_("can't change the meaning of the term '%s'"), term);
+		return _error(_("can't change the meaning of the term '%s'"), term);
 
 	return 0;
 }
@@ -216,7 +216,7 @@ static int write_terms(const char *bad, const char *good)
 	int res;
 
 	if (!strcmp(bad, good))
-		return error(_("please use two different terms"));
+		return _error(_("please use two different terms"));
 
 	if (check_term_format(bad, "bad") || check_term_format(good, "good"))
 		return -1;
@@ -239,7 +239,7 @@ static int bisect_reset(const char *commit)
 		struct object_id oid;
 
 		if (repo_get_oid_commit(the_repository, commit, &oid))
-			return error(_("'%s' is not a valid commit"), commit);
+			return _error(_("'%s' is not a valid commit"), commit);
 		strbuf_addstr(&branch, commit);
 	}
 
@@ -250,7 +250,7 @@ static int bisect_reset(const char *commit)
 		strvec_pushl(&cmd.args, "checkout", "--ignore-other-worktrees",
 				branch.buf, "--", NULL);
 		if (run_command(&cmd)) {
-			error(_("could not check out original"
+			_error(_("could not check out original"
 				" HEAD '%s'. Try 'git bisect"
 				" reset <commit>'."), branch.buf);
 			strbuf_release(&branch);
@@ -293,12 +293,12 @@ static int bisect_write(const char *state, const char *rev,
 	} else if (one_of(state, terms->term_good, "skip", NULL)) {
 		strbuf_addf(&tag, "refs/bisect/%s-%s", state, rev);
 	} else {
-		res = error(_("Bad bisect_write argument: %s"), state);
+		res = _error(_("Bad bisect_write argument: %s"), state);
 		goto finish;
 	}
 
 	if (repo_get_oid(the_repository, rev, &oid)) {
-		res = error(_("couldn't get the oid of the rev '%s'"), rev);
+		res = _error(_("couldn't get the oid of the rev '%s'"), rev);
 		goto finish;
 	}
 
@@ -336,7 +336,7 @@ static int check_and_set_terms(struct bisect_terms *terms, const char *cmd)
 
 	if (has_term_file && strcmp(cmd, terms->term_bad) &&
 	    strcmp(cmd, terms->term_good))
-		return error(_("Invalid command: you're currently in a "
+		return _error(_("Invalid command: you're currently in a "
 				"%s/%s bisect"), terms->term_bad,
 				terms->term_good);
 
@@ -403,10 +403,10 @@ static int decide_next(const struct bisect_terms *terms,
 	}
 
 	if (!is_empty_or_missing_file(git_path_bisect_start()))
-		return error(_(need_bad_and_good_revision_warning),
+		return _error(_(need_bad_and_good_revision_warning),
 			     vocab_bad, vocab_good, vocab_bad, vocab_good);
 	else
-		return error(_(need_bisect_start_warning),
+		return _error(_(need_bisect_start_warning),
 			     vocab_good, vocab_bad, vocab_good, vocab_bad);
 }
 
@@ -499,7 +499,7 @@ finish:
 static int bisect_terms(struct bisect_terms *terms, const char *option)
 {
 	if (get_terms(terms))
-		return error(_("no terms defined"));
+		return _error(_("no terms defined"));
 
 	if (!option) {
 		printf(_("Your current terms are %s for the old state\n"
@@ -512,7 +512,7 @@ static int bisect_terms(struct bisect_terms *terms, const char *option)
 	else if (one_of(option, "--term-bad", "--term-new", NULL))
 		printf("%s\n", terms->term_bad);
 	else
-		return error(_("invalid argument %s for 'git bisect terms'.\n"
+		return _error(_("invalid argument %s for 'git bisect terms'.\n"
 			       "Supported options are: "
 			       "--term-good|--term-old and "
 			       "--term-bad|--term-new."), option);
@@ -581,7 +581,7 @@ static int prepare_revs(struct bisect_terms *terms, struct rev_info *revs)
 	refs_for_each_glob_ref_in(get_main_ref_store(the_repository),
 				  add_bisect_ref, good, "refs/bisect/", &cb);
 	if (prepare_revision_walk(revs))
-		res = error(_("revision walk setup failed\n"));
+		res = _error(_("revision walk setup failed\n"));
 
 	free(good);
 	free(bad);
@@ -727,7 +727,7 @@ static enum bisect_error bisect_start(struct bisect_terms *terms, int argc,
 			 !strcmp(arg, "--term-old")) {
 			i++;
 			if (argc <= i)
-				return error(_("'' is not a valid term"));
+				return _error(_("'' is not a valid term"));
 			must_write_terms = 1;
 			free((void *) terms->term_good);
 			terms->term_good = xstrdup(argv[i]);
@@ -740,7 +740,7 @@ static enum bisect_error bisect_start(struct bisect_terms *terms, int argc,
 			 !strcmp(arg, "--term-new")) {
 			i++;
 			if (argc <= i)
-				return error(_("'' is not a valid term"));
+				return _error(_("'' is not a valid term"));
 			must_write_terms = 1;
 			free((void *) terms->term_bad);
 			terms->term_bad = xstrdup(argv[i]);
@@ -750,7 +750,7 @@ static enum bisect_error bisect_start(struct bisect_terms *terms, int argc,
 			free((void *) terms->term_bad);
 			terms->term_bad = xstrdup(arg);
 		} else if (starts_with(arg, "--")) {
-			return error(_("unrecognized option: '%s'"), arg);
+			return _error(_("unrecognized option: '%s'"), arg);
 		} else if (!get_oidf(&oid, "%s^{commit}", arg)) {
 			string_list_append(&revs, oid_to_hex(&oid));
 		} else if (has_double_dash) {
@@ -786,7 +786,7 @@ static enum bisect_error bisect_start(struct bisect_terms *terms, int argc,
 				       "HEAD", 0, &head_oid, &flags);
 	if (!head)
 		if (repo_get_oid(the_repository, "HEAD", &head_oid))
-			return error(_("bad HEAD - I need a HEAD"));
+			return _error(_("bad HEAD - I need a HEAD"));
 
 	/*
 	 * Check if we are bisecting
@@ -802,7 +802,7 @@ static enum bisect_error bisect_start(struct bisect_terms *terms, int argc,
 			strvec_pushl(&cmd.args, "checkout", start_head.buf,
 				     "--", NULL);
 			if (run_command(&cmd)) {
-				res = error(_("checking out '%s' failed."
+				res = _error(_("checking out '%s' failed."
 						 " Try 'git bisect start "
 						 "<valid-branch>'."),
 					       start_head.buf);
@@ -819,7 +819,7 @@ static enum bisect_error bisect_start(struct bisect_terms *terms, int argc,
 			   skip_prefix(head, "refs/heads/", &head)) {
 			strbuf_addstr(&start_head, head);
 		} else {
-			return error(_("bad HEAD - strange symbolic ref"));
+			return _error(_("bad HEAD - strange symbolic ref"));
 		}
 	}
 
@@ -839,7 +839,7 @@ static enum bisect_error bisect_start(struct bisect_terms *terms, int argc,
 
 	if (no_checkout) {
 		if (repo_get_oid(the_repository, start_head.buf, &oid) < 0) {
-			res = error(_("invalid ref: '%s'"), start_head.buf);
+			res = _error(_("invalid ref: '%s'"), start_head.buf);
 			goto finish;
 		}
 		if (refs_update_ref(get_main_ref_store(the_repository), NULL, "BISECT_HEAD", &oid, NULL, 0,
@@ -925,7 +925,7 @@ static enum bisect_error bisect_state(struct bisect_terms *terms, int argc,
 	struct oid_array revs = OID_ARRAY_INIT;
 
 	if (!argc)
-		return error(_("Please call `--bisect-state` with at least one argument"));
+		return _error(_("Please call `--bisect-state` with at least one argument"));
 
 	if (bisect_autostart(terms))
 		return BISECT_FAILED;
@@ -938,7 +938,7 @@ static enum bisect_error bisect_state(struct bisect_terms *terms, int argc,
 	argv++;
 	argc--;
 	if (argc > 1 && !strcmp(state, terms->term_bad))
-		return error(_("'git bisect %s' can take only one argument."), terms->term_bad);
+		return _error(_("'git bisect %s' can take only one argument."), terms->term_bad);
 
 	if (argc == 0) {
 		const char *head = "BISECT_HEAD";
@@ -951,7 +951,7 @@ static enum bisect_error bisect_state(struct bisect_terms *terms, int argc,
 		}
 
 		if (res_head)
-			error(_("Bad rev input: %s"), head);
+			_error(_("Bad rev input: %s"), head);
 		oid_array_append(&revs, &oid);
 	}
 
@@ -964,7 +964,7 @@ static enum bisect_error bisect_state(struct bisect_terms *terms, int argc,
 		struct commit *commit;
 
 		if (repo_get_oid(the_repository, *argv, &oid)){
-			error(_("Bad rev input: %s"), *argv);
+			_error(_("Bad rev input: %s"), *argv);
 			oid_array_clear(&revs);
 			return BISECT_FAILED;
 		}
@@ -1003,7 +1003,7 @@ static enum bisect_error bisect_log(void)
 	const char* filename = git_path_bisect_log();
 
 	if (is_empty_or_missing_file(filename))
-		return error(_("We are not bisecting."));
+		return _error(_("We are not bisecting."));
 
 	fd = open(filename, O_RDONLY);
 	if (fd < 0)
@@ -1053,7 +1053,7 @@ static int process_replay_line(struct bisect_terms *terms, struct strbuf *line)
 		strvec_clear(&argv);
 		return res;
 	}
-	error(_("'%s'?? what are you talking about?"), p);
+	_error(_("'%s'?? what are you talking about?"), p);
 
 	return -1;
 }
@@ -1065,7 +1065,7 @@ static enum bisect_error bisect_replay(struct bisect_terms *terms, const char *f
 	struct strbuf line = STRBUF_INIT;
 
 	if (is_empty_or_missing_file(filename))
-		return error(_("cannot read file '%s' for replaying"), filename);
+		return _error(_("cannot read file '%s' for replaying"), filename);
 
 	if (bisect_reset(NULL))
 		return BISECT_FAILED;
@@ -1221,7 +1221,7 @@ static int bisect_run(struct bisect_terms *terms, int argc, const char **argv)
 		return BISECT_FAILED;
 
 	if (!argc) {
-		error(_("bisect run failed: no command provided."));
+		_error(_("bisect run failed: no command provided."));
 		return BISECT_FAILED;
 	}
 
@@ -1241,13 +1241,13 @@ static int bisect_run(struct bisect_terms *terms, int argc, const char **argv)
 			int rc = verify_good(terms, command.buf);
 			is_first_run = 0;
 			if (rc < 0 || 128 <= rc) {
-				error(_("unable to verify %s on good"
+				_error(_("unable to verify %s on good"
 					" revision"), command.buf);
 				res = BISECT_FAILED;
 				break;
 			}
 			if (rc == res) {
-				error(_("bogus exit code %d for good revision"),
+				_error(_("bogus exit code %d for good revision"),
 				      rc);
 				res = BISECT_FAILED;
 				break;
@@ -1255,7 +1255,7 @@ static int bisect_run(struct bisect_terms *terms, int argc, const char **argv)
 		}
 
 		if (res < 0 || 128 <= res) {
-			error(_("bisect run failed: exit code %d from"
+			_error(_("bisect run failed: exit code %d from"
 				" %s is < 0 or >= 128"), res, command.buf);
 			break;
 		}
@@ -1288,7 +1288,7 @@ static int bisect_run(struct bisect_terms *terms, int argc, const char **argv)
 		print_file_to_stdout(git_path_bisect_run());
 
 		if (res == BISECT_ONLY_SKIPPED_LEFT)
-			error(_("bisect run cannot continue any more"));
+			_error(_("bisect run cannot continue any more"));
 		else if (res == BISECT_INTERNAL_SUCCESS_MERGE_BASE) {
 			puts(_("bisect run success"));
 			res = BISECT_OK;
@@ -1296,7 +1296,7 @@ static int bisect_run(struct bisect_terms *terms, int argc, const char **argv)
 			puts(_("bisect found first bad commit"));
 			res = BISECT_OK;
 		} else if (res) {
-			error(_("bisect run failed: 'git bisect %s'"
+			_error(_("bisect run failed: 'git bisect %s'"
 				" exited with error code %d"), new_state, res);
 		} else {
 			continue;
@@ -1311,7 +1311,7 @@ static int bisect_run(struct bisect_terms *terms, int argc, const char **argv)
 static int cmd_bisect__reset(int argc, const char **argv, const char *prefix UNUSED)
 {
 	if (argc > 1)
-		return error(_("'%s' requires either no argument or a commit"),
+		return _error(_("'%s' requires either no argument or a commit"),
 			     "git bisect reset");
 	return bisect_reset(argc ? argv[0] : NULL);
 }
@@ -1322,7 +1322,7 @@ static int cmd_bisect__terms(int argc, const char **argv, const char *prefix UNU
 	struct bisect_terms terms = { 0 };
 
 	if (argc > 1)
-		return error(_("'%s' requires 0 or 1 argument"),
+		return _error(_("'%s' requires 0 or 1 argument"),
 			     "git bisect terms");
 	res = bisect_terms(&terms, argc == 1 ? argv[0] : NULL);
 	free_terms(&terms);
@@ -1346,7 +1346,7 @@ static int cmd_bisect__next(int argc, const char **argv UNUSED, const char *pref
 	struct bisect_terms terms = { 0 };
 
 	if (argc)
-		return error(_("'%s' requires 0 arguments"),
+		return _error(_("'%s' requires 0 arguments"),
 			     "git bisect next");
 	get_terms(&terms);
 	res = bisect_next(&terms, prefix);
@@ -1365,7 +1365,7 @@ static int cmd_bisect__replay(int argc, const char **argv, const char *prefix UN
 	struct bisect_terms terms = { 0 };
 
 	if (argc != 1)
-		return error(_("no logfile given"));
+		return _error(_("no logfile given"));
 	set_terms(&terms, "bad", "good");
 	res = bisect_replay(&terms, argv[0]);
 	free_terms(&terms);
@@ -1401,7 +1401,7 @@ static int cmd_bisect__run(int argc, const char **argv, const char *prefix UNUSE
 	struct bisect_terms terms = { 0 };
 
 	if (!argc)
-		return error(_("'%s' failed: no command provided."), "git bisect run");
+		return _error(_("'%s' failed: no command provided."), "git bisect run");
 	get_terms(&terms);
 	res = bisect_run(&terms, argc, argv);
 	free_terms(&terms);

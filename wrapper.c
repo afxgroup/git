@@ -25,7 +25,7 @@ static int memory_limit_check(size_t size, int gentle)
 	}
 	if (size > limit) {
 		if (gentle) {
-			error("attempting to allocate %"PRIuMAX" over limit %"PRIuMAX,
+			_error("attempting to allocate %"PRIuMAX" over limit %"PRIuMAX,
 			      (uintmax_t)size, (uintmax_t)limit);
 			return -1;
 		} else
@@ -57,7 +57,7 @@ static void *do_xmalloc(size_t size, int gentle)
 			die("Out of memory, malloc failed (tried to allocate %lu bytes)",
 			    (unsigned long)size);
 		else {
-			error("Out of memory, malloc failed (tried to allocate %lu bytes)",
+			_error("Out of memory, malloc failed (tried to allocate %lu bytes)",
 			      (unsigned long)size);
 			return NULL;
 		}
@@ -78,7 +78,7 @@ static void *do_xmallocz(size_t size, int gentle)
 	void *ret;
 	if (unsigned_add_overflows(size, 1)) {
 		if (gentle) {
-			error("Data too large to fit into virtual memory space.");
+			_error("Data too large to fit into virtual memory space.");
 			return NULL;
 		} else
 			die("Data too large to fit into virtual memory space.");

@@ -63,7 +63,7 @@ static int verify_packfile(struct repository *r,
 	struct idx_entry *entries;
 
 	if (!is_pack_valid(p))
-		return error("packfile %s cannot be accessed", p->pack_name);
+		return _error("packfile %s cannot be accessed", p->pack_name);
 
 	r->hash_algo->init_fn(&ctx);
 	do {
@@ -79,10 +79,10 @@ static int verify_packfile(struct repository *r,
 	r->hash_algo->final_fn(hash, &ctx);
 	pack_sig = use_pack(p, w_curs, pack_sig_ofs, NULL);
 	if (!hasheq(hash, pack_sig))
-		err = error("%s pack checksum mismatch",
+		err = _error("%s pack checksum mismatch",
 			    p->pack_name);
 	if (!hasheq(index_base + index_size - r->hash_algo->hexsz, pack_sig))
-		err = error("%s pack checksum does not match its index",
+		err = _error("%s pack checksum does not match its index",
 			    p->pack_name);
 	unuse_pack(w_curs);
 
@@ -117,7 +117,7 @@ static int verify_packfile(struct repository *r,
 			off_t len = entries[i+1].offset - offset;
 			unsigned int nr = entries[i].nr;
 			if (check_pack_crc(p, w_curs, offset, len, nr))
-				err = error("index CRC mismatch for object %s "
+				err = _error("index CRC mismatch for object %s "
 					    "from %s at offset %"PRIuMAX"",
 					    oid_to_hex(&oid),
 					    p->pack_name, (uintmax_t)offset);
@@ -141,15 +141,15 @@ static int verify_packfile(struct repository *r,
 		}
 
 		if (data_valid && !data)
-			err = error("cannot unpack %s from %s at offset %"PRIuMAX"",
+			err = _error("cannot unpack %s from %s at offset %"PRIuMAX"",
 				    oid_to_hex(&oid), p->pack_name,
 				    (uintmax_t)entries[i].offset);
 		else if (data && check_object_signature(r, &oid, data, size,
 							type) < 0)
-			err = error("packed %s from %s is corrupt",
+			err = _error("packed %s from %s is corrupt",
 				    oid_to_hex(&oid), p->pack_name);
 		else if (!data && stream_object_signature(r, &oid) < 0)
-			err = error("packed %s from %s is corrupt",
+			err = _error("packed %s from %s is corrupt",
 				    oid_to_hex(&oid), p->pack_name);
 		else if (fn) {
 			int eaten = 0;
@@ -173,11 +173,11 @@ int verify_pack_index(struct packed_git *p)
 	int err = 0;
 
 	if (open_pack_index(p))
-		return error("packfile %s index not opened", p->pack_name);
+		return _error("packfile %s index not opened", p->pack_name);
 
 	/* Verify SHA1 sum of the index file */
 	if (!hashfile_checksum_valid(p->index_data, p->index_size))
-		err = error("Packfile index for %s hash mismatch",
+		err = _error("Packfile index for %s hash mismatch",
 			    p->pack_name);
 	return err;
 }

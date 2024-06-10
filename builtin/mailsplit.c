@@ -239,7 +239,7 @@ static int split_mbox(const char *file, const char *dir, int allow_bare,
 				ret = skip;
 			else {
 				fclose(f);
-				error(_("empty mbox: '%s'"), file);
+				_error(_("empty mbox: '%s'"), file);
 			}
 			goto out;
 		}
@@ -249,7 +249,7 @@ static int split_mbox(const char *file, const char *dir, int allow_bare,
 	if (strbuf_getwholeline(&buf, f, '\n')) {
 		/* empty stdin is OK */
 		if (f != stdin) {
-			error("cannot read mbox %s", file);
+			_error("cannot read mbox %s", file);
 			goto out;
 		}
 		file_done = 1;
@@ -340,7 +340,7 @@ int cmd_mailsplit(int argc, const char **argv, const char *prefix)
 		if (arg[0] == '-' && arg[1] == 0) {
 			ret = split_mbox(arg, dir, allow_bare, nr_prec, nr);
 			if (ret < 0) {
-				error("cannot split patches from stdin");
+				_error("cannot split patches from stdin");
 				return 1;
 			}
 			num += (ret - nr);
@@ -359,7 +359,7 @@ int cmd_mailsplit(int argc, const char **argv, const char *prefix)
 			ret = split_mbox(arg, dir, allow_bare, nr_prec, nr);
 
 		if (ret < 0) {
-			error("cannot split patches from %s", arg);
+			_error("cannot split patches from %s", arg);
 			return 1;
 		}
 		num += (ret - nr);

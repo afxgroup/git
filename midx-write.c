@@ -897,7 +897,7 @@ static int fill_packs_from_midx(struct write_midx_context *ctx,
 			 * preferred pack has a non-zero object count.
 			 */
 			if (prepare_midx_pack(the_repository, ctx->m, i))
-				return error(_("could not load pack"));
+				return _error(_("could not load pack"));
 
 			if (open_pack_index(ctx->m->packs[i]))
 				die(_("could not open index for %s"),
@@ -1045,7 +1045,7 @@ static int write_midx_internal(const char *object_dir,
 	if (ctx.preferred_pack_idx > -1) {
 		struct packed_git *preferred = ctx.info[ctx.preferred_pack_idx].p;
 		if (!preferred->num_objects) {
-			error(_("cannot select preferred pack %s with no objects"),
+			_error(_("cannot select preferred pack %s with no objects"),
 			      preferred->pack_name);
 			result = 1;
 			goto cleanup;
@@ -1076,7 +1076,7 @@ static int write_midx_internal(const char *object_dir,
 				drop_index++;
 				ctx.info[i].expired = 1;
 			} else if (cmp > 0) {
-				error(_("did not see pack-file %s to drop"),
+				_error(_("did not see pack-file %s to drop"),
 				      packs_to_drop->items[drop_index].string);
 				drop_index++;
 				missing_drops++;
@@ -1137,7 +1137,7 @@ static int write_midx_internal(const char *object_dir,
 	f = hashfd(get_lock_file_fd(&lk), get_lock_file_path(&lk));
 
 	if (ctx.nr - dropped_packs == 0) {
-		error(_("no pack files to index."));
+		_error(_("no pack files to index."));
 		result = 1;
 		goto cleanup;
 	}
@@ -1212,7 +1212,7 @@ static int write_midx_internal(const char *object_dir,
 		if (write_midx_bitmap(midx_name.buf, midx_hash, &pdata,
 				      commits, commits_nr, ctx.pack_order,
 				      flags) < 0) {
-			error(_("could not write multi-pack bitmap"));
+			_error(_("could not write multi-pack bitmap"));
 			result = 1;
 			clear_packing_data(&pdata);
 			free(commits);
@@ -1496,7 +1496,7 @@ int midx_repack(struct repository *r, const char *object_dir, size_t batch_size,
 	cmd.in = cmd.out = -1;
 
 	if (start_command(&cmd)) {
-		error(_("could not start pack-objects"));
+		_error(_("could not start pack-objects"));
 		result = 1;
 		goto cleanup;
 	}
@@ -1515,7 +1515,7 @@ int midx_repack(struct repository *r, const char *object_dir, size_t batch_size,
 	fclose(cmd_in);
 
 	if (finish_command(&cmd)) {
-		error(_("could not finish pack-objects"));
+		_error(_("could not finish pack-objects"));
 		result = 1;
 		goto cleanup;
 	}

@@ -540,7 +540,7 @@ static int get_modified_files(struct repository *r,
 
 	discard_index(r->index);
 	if (repo_read_index_preload(r, ps, 0) < 0)
-		return error(_("could not read index"));
+		return _error(_("could not read index"));
 
 	prefix_item_list_clear(files);
 	s.files = &files->items;
@@ -711,17 +711,17 @@ static int run_update(struct add_i_state *s, const struct pathspec *ps,
 			continue;
 		if (lstat(name, &st) && is_missing_file_error(errno)) {
 			if (remove_file_from_index(s->r->index, name) < 0) {
-				res = error(_("could not stage '%s'"), name);
+				res = _error(_("could not stage '%s'"), name);
 				break;
 			}
 		} else if (add_file_to_index(s->r->index, name, 0) < 0) {
-			res = error(_("could not stage '%s'"), name);
+			res = _error(_("could not stage '%s'"), name);
 			break;
 		}
 	}
 
 	if (!res && write_locked_index(s->r->index, &index_lock, COMMIT_LOCK) < 0)
-		res = error(_("could not write index"));
+		res = _error(_("could not write index"));
 
 	if (!res)
 		printf(Q_("updated %d path\n",
@@ -795,7 +795,7 @@ static int run_revert(struct add_i_state *s, const struct pathspec *ps,
 	else {
 		tree = parse_tree_indirect(&oid);
 		if (!tree) {
-			res = error(_("Could not parse HEAD^{tree}"));
+			res = _error(_("Could not parse HEAD^{tree}"));
 			goto finish_revert;
 		}
 		oidcpy(&oid, &tree->object.oid);
@@ -850,7 +850,7 @@ static int get_untracked_files(struct repository *r,
 	struct strbuf buf = STRBUF_INIT;
 
 	if (repo_read_index(r) < 0)
-		return error(_("could not read index"));
+		return _error(_("could not read index"));
 
 	prefix_item_list_clear(files);
 	setup_standard_excludes(&dir);
@@ -906,14 +906,14 @@ static int run_add_untracked(struct add_i_state *s, const struct pathspec *ps,
 		const char *name = files->items.items[i].string;
 		if (files->selected[i] &&
 		    add_file_to_index(s->r->index, name, 0) < 0) {
-			res = error(_("could not stage '%s'"), name);
+			res = _error(_("could not stage '%s'"), name);
 			break;
 		}
 	}
 
 	if (!res &&
 	    write_locked_index(s->r->index, &index_lock, COMMIT_LOCK) < 0)
-		res = error(_("could not write index"));
+		res = _error(_("could not write index"));
 
 	if (!res)
 		printf(Q_("added %d path\n",

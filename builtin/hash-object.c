@@ -149,7 +149,7 @@ int cmd_hash_object(int argc, const char **argv, const char *prefix)
 	}
 
 	if (errstr) {
-		error("%s", errstr);
+		_error("%s", errstr);
 		usage_with_options(hash_object_usage, hash_object_options);
 	}
 

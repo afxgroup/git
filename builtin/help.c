@@ -237,7 +237,7 @@ static int check_emacsclient_version(void)
 	ec_process.err = -1;
 	ec_process.stdout_to_stderr = 1;
 	if (start_command(&ec_process))
-		return error(_("Failed to start emacsclient."));
+		return _error(_("Failed to start emacsclient."));
 
 	strbuf_read(&buffer, ec_process.err, 20);
 	close(ec_process.err);
@@ -250,7 +250,7 @@ static int check_emacsclient_version(void)
 
 	if (!starts_with(buffer.buf, "emacsclient")) {
 		strbuf_release(&buffer);
-		return error(_("Failed to parse emacsclient version."));
+		return _error(_("Failed to parse emacsclient version."));
 	}
 
 	strbuf_remove(&buffer, 0, strlen("emacsclient"));
@@ -258,7 +258,7 @@ static int check_emacsclient_version(void)
 
 	if (version < 22) {
 		strbuf_release(&buffer);
-		return error(_("emacsclient version '%d' too old (< 22)."),
+		return _error(_("emacsclient version '%d' too old (< 22)."),
 			version);
 	}
 

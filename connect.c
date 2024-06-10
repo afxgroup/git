@@ -525,12 +525,12 @@ int get_remote_bundle_uri(int fd_out, struct packet_reader *reader,
 		if (!bundle_uri_parse_line(bundles, line))
 			continue;
 
-		return error(_("error on bundle-uri response line %d: %s"),
+		return _error(_("error on bundle-uri response line %d: %s"),
 			     line_nr, line);
 	}
 
 	if (reader->status != PACKET_READ_FLUSH)
-		return error(_("expected flush after bundle-uri listing"));
+		return _error(_("expected flush after bundle-uri listing"));
 
 	/*
 	 * Might die(), but obscure enough that that's OK, e.g. in

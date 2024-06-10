@@ -260,7 +260,7 @@ static int deflate_blob_to_pack(struct bulk_checkin_packfile *state,
 
 	seekback = lseek(fd, 0, SEEK_CUR);
 	if (seekback == (off_t) -1)
-		return error("cannot find the current offset");
+		return _error("cannot find the current offset");
 
 	header_len = format_object_header((char *)obuf, sizeof(obuf),
 					  OBJ_BLOB, size);
@@ -295,7 +295,7 @@ static int deflate_blob_to_pack(struct bulk_checkin_packfile *state,
 		state->offset = checkpoint.offset;
 		flush_bulk_checkin_packfile(state);
 		if (lseek(fd, seekback, SEEK_SET) == (off_t) -1)
-			return error("cannot seek back");
+			return _error("cannot seek back");
 	}
 	the_hash_algo->final_oid_fn(result_oid, &ctx);
 	if (!idx)

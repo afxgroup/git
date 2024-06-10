@@ -329,7 +329,7 @@ int set_disambiguate_hint_config(const char *var, const char *value)
 		}
 	}
 
-	return error("unknown hint type for '%s': %s", var, value);
+	return _error("unknown hint type for '%s': %s", var, value);
 }
 
 static int init_object_disambiguation(struct repository *r,
@@ -596,7 +596,7 @@ static enum get_oid_result get_short_oid(struct repository *r,
 			.advice = STRBUF_INIT,
 		};
 
-		error(_("short object ID %s is ambiguous"), ds.hex_pfx);
+		_error(_("short object ID %s is ambiguous"), ds.hex_pfx);
 
 		/*
 		 * We may still have ambiguity if we simply saw a series of
@@ -1152,7 +1152,7 @@ struct object *repo_peel_to_type(struct repository *r, const char *name, int nam
 			o = &(repo_get_commit_tree(r, ((struct commit *)o))->object);
 		else {
 			if (name)
-				error("%.*s: expected %s type, but the object "
+				_error("%.*s: expected %s type, but the object "
 				      "dereferences to %s type",
 				      namelen, name, type_name(expected_type),
 				      type_name(o->type));

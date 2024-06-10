@@ -44,7 +44,7 @@ static int midx_read_oid_fanout(const unsigned char *chunk_start,
 	m->chunk_oid_fanout = (uint32_t *)chunk_start;
 
 	if (chunk_size != 4 * 256) {
-		error(_("multi-pack-index OID fanout is of the wrong size"));
+		_error(_("multi-pack-index OID fanout is of the wrong size"));
 		return 1;
 	}
 	for (i = 0; i < 255; i++) {
@@ -52,7 +52,7 @@ static int midx_read_oid_fanout(const unsigned char *chunk_start,
 		uint32_t oid_fanout2 = ntohl(m->chunk_oid_fanout[i+1]);
 
 		if (oid_fanout1 > oid_fanout2) {
-			error(_("oid fanout out of order: fanout[%d] = %"PRIx32" > %"PRIx32" = fanout[%d]"),
+			_error(_("oid fanout out of order: fanout[%d] = %"PRIx32" > %"PRIx32" = fanout[%d]"),
 			      i, oid_fanout1, oid_fanout2, i + 1);
 			return 1;
 		}
@@ -68,7 +68,7 @@ static int midx_read_oid_lookup(const unsigned char *chunk_start,
 	m->chunk_oid_lookup = chunk_start;
 
 	if (chunk_size != st_mult(m->hash_len, m->num_objects)) {
-		error(_("multi-pack-index OID lookup chunk is the wrong size"));
+		_error(_("multi-pack-index OID lookup chunk is the wrong size"));
 		return 1;
 	}
 	return 0;
@@ -81,7 +81,7 @@ static int midx_read_object_offsets(const unsigned char *chunk_start,
 	m->chunk_object_offsets = chunk_start;
 
 	if (chunk_size != st_mult(m->num_objects, MIDX_CHUNK_OFFSET_WIDTH)) {
-		error(_("multi-pack-index object offset chunk is the wrong size"));
+		_error(_("multi-pack-index object offset chunk is the wrong size"));
 		return 1;
 	}
 	return 0;
@@ -116,7 +116,7 @@ struct multi_pack_index *load_multi_pack_index(const char *object_dir, int local
 	midx_size = xsize_t(st.st_size);
 
 	if (midx_size < MIDX_MIN_SIZE) {
-		error(_("multi-pack-index file %s is too small"), midx_name.buf);
+		_error(_("multi-pack-index file %s is too small"), midx_name.buf);
 		goto cleanup_fail;
 	}
 
@@ -142,7 +142,7 @@ struct multi_pack_index *load_multi_pack_index(const char *object_dir, int local
 
 	hash_version = m->data[MIDX_BYTE_HASH_VERSION];
 	if (hash_version != oid_version(the_hash_algo)) {
-		error(_("multi-pack-index hash version %u does not match version %u"),
+		_error(_("multi-pack-index hash version %u does not match version %u"),
 		      hash_version, oid_version(the_hash_algo));
 		goto cleanup_fail;
 	}
@@ -275,10 +275,10 @@ int nth_bitmapped_pack(struct repository *r, struct multi_pack_index *m,
 		       struct bitmapped_pack *bp, uint32_t pack_int_id)
 {
 	if (!m->chunk_bitmapped_packs)
-		return error(_("MIDX does not contain the BTMP chunk"));
+		return _error(_("MIDX does not contain the BTMP chunk"));
 
 	if (prepare_midx_pack(r, m, pack_int_id))
-		return error(_("could not load bitmapped pack %"PRIu32), pack_int_id);
+		return _error(_("could not load bitmapped pack %"PRIu32), pack_int_id);
 
 	bp->p = m->packs[pack_int_id];
 	bp->bitmap_pos = get_be32((char *)m->chunk_bitmapped_packs +
@@ -603,7 +603,7 @@ int verify_midx_file(struct repository *r, const char *object_dir, unsigned flag
 		get_midx_filename(&filename, object_dir);
 
 		if (!stat(filename.buf, &sb)) {
-			error(_("multi-pack-index file exists, but failed to parse"));
+			_error(_("multi-pack-index file exists, but failed to parse"));
 			result = 1;
 		}
 		strbuf_release(&filename);

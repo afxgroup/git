@@ -78,12 +78,12 @@ static int test_function(struct test_data *data, char *(*func)(char *input),
 		if (!strcmp(to, data[i].to))
 			continue;
 		if (!data[i].alternative)
-			error("FAIL: %s(%s) => '%s' != '%s'\n",
+			_error("FAIL: %s(%s) => '%s' != '%s'\n",
 				funcname, data[i].from, to, data[i].to);
 		else if (!strcmp(to, data[i].alternative))
 			continue;
 		else
-			error("FAIL: %s(%s) => '%s' != '%s', '%s'\n",
+			_error("FAIL: %s(%s) => '%s' != '%s', '%s'\n",
 				funcname, data[i].from, to, data[i].to,
 				data[i].alternative);
 		failed = 1;
@@ -188,7 +188,7 @@ static int check_dotfile(const char *x, const char **argv,
 		if (!strcmp("--not", *argv))
 			expect = !expect;
 		else if (expect != (is_hfs(*argv) || is_ntfs(*argv)))
-			res = error("'%s' is %s.git%s", *argv,
+			res = _error("'%s' is %s.git%s", *argv,
 				    expect ? "not " : "", x);
 		else
 			fprintf(stderr, "ok: '%s' is %s.git%s\n",
@@ -491,7 +491,7 @@ int cmd__path_utils(int argc, const char **argv)
 			if (!strcmp("--not", argv[i]))
 				expect = 0;
 			else if (expect != is_valid_path(argv[i]))
-				res = error("'%s' is%s a valid path",
+				res = _error("'%s' is%s a valid path",
 					    argv[i], expect ? " not" : "");
 			else
 				fprintf(stderr,

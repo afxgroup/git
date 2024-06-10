@@ -232,7 +232,7 @@ static char *apply_command(struct conf_info *conf, const char *arg)
 	cp.use_shell = 1;
 
 	if (capture_command(&cp, &buf, 1024)) {
-		error(_("running trailer command '%s' failed"), cmd.buf);
+		_error(_("running trailer command '%s' failed"), cmd.buf);
 		strbuf_release(&buf);
 		result = xstrdup("");
 	} else {
@@ -748,7 +748,7 @@ void parse_trailers_from_command_line_args(struct list_head *arg_head,
 			struct strbuf sb = STRBUF_INIT;
 			strbuf_addstr(&sb, tr->text);
 			strbuf_trim(&sb);
-			error(_("empty trailer token in trailer '%.*s'"),
+			_error(_("empty trailer token in trailer '%.*s'"),
 			      (int) sb.len, sb.buf);
 			strbuf_release(&sb);
 		} else {

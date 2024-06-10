@@ -65,7 +65,7 @@ static int parse_opt_signed_tag_mode(const struct option *opt,
 	else if (!strcmp(arg, "strip"))
 		*val = STRIP;
 	else
-		return error("Unknown signed-tags mode: %s", arg);
+		return _error("Unknown signed-tags mode: %s", arg);
 	return 0;
 }
 
@@ -81,7 +81,7 @@ static int parse_opt_tag_of_filtered_mode(const struct option *opt,
 	else if (!strcmp(arg, "rewrite"))
 		*val = REWRITE;
 	else
-		return error("Unknown tag-of-filtered mode: %s", arg);
+		return _error("Unknown tag-of-filtered mode: %s", arg);
 	return 0;
 }
 
@@ -106,7 +106,7 @@ static int parse_opt_reencode_mode(const struct option *opt,
 		if (!strcasecmp(arg, "abort"))
 			*val = REENCODE_ABORT;
 		else
-			return error("Unknown reencoding mode: %s", arg);
+			return _error("Unknown reencoding mode: %s", arg);
 	}
 
 	return 0;
@@ -1075,7 +1075,7 @@ static void export_marks(char *file)
 	e |= ferror(f);
 	e |= fclose(f);
 	if (e)
-		error("Unable to write marks file %s.", file);
+		_error("Unable to write marks file %s.", file);
 }
 
 static void import_marks(char *input_file, int check_exists)
@@ -1124,7 +1124,7 @@ static void import_marks(char *input_file, int check_exists)
 		object = &commit->object;
 
 		if (object->flags & SHOWN)
-			error("Object %s already has a mark", oid_to_hex(&oid));
+			_error("Object %s already has a mark", oid_to_hex(&oid));
 
 		mark_object(object, mark);
 
@@ -1165,7 +1165,7 @@ static int parse_opt_anonymize_map(const struct option *opt,
 	}
 
 	if (!keylen || !*value)
-		return error(_("--anonymize-map token cannot be empty"));
+		return _error(_("--anonymize-map token cannot be empty"));
 
 	add_anonymized_entry(map, memhash(arg, keylen), arg, keylen,
 			     xstrdup(value));

@@ -59,7 +59,7 @@ static int launch_specified_editor(const char *editor, const char *path,
 				   struct strbuf *buffer, const char *const *env)
 {
 	if (!editor)
-		return error("Terminal is dumb, but EDITOR unset");
+		return _error("Terminal is dumb, but EDITOR unset");
 
 	if (strcmp(editor, ":")) {
 		struct strbuf realpath = STRBUF_INIT;
@@ -92,7 +92,7 @@ static int launch_specified_editor(const char *editor, const char *path,
 		p.trace2_child_class = "editor";
 		if (start_command(&p) < 0) {
 			strbuf_release(&realpath);
-			return error("unable to start editor '%s'", editor);
+			return _error("unable to start editor '%s'", editor);
 		}
 
 		sigchain_push(SIGINT, SIG_IGN);
@@ -111,7 +111,7 @@ static int launch_specified_editor(const char *editor, const char *path,
 			 */
 			term_clear_line();
 		if (ret)
-			return error("there was a problem with the editor '%s'",
+			return _error("there was a problem with the editor '%s'",
 					editor);
 	}
 

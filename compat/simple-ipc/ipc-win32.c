@@ -249,7 +249,7 @@ int ipc_client_send_command_to_connection(
 	if (write_packetized_from_buf_no_flush(message, message_len,
 					       connection->fd) < 0 ||
 	    packet_flush_gently(connection->fd) < 0) {
-		ret = error(_("could not send IPC command"));
+		ret = _error(_("could not send IPC command"));
 		goto done;
 	}
 
@@ -258,7 +258,7 @@ int ipc_client_send_command_to_connection(
 	if (read_packetized_to_strbuf(
 		    connection->fd, answer,
 		    PACKET_READ_GENTLE_ON_EOF | PACKET_READ_GENTLE_ON_READ_ERROR) < 0) {
-		ret = error(_("could not read IPC response"));
+		ret = _error(_("could not read IPC response"));
 		goto done;
 	}
 
@@ -401,7 +401,7 @@ static enum connect_result queue_overlapped_connect(
 	}
 
 failed:
-	error(_("ConnectNamedPipe failed for '%s' (%lu)"),
+	_error(_("ConnectNamedPipe failed for '%s' (%lu)"),
 	      server_thread_data->server_data->buf_path.buf,
 	      GetLastError());
 	return CR_CONNECT_ERROR;
@@ -482,7 +482,7 @@ static int do_io(struct ipc_server_thread_data *server_thread_data)
 
 	reply_data.fd = dup_fd_from_pipe(server_thread_data->hPipe);
 	if (reply_data.fd < 0)
-		return error(_("could not create fd from pipe for '%s'"),
+		return _error(_("could not create fd from pipe for '%s'"),
 			     server_thread_data->server_data->buf_path.buf);
 
 	ret = read_packetized_to_strbuf(
@@ -862,7 +862,7 @@ int ipc_server_await(struct ipc_server_data *server_data)
 
 	dwWaitResult = WaitForSingleObject(server_data->hEventStopRequested, INFINITE);
 	if (dwWaitResult != WAIT_OBJECT_0)
-		return error(_("wait for hEvent failed for '%s'"),
+		return _error(_("wait for hEvent failed for '%s'"),
 			     server_data->buf_path.buf);
 
 	while (server_data->thread_list) {

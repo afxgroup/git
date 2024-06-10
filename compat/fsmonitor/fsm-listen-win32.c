@@ -104,7 +104,7 @@ static int normalize_path_in_utf8(wchar_t *wpath, DWORD wpath_len,
 		if (len > 0)
 			goto normalize;
 		if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
-			error(_("[GLE %ld] could not convert path to UTF-8: '%.*ls'"),
+			_error(_("[GLE %ld] could not convert path to UTF-8: '%.*ls'"),
 			      GetLastError(), (int)wpath_len, wpath);
 			return -1;
 		}
@@ -302,7 +302,7 @@ static struct one_watch *create_watch(const char *path)
 	wchar_t wpath_longname[MAX_PATH + 1];
 
 	if (xutftowcs_path(wpath, path) < 0) {
-		error(_("could not convert to wide characters: '%s'"), path);
+		_error(_("could not convert to wide characters: '%s'"), path);
 		return NULL;
 	}
 
@@ -311,7 +311,7 @@ static struct one_watch *create_watch(const char *path)
 			   FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
 			   NULL);
 	if (hDir == INVALID_HANDLE_VALUE) {
-		error(_("[GLE %ld] could not watch '%s'"),
+		_error(_("[GLE %ld] could not watch '%s'"),
 		      GetLastError(), path);
 		return NULL;
 	}
@@ -319,7 +319,7 @@ static struct one_watch *create_watch(const char *path)
 	len_longname = GetLongPathNameW(wpath, wpath_longname,
 					ARRAY_SIZE(wpath_longname));
 	if (!len_longname) {
-		error(_("[GLE %ld] could not get longname of '%s'"),
+		_error(_("[GLE %ld] could not get longname of '%s'"),
 		      GetLastError(), path);
 		CloseHandle(hDir);
 		return NULL;
@@ -390,7 +390,7 @@ static int start_rdcw_watch(struct one_watch *watch)
 	if (watch->is_active)
 		return 0;
 
-	error(_("ReadDirectoryChangedW failed on '%s' [GLE %ld]"),
+	_error(_("ReadDirectoryChangedW failed on '%s' [GLE %ld]"),
 	      watch->path.buf, GetLastError());
 	return -1;
 }
@@ -443,7 +443,7 @@ static int recv_rdcw_watch(struct one_watch *watch)
 	 * Shutdown if we get any error.
 	 */
 
-	error(_("GetOverlappedResult failed on '%s' [GLE %ld]"),
+	_error(_("GetOverlappedResult failed on '%s' [GLE %ld]"),
 	      watch->path.buf, gle);
 	return -1;
 }
@@ -791,7 +791,7 @@ void fsm_listen__loop(struct fsmonitor_daemon_state *state)
 		if (dwWait == WAIT_OBJECT_0 + LISTENER_SHUTDOWN)
 			goto clean_shutdown;
 
-		error(_("could not read directory changes [GLE %ld]"),
+		_error(_("could not read directory changes [GLE %ld]"),
 		      GetLastError());
 		goto force_error_stop;
 	}

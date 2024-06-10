@@ -128,7 +128,7 @@ int cmd_bugreport(int argc, const char **argv, const char *prefix)
 			     bugreport_usage, 0);
 
 	if (argc) {
-		error(_("unknown argument `%s'"), argv[0]);
+		_error(_("unknown argument `%s'"), argv[0]);
 		usage(bugreport_usage[0]);
 	}
 

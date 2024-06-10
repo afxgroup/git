@@ -916,7 +916,7 @@ static void generate_submodule_summary(struct summary_cb *info,
 			if (fd < 0 || fstat(fd, &st) < 0 ||
 			    index_fd(the_repository->index, &p->oid_dst, fd, &st, OBJ_BLOB,
 				     p->sm_path, 0))
-				error(_("couldn't hash object from '%s'"), p->sm_path);
+				_error(_("couldn't hash object from '%s'"), p->sm_path);
 		} else {
 			/* for a submodule removal (mode:0000000), don't warn */
 			if (p->mod_dst)
@@ -1505,7 +1505,7 @@ static int module_deinit(int argc, const char **argv, const char *prefix)
 			     git_submodule_helper_usage, 0);
 
 	if (all && argc) {
-		error("pathspec and --all are incompatible");
+		_error("pathspec and --all are incompatible");
 		usage_with_options(git_submodule_helper_usage,
 				   module_deinit_options);
 	}
@@ -1689,7 +1689,7 @@ static int dir_contains_only_dotgit(const char *path)
 		ret = 0;
 	else if (strcmp(DEFAULT_GIT_DIR_ENVIRONMENT, e->d_name) ||
 		 (e = readdir_skip_dot_and_dotdot(dir))) {
-		error("unexpected item '%s' in '%s'", e->d_name, path);
+		_error("unexpected item '%s' in '%s'", e->d_name, path);
 		ret = 0;
 	}
 

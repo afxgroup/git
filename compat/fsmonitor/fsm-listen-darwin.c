@@ -454,7 +454,7 @@ int fsm_listen__ctor(struct fsmonitor_daemon_state *state)
 	return 0;
 
 failed:
-	error(_("Unable to create FSEventStream."));
+	_error(_("Unable to create FSEventStream."));
 
 	FREE_AND_NULL(state->listen_data);
 	return -1;
@@ -511,7 +511,7 @@ void fsm_listen__loop(struct fsmonitor_daemon_state *state)
 	data->stream_scheduled = 1;
 
 	if (!FSEventStreamStart(data->stream)) {
-		error(_("Failed to start the FSEventStream"));
+		_error(_("Failed to start the FSEventStream"));
 		goto force_error_stop_without_loop;
 	}
 	data->stream_started = 1;

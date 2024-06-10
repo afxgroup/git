@@ -93,7 +93,7 @@ static int ut_003error(int argc, const char **argv)
 		die("expect <error_message>");
 
 	for (k = 0; k < argc; k++)
-		error("%s", argv[k]);
+		_error("%s", argv[k]);
 
 	return 0;
 }

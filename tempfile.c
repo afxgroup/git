@@ -150,7 +150,7 @@ struct tempfile *create_tempfile_mode(const char *path, int mode)
 	activate_tempfile(tempfile);
 	if (adjust_shared_perm(tempfile->filename.buf)) {
 		int save_errno = errno;
-		error("cannot fix permission bits on %s", tempfile->filename.buf);
+		_error("cannot fix permission bits on %s", tempfile->filename.buf);
 		delete_tempfile(&tempfile);
 		errno = save_errno;
 		return NULL;

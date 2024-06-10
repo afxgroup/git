@@ -590,7 +590,7 @@ static off_t write_reuse_object(struct hashfile *f, struct object_entry *entry,
 	if (!pack_to_stdout && p->index_version > 1 &&
 	    check_pack_crc(p, &w_curs, offset, datalen,
 			   pack_pos_to_index(p, pos))) {
-		error(_("bad packed object CRC for %s"),
+		_error(_("bad packed object CRC for %s"),
 		      oid_to_hex(&entry->idx.oid));
 		unuse_pack(&w_curs);
 		return write_no_reuse_object(f, entry, limit, usable_delta);
@@ -601,7 +601,7 @@ static off_t write_reuse_object(struct hashfile *f, struct object_entry *entry,
 
 	if (!pack_to_stdout && p->index_version == 1 &&
 	    check_pack_inflate(p, &w_curs, offset, datalen, entry_size)) {
-		error(_("corrupt packed object for %s"),
+		_error(_("corrupt packed object for %s"),
 		      oid_to_hex(&entry->idx.oid));
 		unuse_pack(&w_curs);
 		return write_no_reuse_object(f, entry, limit, usable_delta);
@@ -2092,7 +2092,7 @@ static void check_object(struct object_entry *entry, uint32_t object_index)
 			while (c & 128) {
 				ofs += 1;
 				if (!ofs || MSB(ofs, 7)) {
-					error(_("delta base offset overflow in pack for %s"),
+					_error(_("delta base offset overflow in pack for %s"),
 					      oid_to_hex(&entry->idx.oid));
 					goto give_up;
 				}
@@ -2101,7 +2101,7 @@ static void check_object(struct object_entry *entry, uint32_t object_index)
 			}
 			ofs = entry->in_pack_offset - ofs;
 			if (ofs <= 0 || ofs >= entry->in_pack_offset) {
-				error(_("delta base offset out of bound for %s"),
+				_error(_("delta base offset out of bound for %s"),
 				      oid_to_hex(&entry->idx.oid));
 				goto give_up;
 			}

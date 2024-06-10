@@ -395,7 +395,7 @@ static int notes_copy_from_stdin(int force, const char *rewrite_cmd)
 					combine_notes_overwrite);
 
 		if (err) {
-			error(_("failed to copy notes from '%s' to '%s'"),
+			_error(_("failed to copy notes from '%s' to '%s'"),
 			      split[0]->buf, split[1]->buf);
 			ret = 1;
 		}
@@ -447,7 +447,7 @@ static int list(int argc, const char **argv, const char *prefix)
 				     git_notes_list_usage, 0);
 
 	if (1 < argc) {
-		error(_("too many arguments"));
+		_error(_("too many arguments"));
 		usage_with_options(git_notes_list_usage, options);
 	}
 
@@ -460,7 +460,7 @@ static int list(int argc, const char **argv, const char *prefix)
 			puts(oid_to_hex(note));
 			retval = 0;
 		} else
-			retval = error(_("no note found for object %s."),
+			retval = _error(_("no note found for object %s."),
 				       oid_to_hex(&object));
 	} else
 		retval = for_each_note(t, 0, list_each_note, NULL);
@@ -509,7 +509,7 @@ static int add(int argc, const char **argv, const char *prefix)
 			     PARSE_OPT_KEEP_ARGV0);
 
 	if (2 < argc) {
-		error(_("too many arguments"));
+		_error(_("too many arguments"));
 		usage_with_options(git_notes_add_usage, options);
 	}
 
@@ -530,7 +530,7 @@ static int add(int argc, const char **argv, const char *prefix)
 			free_notes(t);
 			if (d.given) {
 				free_note_data(&d);
-				return error(_("Cannot add notes. "
+				return _error(_("Cannot add notes. "
 					"Found existing notes for object %s. "
 					"Use '-f' to overwrite existing notes"),
 					oid_to_hex(&object));
@@ -591,7 +591,7 @@ static int copy(int argc, const char **argv, const char *prefix)
 
 	if (from_stdin || rewrite_cmd) {
 		if (argc) {
-			error(_("too many arguments"));
+			_error(_("too many arguments"));
 			usage_with_options(git_notes_copy_usage, options);
 		} else {
 			return notes_copy_from_stdin(force, rewrite_cmd);
@@ -599,11 +599,11 @@ static int copy(int argc, const char **argv, const char *prefix)
 	}
 
 	if (argc < 1) {
-		error(_("too few arguments"));
+		_error(_("too few arguments"));
 		usage_with_options(git_notes_copy_usage, options);
 	}
 	if (2 < argc) {
-		error(_("too many arguments"));
+		_error(_("too many arguments"));
 		usage_with_options(git_notes_copy_usage, options);
 	}
 
@@ -620,7 +620,7 @@ static int copy(int argc, const char **argv, const char *prefix)
 
 	if (note) {
 		if (!force) {
-			retval = error(_("Cannot copy notes. Found existing "
+			retval = _error(_("Cannot copy notes. Found existing "
 				       "notes for object %s. Use '-f' to "
 				       "overwrite existing notes"),
 				       oid_to_hex(&object));
@@ -632,7 +632,7 @@ static int copy(int argc, const char **argv, const char *prefix)
 
 	from_note = get_note(t, &from_obj);
 	if (!from_note) {
-		retval = error(_("missing notes on source object %s. Cannot "
+		retval = _error(_("missing notes on source object %s. Cannot "
 			       "copy."), oid_to_hex(&from_obj));
 		goto out;
 	}
@@ -686,7 +686,7 @@ static int append_edit(int argc, const char **argv, const char *prefix)
 			     PARSE_OPT_KEEP_ARGV0);
 
 	if (2 < argc) {
-		error(_("too many arguments"));
+		_error(_("too many arguments"));
 		usage_with_options(usage, options);
 	}
 
@@ -762,7 +762,7 @@ static int show(int argc, const char **argv, const char *prefix)
 			     0);
 
 	if (1 < argc) {
-		error(_("too many arguments"));
+		_error(_("too many arguments"));
 		usage_with_options(git_notes_show_usage, options);
 	}
 
@@ -775,7 +775,7 @@ static int show(int argc, const char **argv, const char *prefix)
 	note = get_note(t, &object);
 
 	if (!note)
-		retval = error(_("no note found for object %s."),
+		retval = _error(_("no note found for object %s."),
 			       oid_to_hex(&object));
 	else {
 		const char *show_args[3] = {"show", oid_to_hex(note), NULL};
@@ -795,11 +795,11 @@ static int merge_abort(struct notes_merge_options *o)
 	 */
 
 	if (refs_delete_ref(get_main_ref_store(the_repository), NULL, "NOTES_MERGE_PARTIAL", NULL, 0))
-		ret += error(_("failed to delete ref NOTES_MERGE_PARTIAL"));
+		ret += _error(_("failed to delete ref NOTES_MERGE_PARTIAL"));
 	if (refs_delete_ref(get_main_ref_store(the_repository), NULL, "NOTES_MERGE_REF", NULL, REF_NO_DEREF))
-		ret += error(_("failed to delete ref NOTES_MERGE_REF"));
+		ret += _error(_("failed to delete ref NOTES_MERGE_REF"));
 	if (notes_merge_abort(o))
-		ret += error(_("failed to remove 'git notes merge' worktree"));
+		ret += _error(_("failed to remove 'git notes merge' worktree"));
 	return ret;
 }
 
@@ -907,15 +907,15 @@ static int merge(int argc, const char **argv, const char *prefix)
 	if (strategy || do_commit + do_abort == 0)
 		do_merge = 1;
 	if (do_merge + do_commit + do_abort != 1) {
-		error(_("cannot mix --commit, --abort or -s/--strategy"));
+		_error(_("cannot mix --commit, --abort or -s/--strategy"));
 		usage_with_options(git_notes_merge_usage, options);
 	}
 
 	if (do_merge && argc != 1) {
-		error(_("must specify a notes ref to merge"));
+		_error(_("must specify a notes ref to merge"));
 		usage_with_options(git_notes_merge_usage, options);
 	} else if (!do_merge && argc) {
-		error(_("too many arguments"));
+		_error(_("too many arguments"));
 		usage_with_options(git_notes_merge_usage, options);
 	}
 
@@ -936,7 +936,7 @@ static int merge(int argc, const char **argv, const char *prefix)
 
 	if (strategy) {
 		if (parse_notes_merge_strategy(strategy, &o.strategy)) {
-			error(_("unknown -s/--strategy: %s"), strategy);
+			_error(_("unknown -s/--strategy: %s"), strategy);
 			usage_with_options(git_notes_merge_usage, options);
 		}
 	} else {
@@ -1003,7 +1003,7 @@ static int remove_one_note(struct notes_tree *t, const char *name, unsigned flag
 	int status;
 	struct object_id oid;
 	if (repo_get_oid(the_repository, name, &oid))
-		return error(_("Failed to resolve '%s' as a valid ref."), name);
+		return _error(_("Failed to resolve '%s' as a valid ref."), name);
 	status = remove_note(t, oid.hash);
 	if (status)
 		fprintf(stderr, _("Object %s has no note\n"), name);
@@ -1069,7 +1069,7 @@ static int prune(int argc, const char **argv, const char *prefix)
 			     0);
 
 	if (argc) {
-		error(_("too many arguments"));
+		_error(_("too many arguments"));
 		usage_with_options(git_notes_prune_usage, options);
 	}
 
@@ -1091,7 +1091,7 @@ static int get_ref(int argc, const char **argv, const char *prefix)
 			     git_notes_get_ref_usage, 0);
 
 	if (argc) {
-		error(_("too many arguments"));
+		_error(_("too many arguments"));
 		usage_with_options(git_notes_get_ref_usage, options);
 	}
 
@@ -1124,7 +1124,7 @@ int cmd_notes(int argc, const char **argv, const char *prefix)
 			     PARSE_OPT_SUBCOMMAND_OPTIONAL);
 	if (!fn) {
 		if (argc) {
-			error(_("unknown subcommand: `%s'"), argv[0]);
+			_error(_("unknown subcommand: `%s'"), argv[0]);
 			usage_with_options(git_notes_usage, options);
 		}
 		fn = list;

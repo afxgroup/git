@@ -45,7 +45,7 @@ static int fsmonitor_config(const char *var, const char *value,
 	if (!strcmp(var, FSMONITOR__IPC_THREADS)) {
 		int i = git_config_int(var, value, ctx->kvi);
 		if (i < 1)
-			return error(_("value of '%s' out of range: %d"),
+			return _error(_("value of '%s' out of range: %d"),
 				     FSMONITOR__IPC_THREADS, i);
 		fsmonitor__ipc_threads = i;
 		return 0;
@@ -54,7 +54,7 @@ static int fsmonitor_config(const char *var, const char *value,
 	if (!strcmp(var, FSMONITOR__START_TIMEOUT)) {
 		int i = git_config_int(var, value, ctx->kvi);
 		if (i < 0)
-			return error(_("value of '%s' out of range: %d"),
+			return _error(_("value of '%s' out of range: %d"),
 				     FSMONITOR__START_TIMEOUT, i);
 		fsmonitor__start_timeout_sec = i;
 		return 0;
@@ -64,7 +64,7 @@ static int fsmonitor_config(const char *var, const char *value,
 		int is_bool;
 		int i = git_config_bool_or_int(var, value, ctx->kvi, &is_bool);
 		if (i < 0)
-			return error(_("value of '%s' not bool or int: %d"),
+			return _error(_("value of '%s' not bool or int: %d"),
 				     var, i);
 		fsmonitor__announce_startup = i;
 		return 0;
@@ -763,7 +763,7 @@ static int do_handle_client(struct fsmonitor_daemon_state *state,
 	if (do_cookie) {
 		cookie_result = with_lock__wait_for_cookie(state);
 		if (cookie_result != FCIR_SEEN) {
-			error(_("fsmonitor: cookie_result '%d' != SEEN"),
+			_error(_("fsmonitor: cookie_result '%d' != SEEN"),
 			      cookie_result);
 			do_trivial = 1;
 		}
@@ -1222,7 +1222,7 @@ static int fsmonitor_run_daemon_1(struct fsmonitor_daemon_state *state)
 	if (pthread_create(&state->listener_thread, NULL,
 			   fsm_listen__thread_proc, state)) {
 		ipc_server_stop_async(state->ipc_server_data);
-		err = error(_("could not start fsmonitor listener thread"));
+		err = _error(_("could not start fsmonitor listener thread"));
 		goto cleanup;
 	}
 	listener_started = 1;
@@ -1233,7 +1233,7 @@ static int fsmonitor_run_daemon_1(struct fsmonitor_daemon_state *state)
 	if (pthread_create(&state->health_thread, NULL,
 			   fsm_health__thread_proc, state)) {
 		ipc_server_stop_async(state->ipc_server_data);
-		err = error(_("could not start fsmonitor health thread"));
+		err = _error(_("could not start fsmonitor health thread"));
 		goto cleanup;
 	}
 	health_started = 1;
@@ -1368,12 +1368,12 @@ static int fsmonitor_run_daemon(void)
 	 * filesystem listener before we bother starting all the threads.
 	 */
 	if (fsm_listen__ctor(&state)) {
-		err = error(_("could not initialize listener thread"));
+		err = _error(_("could not initialize listener thread"));
 		goto done;
 	}
 
 	if (fsm_health__ctor(&state)) {
-		err = error(_("could not initialize health thread"));
+		err = _error(_("could not initialize health thread"));
 		goto done;
 	}
 
@@ -1511,13 +1511,13 @@ static int try_to_start_background_daemon(void)
 	default:
 	case SBGR_ERROR:
 	case SBGR_CB_ERROR:
-		return error(_("daemon failed to start"));
+		return _error(_("daemon failed to start"));
 
 	case SBGR_TIMEOUT:
-		return error(_("daemon not online yet"));
+		return _error(_("daemon not online yet"));
 
 	case SBGR_DIED:
-		return error(_("daemon terminated"));
+		return _error(_("daemon terminated"));
 	}
 }
 

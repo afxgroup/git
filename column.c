@@ -282,7 +282,7 @@ static int parse_option(const char *arg, int len, unsigned int *colopts,
 		return 0;
 	}
 
-	return error("unsupported option '%s'", arg);
+	return _error("unsupported option '%s'", arg);
 }
 
 static int parse_config(unsigned int *colopts, const char *value)
@@ -319,7 +319,7 @@ static int column_config(const char *var, const char *value,
 	if (!value)
 		return config_error_nonbool(var);
 	if (parse_config(colopts, value))
-		return error("invalid column.%s mode %s", key, value);
+		return _error("invalid column.%s mode %s", key, value);
 	return 0;
 }
 

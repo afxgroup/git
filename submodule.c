@@ -2163,7 +2163,7 @@ int submodule_move_head(const char *path, const char *super_prefix,
 	if (old_head && !(flags & SUBMODULE_MOVE_HEAD_FORCE)) {
 		/* Check if the submodule has a dirty index. */
 		if (submodule_has_dirty_index(sub))
-			return error(_("submodule '%s' has dirty index"), path);
+			return _error(_("submodule '%s' has dirty index"), path);
 	}
 
 	if (!(flags & SUBMODULE_MOVE_HEAD_DRY_RUN)) {
@@ -2234,7 +2234,7 @@ int submodule_move_head(const char *path, const char *super_prefix,
 	strvec_push(&cp.args, new_head ? new_head : empty_tree_oid_hex());
 
 	if (run_command(&cp)) {
-		ret = error(_("Submodule '%s' could not be updated."), path);
+		ret = _error(_("Submodule '%s' could not be updated."), path);
 		goto out;
 	}
 
@@ -2302,7 +2302,7 @@ int validate_submodule_git_dir(char *git_dir, const char *submodule_name)
 			*p = c;
 
 			if (ret < 0)
-				return error(_("submodule git dir '%s' is "
+				return _error(_("submodule git dir '%s' is "
 					       "inside git dir '%.*s'"),
 					     git_dir,
 					     (int)(p - git_dir), git_dir);
@@ -2329,11 +2329,11 @@ int validate_submodule_path(const char *path)
 		ret = lstat(p, &st) || !S_ISLNK(st.st_mode) ? 0 : -1;
 		p[i] = sep;
 		if (ret)
-			error(_("expected '%.*s' in submodule path '%s' not to "
+			_error(_("expected '%.*s' in submodule path '%s' not to "
 				"be a symbolic link"), i, p, p);
 	}
 	if (!lstat(p, &st) && S_ISLNK(st.st_mode))
-		ret = error(_("expected submodule path '%s' not to be a "
+		ret = _error(_("expected submodule path '%s' not to be a "
 			      "symbolic link"), p);
 	free(p);
 	return ret;

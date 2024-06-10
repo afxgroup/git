@@ -180,7 +180,7 @@ static int install_branch_config_multiple_remotes(int flag, const char *local,
 
 out_err:
 	strbuf_release(&key);
-	error(_("unable to write upstream branch configuration"));
+	_error(_("unable to write upstream branch configuration"));
 
 	advise(_("\nAfter fixing the error cause you may try to fix up\n"
 		"the remote tracking information by invoking:"));

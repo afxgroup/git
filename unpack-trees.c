@@ -243,7 +243,7 @@ static int add_rejected_path(struct unpack_trees_options *o,
 		return -1;
 
 	if (!o->internal.show_all_errors)
-		return error(ERRORMSG(o, e), super_prefixed(path,
+		return _error(ERRORMSG(o, e), super_prefixed(path,
 							    o->super_prefix));
 
 	/*
@@ -271,7 +271,7 @@ static void display_error_msgs(struct unpack_trees_options *o)
 			error_displayed = 1;
 			for (i = 0; i < rejects->nr; i++)
 				strbuf_addf(&path, "\t%s\n", rejects->items[i].string);
-			error(ERRORMSG(o, e), super_prefixed(path.buf,
+			_error(ERRORMSG(o, e), super_prefixed(path.buf,
 							     o->super_prefix));
 			strbuf_release(&path);
 		}
@@ -1255,7 +1255,7 @@ static int unpack_failed(struct unpack_trees_options *o, const char *message)
 	discard_index(&o->internal.result);
 	if (!o->quiet && !o->exiting_early) {
 		if (message)
-			return error("%s", message);
+			return _error("%s", message);
 		return -1;
 	}
 	return -1;
@@ -2902,7 +2902,7 @@ int twoway_merge(const struct cache_entry * const *src,
 	const struct cache_entry *newtree = src[2];
 
 	if (o->internal.merge_size != 2)
-		return error("Cannot do a twoway merge of %d trees",
+		return _error("Cannot do a twoway merge of %d trees",
 			     o->internal.merge_size);
 
 	if (oldtree == o->df_conflict_entry)
@@ -2984,11 +2984,11 @@ int bind_merge(const struct cache_entry * const *src,
 	const struct cache_entry *a = src[1];
 
 	if (o->internal.merge_size != 1)
-		return error("Cannot do a bind merge of %d trees",
+		return _error("Cannot do a bind merge of %d trees",
 			     o->internal.merge_size);
 	if (a && old)
 		return o->quiet ? -1 :
-			error(ERRORMSG(o, ERROR_BIND_OVERLAP),
+				  _error(ERRORMSG(o, ERROR_BIND_OVERLAP),
 			      super_prefixed(a->name, o->super_prefix),
 			      super_prefixed(old->name, o->super_prefix));
 	if (!a)
@@ -3010,7 +3010,7 @@ int oneway_merge(const struct cache_entry * const *src,
 	const struct cache_entry *a = src[1];
 
 	if (o->internal.merge_size != 1)
-		return error("Cannot do a oneway merge of %d trees",
+		return _error("Cannot do a oneway merge of %d trees",
 			     o->internal.merge_size);
 
 	if (!a || a == o->df_conflict_entry)
@@ -3050,7 +3050,7 @@ int stash_worktree_untracked_merge(const struct cache_entry * const *src,
 		BUG("invalid merge_size: %d", o->internal.merge_size);
 
 	if (worktree && untracked)
-		return error(_("worktree and untracked commit have duplicate entries: %s"),
+		return _error(_("worktree and untracked commit have duplicate entries: %s"),
 			     super_prefixed(worktree->name, o->super_prefix));
 
 	return merged_entry(worktree ? worktree : untracked, NULL, o);

@@ -403,7 +403,7 @@ static int push_with_options(struct transport *transport, struct refspec *rs,
 	trace2_region_leave("push", "transport_push", the_repository);
 	if (err != 0) {
 		fprintf(stderr, "%s", push_get_color(PUSH_COLOR_ERROR));
-		error(_("failed to push some refs to '%s'"), anon_url);
+		_error(_("failed to push some refs to '%s'"), anon_url);
 		fprintf(stderr, "%s", push_get_color(PUSH_COLOR_RESET));
 	}
 
@@ -536,7 +536,7 @@ static int git_push_config(const char *k, const char *v,
 			if (!strcasecmp(v, "if-asked"))
 				set_push_cert_flags(flags, SEND_PACK_PUSH_CERT_IF_ASKED);
 			else
-				return error(_("invalid value for '%s'"), k);
+				return _error(_("invalid value for '%s'"), k);
 		}
 	} else if (!strcmp(k, "push.recursesubmodules")) {
 		recurse_submodules = parse_push_recurse_submodules_arg(k, v);

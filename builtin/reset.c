@@ -98,15 +98,15 @@ static int reset_index(const char *ref, const struct object_id *oid, int reset_t
 	if (reset_type == KEEP) {
 		struct object_id head_oid;
 		if (repo_get_oid(the_repository, "HEAD", &head_oid))
-			return error(_("You do not have a valid HEAD."));
+			return _error(_("You do not have a valid HEAD."));
 		if (!fill_tree_descriptor(the_repository, desc + nr, &head_oid))
-			return error(_("Failed to find tree of HEAD."));
+			return _error(_("Failed to find tree of HEAD."));
 		nr++;
 		opts.fn = twoway_merge;
 	}
 
 	if (!fill_tree_descriptor(the_repository, desc + nr, oid)) {
-		error(_("Failed to find tree of %s."), oid_to_hex(oid));
+		_error(_("Failed to find tree of %s."), oid_to_hex(oid));
 		goto out;
 	}
 	nr++;
@@ -117,7 +117,7 @@ static int reset_index(const char *ref, const struct object_id *oid, int reset_t
 	if (reset_type == MIXED || reset_type == HARD) {
 		tree = parse_tree_indirect(oid);
 		if (!tree) {
-			error(_("unable to read tree (%s)"), oid_to_hex(oid));
+			_error(_("unable to read tree (%s)"), oid_to_hex(oid));
 			goto out;
 		}
 		prime_cache_tree(the_repository, the_repository->index, tree);

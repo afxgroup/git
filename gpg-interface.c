@@ -468,7 +468,7 @@ static int verify_ssh_signed_buffer(struct signature_check *sigc,
 	};
 
 	if (!ssh_allowed_signers) {
-		error(_("gpg.ssh.allowedSignersFile needs to be configured and exist for ssh signature verification"));
+		_error(_("gpg.ssh.allowedSignersFile needs to be configured and exist for ssh signature verification"));
 		return -1;
 	}
 
@@ -497,7 +497,7 @@ static int verify_ssh_signed_buffer(struct signature_check *sigc,
 	ret = pipe_command(&ssh_keygen, NULL, 0, &ssh_principals_out, 0,
 			   &ssh_principals_err, 0);
 	if (ret && strstr(ssh_principals_err.buf, "usage:")) {
-		error(_("ssh-keygen -Y find-principals/verify is needed for ssh signature verification (available in openssh version 8.2p1+)"));
+		_error(_("ssh-keygen -Y find-principals/verify is needed for ssh signature verification (available in openssh version 8.2p1+)"));
 		goto out;
 	}
 	if (ret || !ssh_principals_out.len) {
@@ -743,7 +743,7 @@ static int git_gpg_config(const char *var, const char *value,
 			return config_error_nonbool(var);
 		fmt = get_format_by_name(value);
 		if (!fmt)
-			return error(_("invalid value for '%s': '%s'"),
+			return _error(_("invalid value for '%s': '%s'"),
 				     var, value);
 		use_format = fmt;
 		return 0;
@@ -758,7 +758,7 @@ static int git_gpg_config(const char *var, const char *value,
 		free(trust);
 
 		if (ret)
-			return error(_("invalid value for '%s': '%s'"),
+			return _error(_("invalid value for '%s': '%s'"),
 				     var, value);
 		return 0;
 	}
@@ -1000,7 +1000,7 @@ static int sign_buffer_gpg(struct strbuf *buffer, struct strbuf *signature,
 	}
 	ret |= !cp;
 	if (ret) {
-		error(_("gpg failed to sign the data:\n%s"),
+		_error(_("gpg failed to sign the data:\n%s"),
 		      gpg_status.len ? gpg_status.buf : "(no gpg output)");
 		strbuf_release(&gpg_status);
 		return -1;
@@ -1027,7 +1027,7 @@ static int sign_buffer_ssh(struct strbuf *buffer, struct strbuf *signature,
 	int literal_ssh_key = 0;
 
 	if (!signing_key || signing_key[0] == '\0')
-		return error(
+		return _error(
 			_("user.signingKey needs to be set for ssh signing"));
 
 	if (is_literal_ssh_key(signing_key, &literal_key)) {
@@ -1078,9 +1078,9 @@ static int sign_buffer_ssh(struct strbuf *buffer, struct strbuf *signature,
 
 	if (ret) {
 		if (strstr(signer_stderr.buf, "usage:"))
-			error(_("ssh-keygen -Y sign is needed for ssh signing (available in openssh version 8.2p1+)"));
+			_error(_("ssh-keygen -Y sign is needed for ssh signing (available in openssh version 8.2p1+)"));
 
-		ret = error("%s", signer_stderr.buf);
+		ret = _error("%s", signer_stderr.buf);
 		goto out;
 	}
 

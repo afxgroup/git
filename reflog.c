@@ -407,10 +407,10 @@ int reflog_delete(const char *rev, enum expire_reflog_flags flags, int verbose)
 		should_prune_fn = should_expire_reflog_ent_verbose;
 
 	if (!spec)
-		return error(_("not a reflog: %s"), rev);
+		return _error(_("not a reflog: %s"), rev);
 
 	if (!repo_dwim_log(the_repository, rev, spec - rev, NULL, &ref)) {
-		status |= error(_("no reflog for '%s'"), rev);
+		status |= _error(_("no reflog for '%s'"), rev);
 		goto cleanup;
 	}
 

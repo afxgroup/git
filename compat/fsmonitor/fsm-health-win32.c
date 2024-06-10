@@ -55,13 +55,13 @@ static int lookup_bhfi(wchar_t *wpath,
 	hDir = CreateFileW(wpath, desired_access, share_mode, NULL,
 			   OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
 	if (hDir == INVALID_HANDLE_VALUE) {
-		error(_("[GLE %ld] health thread could not open '%ls'"),
+		_error(_("[GLE %ld] health thread could not open '%ls'"),
 		      GetLastError(), wpath);
 		return -1;
 	}
 
 	if (!GetFileInformationByHandle(hDir, bhfi)) {
-		error(_("[GLE %ld] health thread getting BHFI for '%ls'"),
+		_error(_("[GLE %ld] health thread getting BHFI for '%ls'"),
 		      GetLastError(), wpath);
 		CloseHandle(hDir);
 		return -1;
@@ -145,7 +145,7 @@ static int has_worktree_moved(struct fsmonitor_daemon_state *state,
 	case CTX_INIT:
 		if (xutftowcs_path(data->wt_moved.wpath,
 				   state->path_worktree_watch.buf) < 0) {
-			error(_("could not convert to wide characters: '%s'"),
+			_error(_("could not convert to wide characters: '%s'"),
 			      state->path_worktree_watch.buf);
 			return -1;
 		}
@@ -161,7 +161,7 @@ static int has_worktree_moved(struct fsmonitor_daemon_state *state,
 		if (r)
 			return r;
 		if (!bhfi_eq(&data->wt_moved.bhfi, &bhfi)) {
-			error(_("BHFI changed '%ls'"), data->wt_moved.wpath);
+			_error(_("BHFI changed '%ls'"), data->wt_moved.wpath);
 			return -1;
 		}
 		return 0;
@@ -260,7 +260,7 @@ void fsm_health__loop(struct fsmonitor_daemon_state *state)
 			continue;
 		}
 
-		error(_("health thread wait failed [GLE %ld]"),
+		_error(_("health thread wait failed [GLE %ld]"),
 		      GetLastError());
 		goto force_error_stop;
 	}

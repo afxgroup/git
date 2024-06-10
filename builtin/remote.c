@@ -103,7 +103,7 @@ static int fetch_remote(const char *name)
 	cmd.git_cmd = 1;
 	printf_ln(_("Updating %s"), name);
 	if (run_command(&cmd))
-		return error(_("Could not fetch %s"), name);
+		return _error(_("Could not fetch %s"), name);
 	return 0;
 }
 
@@ -150,7 +150,7 @@ static int parse_mirror_opt(const struct option *opt, const char *arg, int not)
 	else if (!strcmp(arg, "push"))
 		*mirror = MIRROR_PUSH;
 	else
-		return error(_("unknown --mirror argument: %s"), arg);
+		return _error(_("unknown --mirror argument: %s"), arg);
 	return 0;
 }
 
@@ -196,7 +196,7 @@ static int add(int argc, const char **argv, const char *prefix)
 
 	remote = remote_get(name);
 	if (remote_is_configured(remote, 1)) {
-		error(_("remote %s already exists."), name);
+		_error(_("remote %s already exists."), name);
 		exit(3);
 	}
 
@@ -241,7 +241,7 @@ static int add(int argc, const char **argv, const char *prefix)
 		strbuf_addf(&buf2, "refs/remotes/%s/%s", name, master);
 
 		if (refs_update_symref(get_main_ref_store(the_repository), buf.buf, buf2.buf, "remote add"))
-			return error(_("Could not setup master '%s'"), master);
+			return _error(_("Could not setup master '%s'"), master);
 	}
 
 	strbuf_release(&buf);
@@ -718,7 +718,7 @@ static int mv(int argc, const char **argv, const char *prefix)
 
 	oldremote = remote_get(rename.old_name);
 	if (!remote_is_configured(oldremote, 1)) {
-		error(_("No such remote: '%s'"), rename.old_name);
+		_error(_("No such remote: '%s'"), rename.old_name);
 		exit(2);
 	}
 
@@ -727,7 +727,7 @@ static int mv(int argc, const char **argv, const char *prefix)
 
 	newremote = remote_get(rename.new_name);
 	if (remote_is_configured(newremote, 1)) {
-		error(_("remote %s already exists."), rename.new_name);
+		_error(_("remote %s already exists."), rename.new_name);
 		exit(3);
 	}
 
@@ -737,7 +737,7 @@ static int mv(int argc, const char **argv, const char *prefix)
 	strbuf_addf(&buf, "remote.%s", rename.old_name);
 	strbuf_addf(&buf2, "remote.%s", rename.new_name);
 	if (git_config_rename_section(buf.buf, buf2.buf) < 1)
-		return error(_("Could not rename config section '%s' to '%s'"),
+		return _error(_("Could not rename config section '%s' to '%s'"),
 				buf.buf, buf2.buf);
 
 	if (oldremote->fetch.raw_nr) {
@@ -882,7 +882,7 @@ static int rm(int argc, const char **argv, const char *prefix)
 
 	remote = remote_get(argv[0]);
 	if (!remote_is_configured(remote, 1)) {
-		error(_("No such remote: '%s'"), argv[0]);
+		_error(_("No such remote: '%s'"), argv[0]);
 		exit(2);
 	}
 
@@ -945,7 +945,7 @@ static int rm(int argc, const char **argv, const char *prefix)
 	if (!result) {
 		strbuf_addf(&buf, "remote.%s", remote->name);
 		if (git_config_rename_section(buf.buf, NULL) < 1)
-			return error(_("Could not remove config section '%s'"), buf.buf);
+			return _error(_("Could not remove config section '%s'"), buf.buf);
 
 		handle_push_default(remote->name, NULL);
 	}
@@ -994,7 +994,7 @@ static int get_remote_ref_states(const char *name,
 {
 	states->remote = remote_get(name);
 	if (!states->remote)
-		return error(_("No such remote: '%s'"), name);
+		return _error(_("No such remote: '%s'"), name);
 
 	read_branches();
 
@@ -1106,7 +1106,7 @@ static int show_local_info_item(struct string_list_item *item, void *cb_data)
 	int i;
 
 	if (branch_info->rebase >= REBASE_TRUE && branch_info->merge.nr > 1) {
-		error(_("invalid branch.%s.merge; cannot rebase onto > 1 branch"),
+		_error(_("invalid branch.%s.merge; cannot rebase onto > 1 branch"),
 			item->string);
 		return 0;
 	}
@@ -1402,9 +1402,9 @@ static int set_head(int argc, const char **argv, const char *prefix)
 		struct ref_states states = REF_STATES_INIT;
 		get_remote_ref_states(argv[0], &states, GET_HEAD_NAMES);
 		if (!states.heads.nr)
-			result |= error(_("Cannot determine remote HEAD"));
+			result |= _error(_("Cannot determine remote HEAD"));
 		else if (states.heads.nr > 1) {
-			result |= error(_("Multiple remote HEAD branches. "
+			result |= _error(_("Multiple remote HEAD branches. "
 					  "Please choose one explicitly with:"));
 			for (i = 0; i < states.heads.nr; i++)
 				fprintf(stderr, "  git remote set-head %s %s\n",
@@ -1414,7 +1414,7 @@ static int set_head(int argc, const char **argv, const char *prefix)
 		free_remote_ref_states(&states);
 	} else if (opt_d && !opt_a && argc == 1) {
 		if (refs_delete_ref(get_main_ref_store(the_repository), NULL, buf.buf, NULL, REF_NO_DEREF))
-			result |= error(_("Could not delete %s"), buf.buf);
+			result |= _error(_("Could not delete %s"), buf.buf);
 	} else
 		usage_with_options(builtin_remote_sethead_usage, options);
 
@@ -1422,9 +1422,9 @@ static int set_head(int argc, const char **argv, const char *prefix)
 		strbuf_addf(&buf2, "refs/remotes/%s/%s", argv[0], head_name);
 		/* make sure it's valid */
 		if (!refs_ref_exists(get_main_ref_store(the_repository), buf2.buf))
-			result |= error(_("Not a valid ref: %s"), buf2.buf);
+			result |= _error(_("Not a valid ref: %s"), buf2.buf);
 		else if (refs_update_symref(get_main_ref_store(the_repository), buf.buf, buf2.buf, "remote set-head"))
-			result |= error(_("Could not setup %s"), buf.buf);
+			result |= _error(_("Could not setup %s"), buf.buf);
 		else if (opt_a)
 			printf("%s/HEAD set to %s\n", argv[0], head_name);
 		free(head_name);
@@ -1584,7 +1584,7 @@ static int set_remote_branches(const char *remotename, const char **branches,
 
 	remote = remote_get(remotename);
 	if (!remote_is_configured(remote, 1)) {
-		error(_("No such remote '%s'"), remotename);
+		_error(_("No such remote '%s'"), remotename);
 		exit(2);
 	}
 
@@ -1609,7 +1609,7 @@ static int set_branches(int argc, const char **argv, const char *prefix)
 	argc = parse_options(argc, argv, prefix, options,
 			     builtin_remote_setbranches_usage, 0);
 	if (argc == 0) {
-		error(_("no remote specified"));
+		_error(_("no remote specified"));
 		usage_with_options(builtin_remote_setbranches_usage, options);
 	}
 	argv[argc] = NULL;
@@ -1641,7 +1641,7 @@ static int get_url(int argc, const char **argv, const char *prefix)
 
 	remote = remote_get(remotename);
 	if (!remote_is_configured(remote, 1)) {
-		error(_("No such remote '%s'"), remotename);
+		_error(_("No such remote '%s'"), remotename);
 		exit(2);
 	}
 
@@ -1712,7 +1712,7 @@ static int set_url(int argc, const char **argv, const char *prefix)
 
 	remote = remote_get(remotename);
 	if (!remote_is_configured(remote, 1)) {
-		error(_("No such remote '%s'"), remotename);
+		_error(_("No such remote '%s'"), remotename);
 		exit(2);
 	}
 
@@ -1788,7 +1788,7 @@ int cmd_remote(int argc, const char **argv, const char *prefix)
 		return !!fn(argc, argv, prefix);
 	} else {
 		if (argc) {
-			error(_("unknown subcommand: `%s'"), argv[0]);
+			_error(_("unknown subcommand: `%s'"), argv[0]);
 			usage_with_options(builtin_remote_usage, options);
 		}
 		return !!show_all();

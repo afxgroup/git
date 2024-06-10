@@ -24,7 +24,7 @@ static int label_cb(const struct option *opt, const char *arg, int unset)
 	BUG_ON_OPT_NEG(unset);
 
 	if (label_count >= 3)
-		return error("too many labels on the command line");
+		return _error("too many labels on the command line");
 	names[label_count++] = arg;
 	return 0;
 }
@@ -47,7 +47,7 @@ static int diff_algorithm_cb(const struct option *opt,
 	BUG_ON_OPT_NEG(unset);
 
 	if (set_diff_algorithm(xpp, arg))
-		return error(_("option diff-algorithm accepts \"myers\", "
+		return _error(_("option diff-algorithm accepts \"myers\", "
 			       "\"minimal\", \"patience\" and \"histogram\""));
 
 	return 0;
@@ -118,7 +118,7 @@ int cmd_merge_file(int argc, const char **argv, const char *prefix)
 
 		if (object_id) {
 			if (repo_get_oid(the_repository, argv[i], &oid))
-				ret = error(_("object '%s' does not exist"),
+				ret = _error(_("object '%s' does not exist"),
 					      argv[i]);
 			else if (!oideq(&oid, the_hash_algo->empty_blob))
 				read_mmblob(mmf, &oid);
@@ -129,7 +129,7 @@ int cmd_merge_file(int argc, const char **argv, const char *prefix)
 		}
 		if (ret != -1 && (mmf->size > MAX_XDIFF_SIZE ||
 		    buffer_is_binary(mmf->ptr, mmf->size))) {
-			ret = error("Cannot merge binary files: %s",
+			ret = _error("Cannot merge binary files: %s",
 				    argv[i]);
 		}
 
@@ -149,7 +149,7 @@ int cmd_merge_file(int argc, const char **argv, const char *prefix)
 			struct object_id oid;
 			if (result.size) {
 				if (write_object_file(result.ptr, result.size, OBJ_BLOB, &oid) < 0)
-					ret = error(_("Could not write object file"));
+					ret = _error(_("Could not write object file"));
 			} else {
 				oidcpy(&oid, the_hash_algo->empty_blob);
 			}

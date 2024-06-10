@@ -66,11 +66,11 @@ int cmd_for_each_ref(int argc, const char **argv, const char *prefix)
 
 	parse_options(argc, argv, prefix, opts, for_each_ref_usage, 0);
 	if (format.array_opts.max_count < 0) {
-		error("invalid --count argument: `%d'", format.array_opts.max_count);
+		_error("invalid --count argument: `%d'", format.array_opts.max_count);
 		usage_with_options(for_each_ref_usage, opts);
 	}
 	if (HAS_MULTI_BITS(format.quote_style)) {
-		error("more than one quoting style?");
+		_error("more than one quoting style?");
 		usage_with_options(for_each_ref_usage, opts);
 	}
 	if (verify_ref_format(&format))

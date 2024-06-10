@@ -72,7 +72,7 @@ static struct commit *create_commit(struct tree *tree,
 	reset_ident_date();
 	if (commit_tree_extended(msg.buf, msg.len, &tree->object.oid, parents,
 				 &ret, author, NULL, sign_commit, extra)) {
-		error(_("failed to write commit object"));
+		_error(_("failed to write commit object"));
 		return NULL;
 	}
 	free(author);
@@ -303,7 +303,7 @@ int cmd_replay(int argc, const char **argv, const char *prefix)
 			     PARSE_OPT_KEEP_ARGV0 | PARSE_OPT_KEEP_UNKNOWN_OPT);
 
 	if (!onto_name && !advance_name) {
-		error(_("option --onto or --advance is mandatory"));
+		_error(_("option --onto or --advance is mandatory"));
 		usage_with_options(replay_usage, replay_options);
 	}
 
@@ -329,7 +329,7 @@ int cmd_replay(int argc, const char **argv, const char *prefix)
 
 	argc = setup_revisions(argc, argv, &revs, NULL);
 	if (argc > 1) {
-		ret = error(_("unrecognized argument: %s"), argv[1]);
+		ret = _error(_("unrecognized argument: %s"), argv[1]);
 		goto cleanup;
 	}
 
@@ -369,7 +369,7 @@ int cmd_replay(int argc, const char **argv, const char *prefix)
 		die("Replaying down to root commit is not supported yet!");
 
 	if (prepare_revision_walk(&revs) < 0) {
-		ret = error(_("error preparing revisions"));
+		ret = _error(_("error preparing revisions"));
 		goto cleanup;
 	}
 

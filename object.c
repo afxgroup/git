@@ -174,7 +174,7 @@ void *object_as_type(struct object *obj, enum object_type type, int quiet)
 	}
 	else {
 		if (!quiet)
-			error(_("object %s is a %s, not a %s"),
+			_error(_("object %s is a %s, not a %s"),
 			      oid_to_hex(&obj->oid),
 			      type_name(obj->type), type_name(type));
 		return NULL;
@@ -316,7 +316,7 @@ struct object *parse_object_with_flags(struct repository *r,
 	if ((!obj || obj->type == OBJ_BLOB) &&
 	    oid_object_info(r, oid, NULL) == OBJ_BLOB) {
 		if (!skip_hash && stream_object_signature(r, repl) < 0) {
-			error(_("hash mismatch %s"), oid_to_hex(oid));
+			_error(_("hash mismatch %s"), oid_to_hex(oid));
 			return NULL;
 		}
 		parse_blob_buffer(lookup_blob(r, oid));
@@ -339,7 +339,7 @@ struct object *parse_object_with_flags(struct repository *r,
 		if (!skip_hash &&
 		    check_object_signature(r, repl, buffer, size, type) < 0) {
 			free(buffer);
-			error(_("hash mismatch %s"), oid_to_hex(repl));
+			_error(_("hash mismatch %s"), oid_to_hex(repl));
 			return NULL;
 		}
 

@@ -600,7 +600,7 @@ int cmd_name_rev(int argc, const char **argv, const char *prefix)
 	}
 
 	if (all + annotate_stdin + !!argc > 1) {
-		error("Specify either a list, or --all, not both!");
+		_error("Specify either a list, or --all, not both!");
 		usage_with_options(name_rev_usage, opts);
 	}
 	if (all || annotate_stdin)

@@ -41,6 +41,9 @@ static void set_times(struct stat *st, const struct stat_data *sd)
 #ifdef USE_ST_TIMESPEC
 	st->st_ctimespec.tv_nsec = sd->sd_ctime.nsec;
 	st->st_mtimespec.tv_nsec = sd->sd_mtime.nsec;
+#elif defined(__amigaos4__)
+	st->st_ctime = sd->sd_ctime.nsec;
+	st->st_mtime = sd->sd_mtime.nsec;
 #else
 	st->st_ctim.tv_nsec = sd->sd_ctime.nsec;
 	st->st_mtim.tv_nsec = sd->sd_mtime.nsec;

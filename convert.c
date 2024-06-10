@@ -292,7 +292,7 @@ static int validate_encoding(const char *path, const char *enc,
 			if (die_on_error)
 				die(error_msg, path, enc);
 			else {
-				return error(error_msg, path, enc);
+				return _error(error_msg, path, enc);
 			}
 
 		} else if (is_missing_required_utf_bom(enc, data, len)) {
@@ -307,7 +307,7 @@ static int validate_encoding(const char *path, const char *enc,
 			if (die_on_error)
 				die(error_msg, path, enc);
 			else {
-				return error(error_msg, path, enc);
+				return _error(error_msg, path, enc);
 			}
 		}
 
@@ -418,7 +418,7 @@ static int encode_to_git(const char *path, const char *src, size_t src_len,
 		if (die_on_error)
 			die(msg, path, enc, default_encoding);
 		else {
-			error(msg, path, enc, default_encoding);
+			_error(msg, path, enc, default_encoding);
 			return 0;
 		}
 	}
@@ -485,7 +485,7 @@ static int encode_to_worktree(const char *path, const char *src, size_t src_len,
 	dst = reencode_string_len(src, src_len, enc, default_encoding,
 				  &dst_len);
 	if (!dst) {
-		error(_("failed to encode '%s' from %s to %s"),
+		_error(_("failed to encode '%s' from %s to %s"),
 		      path, default_encoding, enc);
 		return 0;
 	}
@@ -658,7 +658,7 @@ static int filter_buffer_or_fd(int in UNUSED, int out, void *data)
 
 	if (start_command(&child_process)) {
 		strbuf_release(&cmd);
-		return error(_("cannot fork to run external filter '%s'"),
+		return _error(_("cannot fork to run external filter '%s'"),
 			     params->cmd);
 	}
 
@@ -678,14 +678,14 @@ static int filter_buffer_or_fd(int in UNUSED, int out, void *data)
 	if (close(child_process.in))
 		write_err = 1;
 	if (write_err)
-		error(_("cannot feed the input to external filter '%s'"),
+		_error(_("cannot feed the input to external filter '%s'"),
 		      params->cmd);
 
 	sigchain_pop(SIGPIPE);
 
 	status = finish_command(&child_process);
 	if (status)
-		error(_("external filter '%s' failed %d"), params->cmd, status);
+		_error(_("external filter '%s' failed %d"), params->cmd, status);
 
 	strbuf_release(&cmd);
 	return (write_err || status);
@@ -720,13 +720,13 @@ static int apply_single_file_filter(const char *path, const char *src, size_t le
 		return 0;	/* error was already reported */
 
 	if (strbuf_read(&nbuf, async.out, 0) < 0) {
-		err = error(_("read from external filter '%s' failed"), cmd);
+		err = _error(_("read from external filter '%s' failed"), cmd);
 	}
 	if (close(async.out)) {
-		err = error(_("read from external filter '%s' failed"), cmd);
+		err = _error(_("read from external filter '%s' failed"), cmd);
 	}
 	if (finish_async(&async)) {
-		err = error(_("external filter '%s' failed"), cmd);
+		err = _error(_("external filter '%s' failed"), cmd);
 	}
 
 	if (!err) {
@@ -781,7 +781,7 @@ static void handle_filter_error(const struct strbuf *filter_status,
 		 * Something went wrong with the protocol filter.
 		 * Force shutdown and restart if another blob requires filtering.
 		 */
-		error(_("external filter '%s' failed"), entry->subprocess.cmd);
+		_error(_("external filter '%s' failed"), entry->subprocess.cmd);
 		subprocess_stop(&subprocess_map, &entry->subprocess);
 		free(entry);
 	}
@@ -841,7 +841,7 @@ static int apply_multi_file_filter(const char *path, const char *src, size_t len
 
 	err = strlen(path) > LARGE_PACKET_DATA_MAX - strlen("pathname=\n");
 	if (err) {
-		error(_("path name too long for external filter"));
+		_error(_("path name too long for external filter"));
 		goto done;
 	}
 
@@ -939,7 +939,7 @@ int async_query_available_blobs(const char *cmd, struct string_list *available_p
 	assert(subprocess_map_initialized);
 	entry = (struct cmd2process *)subprocess_find_entry(&subprocess_map, cmd);
 	if (!entry) {
-		error(_("external filter '%s' is not available anymore although "
+		_error(_("external filter '%s' is not available anymore although "
 			"not all paths have been filtered"), cmd);
 		return 0;
 	}

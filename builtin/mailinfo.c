@@ -44,7 +44,7 @@ static int parse_opt_quoted_cr(const struct option *opt, const char *arg, int un
 	BUG_ON_OPT_NEG(unset);
 
 	if (mailinfo_parse_quoted_cr_action(arg, opt->value) != 0)
-		return error(_("bad action '%s' for '%s'"), arg, "--quoted-cr");
+		return _error(_("bad action '%s' for '%s'"), arg, "--quoted-cr");
 	return 0;
 }
 

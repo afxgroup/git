@@ -93,13 +93,13 @@ ssize_t ewah_read_mmap(struct ewah_bitmap *self, const void *map, size_t len)
 	size_t i;
 
 	if (len < sizeof(uint32_t))
-		return error("corrupt ewah bitmap: eof before bit size");
+		return _error("corrupt ewah bitmap: eof before bit size");
 	self->bit_size = get_be32(ptr);
 	ptr += sizeof(uint32_t);
 	len -= sizeof(uint32_t);
 
 	if (len < sizeof(uint32_t))
-		return error("corrupt ewah bitmap: eof before length");
+		return _error("corrupt ewah bitmap: eof before length");
 	self->buffer_size = self->alloc_size = get_be32(ptr);
 	ptr += sizeof(uint32_t);
 	len -= sizeof(uint32_t);
@@ -114,7 +114,7 @@ ssize_t ewah_read_mmap(struct ewah_bitmap *self, const void *map, size_t len)
 	 */
 	data_len = st_mult(self->buffer_size, sizeof(eword_t));
 	if (len < data_len)
-		return error("corrupt ewah bitmap: eof in data "
+		return _error("corrupt ewah bitmap: eof in data "
 			     "(%"PRIuMAX" bytes short)",
 			     (uintmax_t)(data_len - len));
 	memcpy(self->buffer, ptr, data_len);
@@ -125,7 +125,7 @@ ssize_t ewah_read_mmap(struct ewah_bitmap *self, const void *map, size_t len)
 		self->buffer[i] = ntohll(self->buffer[i]);
 
 	if (len < sizeof(uint32_t))
-		return error("corrupt ewah bitmap: eof before rlw");
+		return _error("corrupt ewah bitmap: eof before rlw");
 	self->rlw = self->buffer + get_be32(ptr);
 	ptr += sizeof(uint32_t);
 	len -= sizeof(uint32_t);

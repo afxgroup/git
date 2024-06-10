@@ -64,7 +64,7 @@ int cmd__env_helper(int argc, const char **argv)
 		if (env_default) {
 			default_int = git_parse_maybe_bool(env_default);
 			if (default_int == -1) {
-				error("option `--default' expects a boolean value with `--type=bool`, not `%s`",
+				_error("option `--default' expects a boolean value with `--type=bool`, not `%s`",
 				      env_default);
 				usage_with_options(env__helper_usage, opts);
 			}
@@ -79,7 +79,7 @@ int cmd__env_helper(int argc, const char **argv)
 	case ENV_HELPER_TYPE_ULONG:
 		if (env_default) {
 			if (!git_parse_ulong(env_default, &default_ulong)) {
-				error("option `--default' expects an unsigned long value with `--type=ulong`, not `%s`",
+				_error("option `--default' expects an unsigned long value with `--type=ulong`, not `%s`",
 				      env_default);
 				usage_with_options(env__helper_usage, opts);
 			}

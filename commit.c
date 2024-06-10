@@ -248,7 +248,7 @@ struct commit_graft *read_graft_line(struct strbuf *line)
 	return graft;
 
 bad_graft_data:
-	error("bad graft data: %s", line->buf);
+	_error("bad graft data: %s", line->buf);
 	assert(!graft);
 	return NULL;
 }
@@ -275,7 +275,7 @@ static int read_graft_file(struct repository *r, const char *graft_file)
 		if (!graft)
 			continue;
 		if (register_commit_graft(r, graft, 1))
-			error("duplicate graft data: %s", buf.buf);
+			_error("duplicate graft data: %s", buf.buf);
 	}
 	fclose(fp);
 	strbuf_release(&buf);
@@ -488,13 +488,13 @@ int parse_commit_buffer(struct repository *r, struct commit *item, const void *b
 	tail += size;
 	if (tail <= bufptr + tree_entry_len + 1 || memcmp(bufptr, "tree ", 5) ||
 			bufptr[tree_entry_len] != '\n')
-		return error("bogus commit object %s", oid_to_hex(&item->object.oid));
+		return _error("bogus commit object %s", oid_to_hex(&item->object.oid));
 	if (get_oid_hex(bufptr + 5, &parent) < 0)
-		return error("bad tree pointer in commit %s",
+		return _error("bad tree pointer in commit %s",
 			     oid_to_hex(&item->object.oid));
 	tree = lookup_tree(r, &parent);
 	if (!tree)
-		return error("bad tree pointer %s in commit %s",
+		return _error("bad tree pointer %s in commit %s",
 			     oid_to_hex(&parent),
 			     oid_to_hex(&item->object.oid));
 	set_commit_tree(item, tree);
@@ -510,7 +510,7 @@ int parse_commit_buffer(struct repository *r, struct commit *item, const void *b
 		if (tail <= bufptr + parent_entry_len + 1 ||
 		    get_oid_hex(bufptr + 7, &parent) ||
 		    bufptr[parent_entry_len] != '\n')
-			return error("bad parents in commit %s", oid_to_hex(&item->object.oid));
+			return _error("bad parents in commit %s", oid_to_hex(&item->object.oid));
 		bufptr += parent_entry_len + 1;
 		/*
 		 * The clone is shallow if nr_parent < 0, and we must
@@ -520,7 +520,7 @@ int parse_commit_buffer(struct repository *r, struct commit *item, const void *b
 			continue;
 		new_parent = lookup_commit(r, &parent);
 		if (!new_parent)
-			return error("bad parent %s in commit %s",
+			return _error("bad parent %s in commit %s",
 				     oid_to_hex(&parent),
 				     oid_to_hex(&item->object.oid));
 		pptr = &commit_list_insert(new_parent, pptr)->next;
@@ -532,7 +532,7 @@ int parse_commit_buffer(struct repository *r, struct commit *item, const void *b
 			new_parent = lookup_commit(r,
 						   &graft->parent[i]);
 			if (!new_parent)
-				return error("bad graft parent %s in commit %s",
+				return _error("bad graft parent %s in commit %s",
 					     oid_to_hex(&graft->parent[i]),
 					     oid_to_hex(&item->object.oid));
 			pptr = &commit_list_insert(new_parent, pptr)->next;
@@ -581,7 +581,7 @@ int repo_parse_commit_internal(struct repository *r,
 		if (commit_graph_paranoia && !has_object(r, &item->object.oid, 0)) {
 			unparse_commit(r, &item->object.oid);
 			return quiet_on_missing ? -1 :
-				error(_("commit %s exists in commit-graph but not in the object database"),
+						  _error(_("commit %s exists in commit-graph but not in the object database"),
 				      oid_to_hex(&item->object.oid));
 		}
 
@@ -590,11 +590,11 @@ int repo_parse_commit_internal(struct repository *r,
 
 	if (oid_object_info_extended(r, &item->object.oid, &oi, flags) < 0)
 		return quiet_on_missing ? -1 :
-			error("Could not read %s",
+					  _error("Could not read %s",
 			     oid_to_hex(&item->object.oid));
 	if (type != OBJ_COMMIT) {
 		free(buffer);
-		return error("Object %s not a commit",
+		return _error("Object %s not a commit",
 			     oid_to_hex(&item->object.oid));
 	}
 
@@ -1710,7 +1710,7 @@ int commit_tree_extended(const char *msg, size_t msg_len,
 	assert_oid_type(tree, OBJ_TREE);
 
 	if (memchr(msg, '\0', msg_len))
-		return error("a NUL byte in commit log message not allowed.");
+		return _error("a NUL byte in commit log message not allowed.");
 
 	nparents = commit_list_count(parents);
 	CALLOC_ARRAY(parent_buf, nparents);

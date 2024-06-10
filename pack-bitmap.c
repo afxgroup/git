@@ -142,7 +142,7 @@ static struct ewah_bitmap *read_bitmap_1(struct bitmap_index *index)
 		index->map_size - index->map_pos);
 
 	if (bitmap_size < 0) {
-		error(_("failed to load bitmap index (corrupted?)"));
+		_error(_("failed to load bitmap index (corrupted?)"));
 		ewah_pool_free(b);
 		return NULL;
 	}
@@ -164,14 +164,14 @@ static int load_bitmap_header(struct bitmap_index *index)
 	size_t header_size = sizeof(*header) - GIT_MAX_RAWSZ + the_hash_algo->rawsz;
 
 	if (index->map_size < header_size + the_hash_algo->rawsz)
-		return error(_("corrupted bitmap index (too small)"));
+		return _error(_("corrupted bitmap index (too small)"));
 
 	if (memcmp(header->magic, BITMAP_IDX_SIGNATURE, sizeof(BITMAP_IDX_SIGNATURE)) != 0)
-		return error(_("corrupted bitmap index file (wrong header)"));
+		return _error(_("corrupted bitmap index file (wrong header)"));
 
 	index->version = ntohs(header->version);
 	if (index->version != 1)
-		return error(_("unsupported version '%d' for bitmap index file"), index->version);
+		return _error(_("unsupported version '%d' for bitmap index file"), index->version);
 
 	/* Parse known bitmap format options */
 	{
@@ -185,7 +185,7 @@ static int load_bitmap_header(struct bitmap_index *index)
 
 		if (flags & BITMAP_OPT_HASH_CACHE) {
 			if (cache_size > index_end - index->map - header_size)
-				return error(_("corrupted bitmap index file (too short to fit hash cache)"));
+				return _error(_("corrupted bitmap index file (too short to fit hash cache)"));
 			index->hashes = (void *)(index_end - cache_size);
 			index_end -= cache_size;
 		}
@@ -194,7 +194,7 @@ static int load_bitmap_header(struct bitmap_index *index)
 			size_t table_size = st_mult(ntohl(header->entry_count),
 						    BITMAP_LOOKUP_TABLE_TRIPLET_WIDTH);
 			if (table_size > index_end - index->map - header_size)
-				return error(_("corrupted bitmap index file (too short to fit lookup table)"));
+				return _error(_("corrupted bitmap index file (too short to fit lookup table)"));
 			if (git_env_bool("GIT_TEST_READ_COMMIT_TABLE", 1))
 				index->table_lookup = (void *)(index_end - table_size);
 			index_end -= table_size;
@@ -231,7 +231,7 @@ static struct stored_bitmap *store_bitmap(struct bitmap_index *index,
 	 * shouldn't be duplicated commits in the index.
 	 */
 	if (ret == 0) {
-		error(_("duplicate entry in bitmap index: '%s'"), oid_to_hex(oid));
+		_error(_("duplicate entry in bitmap index: '%s'"), oid_to_hex(oid));
 		return NULL;
 	}
 
@@ -275,14 +275,14 @@ static int load_bitmap_entries_v1(struct bitmap_index *index)
 		struct object_id oid;
 
 		if (index->map_size - index->map_pos < 6)
-			return error(_("corrupt ewah bitmap: truncated header for entry %d"), i);
+			return _error(_("corrupt ewah bitmap: truncated header for entry %d"), i);
 
 		commit_idx_pos = read_be32(index->map, &index->map_pos);
 		xor_offset = read_u8(index->map, &index->map_pos);
 		flags = read_u8(index->map, &index->map_pos);
 
 		if (nth_bitmap_object_oid(index, &oid, commit_idx_pos) < 0)
-			return error(_("corrupt ewah bitmap: commit index %u out of range"),
+			return _error(_("corrupt ewah bitmap: commit index %u out of range"),
 				     (unsigned)commit_idx_pos);
 
 		bitmap = read_bitmap_1(index);
@@ -290,13 +290,13 @@ static int load_bitmap_entries_v1(struct bitmap_index *index)
 			return -1;
 
 		if (xor_offset > MAX_XOR_OFFSET || xor_offset > i)
-			return error(_("corrupted bitmap pack index"));
+			return _error(_("corrupted bitmap pack index"));
 
 		if (xor_offset > 0) {
 			xor_bitmap = recent_bitmaps[(i - xor_offset) % MAX_XOR_OFFSET];
 
 			if (!xor_bitmap)
-				return error(_("invalid XOR offset in bitmap pack index"));
+				return _error(_("invalid XOR offset in bitmap pack index"));
 		}
 
 		recent_bitmaps[i % MAX_XOR_OFFSET] = store_bitmap(
@@ -368,7 +368,7 @@ static int open_midx_bitmap_1(struct bitmap_index *bitmap_git,
 		goto cleanup;
 
 	if (!hasheq(get_midx_checksum(bitmap_git->midx), bitmap_git->checksum)) {
-		error(_("checksum doesn't match in MIDX and bitmap"));
+		_error(_("checksum doesn't match in MIDX and bitmap"));
 		goto cleanup;
 	}
 
@@ -646,7 +646,7 @@ static int bitmap_lookup_table_get_triplet(struct bitmap_index *bitmap_git,
 {
 	unsigned char *p = NULL;
 	if (pos >= bitmap_git->entry_count)
-		return error(_("corrupt bitmap lookup table: triplet position out of index"));
+		return _error(_("corrupt bitmap lookup table: triplet position out of index"));
 
 	p = bitmap_git->table_lookup + st_mult(pos, BITMAP_LOOKUP_TABLE_TRIPLET_WIDTH);
 
@@ -740,7 +740,7 @@ static struct stored_bitmap *lazy_bitmap_for_commit(struct bitmap_index *bitmap_
 		ALLOC_GROW(xor_items, xor_items_nr + 1, xor_items_alloc);
 
 		if (xor_items_nr + 1 >= bitmap_git->entry_count) {
-			error(_("corrupt bitmap lookup table: xor chain exceeds entry count"));
+			_error(_("corrupt bitmap lookup table: xor chain exceeds entry count"));
 			goto corrupt;
 		}
 
@@ -751,7 +751,7 @@ static struct stored_bitmap *lazy_bitmap_for_commit(struct bitmap_index *bitmap_
 		xor_item->offset = triplet.offset;
 
 		if (nth_bitmap_object_oid(bitmap_git, &xor_item->oid, triplet.commit_pos) < 0) {
-			error(_("corrupt bitmap lookup table: commit index %u out of range"),
+			_error(_("corrupt bitmap lookup table: commit index %u out of range"),
 				triplet.commit_pos);
 			goto corrupt;
 		}
@@ -776,7 +776,7 @@ static struct stored_bitmap *lazy_bitmap_for_commit(struct bitmap_index *bitmap_
 		xor_item = &xor_items[xor_items_nr - 1];
 		bitmap_git->map_pos = xor_item->offset;
 		if (bitmap_git->map_size - bitmap_git->map_pos < bitmap_header_size) {
-			error(_("corrupt ewah bitmap: truncated header for bitmap of commit \"%s\""),
+			_error(_("corrupt ewah bitmap: truncated header for bitmap of commit \"%s\""),
 				oid_to_hex(&xor_item->oid));
 			goto corrupt;
 		}
@@ -794,7 +794,7 @@ static struct stored_bitmap *lazy_bitmap_for_commit(struct bitmap_index *bitmap_
 
 	bitmap_git->map_pos = offset;
 	if (bitmap_git->map_size - bitmap_git->map_pos < bitmap_header_size) {
-		error(_("corrupt ewah bitmap: truncated header for bitmap of commit \"%s\""),
+		_error(_("corrupt ewah bitmap: truncated header for bitmap of commit \"%s\""),
 			oid_to_hex(oid));
 		goto corrupt;
 	}
@@ -2660,7 +2660,7 @@ static int verify_bitmap_file(const char *name)
 	data = xmmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
 	close(fd);
 	if (!hashfile_checksum_valid(data, st.st_size))
-		res = error(_("bitmap file '%s' has invalid checksum"),
+		res = _error(_("bitmap file '%s' has invalid checksum"),
 			    name);
 
 	munmap(data, st.st_size);

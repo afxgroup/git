@@ -256,7 +256,7 @@ static void handle_content_type(struct mailinfo *mi, struct strbuf *line)
 	if (slurp_attr(line->buf, "boundary=", boundary)) {
 		strbuf_insert(boundary, 0, "--", 2);
 		if (++mi->content_top >= &mi->content[MAX_BOUNDARIES]) {
-			error("Too many boundaries to handle");
+			_error("Too many boundaries to handle");
 			mi->input_error = -1;
 			mi->content_top = &mi->content[MAX_BOUNDARIES] - 1;
 			return;
@@ -451,7 +451,7 @@ static int convert_to_utf8(struct mailinfo *mi,
 	out = reencode_string(line->buf, mi->metainfo_charset, charset);
 	if (!out) {
 		mi->input_error = -1;
-		return error("cannot convert from %s to %s",
+		return _error("cannot convert from %s to %s",
 			     charset, mi->metainfo_charset);
 	}
 	strbuf_attach(line, out, strlen(out), strlen(out));
@@ -942,7 +942,7 @@ again:
 		   will fail first.  But just in case..
 		 */
 		if (--mi->content_top < mi->content) {
-			error("Detected mismatched boundaries, can't recover");
+			_error("Detected mismatched boundaries, can't recover");
 			mi->input_error = -1;
 			mi->content_top = mi->content;
 			strbuf_release(&newline);
@@ -1170,7 +1170,7 @@ int mailinfo(struct mailinfo *mi, const char *msg, const char *patch)
 		peek = fgetc(mi->input);
 		if (peek == EOF) {
 			fclose(cmitmsg);
-			return error("empty patch: '%s'", patch);
+			return _error("empty patch: '%s'", patch);
 		}
 	} while (isspace(peek));
 	ungetc(peek, mi->input);

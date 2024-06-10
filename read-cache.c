@@ -708,12 +708,12 @@ int add_to_index(struct index_state *istate, const char *path, struct stat *st, 
 		hash_flags |= HASH_RENORMALIZE;
 
 	if (!S_ISREG(st_mode) && !S_ISLNK(st_mode) && !S_ISDIR(st_mode))
-		return error(_("%s: can only add regular files, symbolic links or git-directories"), path);
+		return _error(_("%s: can only add regular files, symbolic links or git-directories"), path);
 
 	namelen = strlen(path);
 	if (S_ISDIR(st_mode)) {
 		if (repo_resolve_gitlink_ref(the_repository, path, "HEAD", &oid) < 0)
-			return error(_("'%s' does not have a commit checked out"), path);
+			return _error(_("'%s' does not have a commit checked out"), path);
 		while (namelen && path[namelen-1] == '/')
 			namelen--;
 	}
@@ -765,7 +765,7 @@ int add_to_index(struct index_state *istate, const char *path, struct stat *st, 
 	if (!intent_only) {
 		if (index_path(istate, &ce->oid, path, st, hash_flags)) {
 			discard_cache_entry(ce);
-			return error(_("unable to index file '%s'"), path);
+			return _error(_("unable to index file '%s'"), path);
 		}
 	} else
 		set_object_name_for_intent_to_add_entry(ce);
@@ -784,7 +784,7 @@ int add_to_index(struct index_state *istate, const char *path, struct stat *st, 
 		discard_cache_entry(ce);
 	else if (add_index_entry(istate, ce, add_option)) {
 		discard_cache_entry(ce);
-		return error(_("unable to add '%s' to index"), path);
+		return _error(_("unable to add '%s' to index"), path);
 	}
 	if (verbose && !was_same)
 		printf("add '%s'\n", path);
@@ -836,7 +836,7 @@ struct cache_entry *make_cache_entry(struct index_state *istate,
 	int len;
 
 	if (verify_path_internal(path, mode) == PATH_INVALID) {
-		error(_("invalid path '%s'"), path);
+		_error(_("invalid path '%s'"), path);
 		return NULL;
 	}
 
@@ -865,7 +865,7 @@ struct cache_entry *make_transient_cache_entry(unsigned int mode,
 	int len;
 
 	if (!verify_path(path, mode)) {
-		error(_("invalid path '%s'"), path);
+		_error(_("invalid path '%s'"), path);
 		return NULL;
 	}
 
@@ -1298,12 +1298,12 @@ static int add_index_entry_with_check(struct index_state *istate, struct cache_e
 	if (!ok_to_add)
 		return -1;
 	if (verify_path_internal(ce->name, ce->ce_mode) == PATH_INVALID)
-		return error(_("invalid path '%s'"), ce->name);
+		return _error(_("invalid path '%s'"), ce->name);
 
 	if (!skip_df_check &&
 	    check_file_directory_conflict(istate, ce, pos, ok_to_replace)) {
 		if (!ok_to_replace)
-			return error(_("'%s' appears as both a file and as a directory"),
+			return _error(_("'%s' appears as both a file and as a directory"),
 				     ce->name);
 		pos = index_name_stage_pos(istate, ce->name, ce_namelen(ce), ce_stage(ce), EXPAND_SPARSE);
 		pos = -pos-1;
@@ -1718,10 +1718,10 @@ static int verify_hdr(const struct cache_header *hdr, unsigned long size)
 	struct object_id oid;
 
 	if (hdr->hdr_signature != htonl(CACHE_SIGNATURE))
-		return error(_("bad signature 0x%08x"), hdr->hdr_signature);
+		return _error(_("bad signature 0x%08x"), hdr->hdr_signature);
 	hdr_version = ntohl(hdr->hdr_version);
 	if (hdr_version < INDEX_FORMAT_LB || INDEX_FORMAT_UB < hdr_version)
-		return error(_("bad index version %d"), hdr_version);
+		return _error(_("bad index version %d"), hdr_version);
 
 	if (!verify_index_checksum)
 		return 0;
@@ -1736,7 +1736,7 @@ static int verify_hdr(const struct cache_header *hdr, unsigned long size)
 	the_hash_algo->update_fn(&c, hdr, size - the_hash_algo->rawsz);
 	the_hash_algo->final_fn(hash, &c);
 	if (!hasheq(hash, start))
-		return error(_("bad index file sha1 signature"));
+		return _error(_("bad index file sha1 signature"));
 	return 0;
 }
 
@@ -1770,7 +1770,7 @@ static int read_index_extension(struct index_state *istate,
 		break;
 	default:
 		if (*ext < 'A' || 'Z' < *ext)
-			return error(_("index uses %.4s extension, which we do not understand"),
+			return _error(_("index uses %.4s extension, which we do not understand"),
 				     ext);
 		fprintf_ln(stderr, _("ignoring %.4s extension"), ext);
 		break;
@@ -2923,7 +2923,7 @@ static int do_write_index(struct index_state *istate, struct tempfile *tempfile,
 			if (allow)
 				warning(msg, ce->name);
 			else
-				err = error(msg, ce->name);
+				err = _error(msg, ce->name);
 
 			drop_cache_tree = 1;
 		}
@@ -3082,7 +3082,7 @@ static int do_write_index(struct index_state *istate, struct tempfile *tempfile,
 			  CSUM_HASH_IN_STREAM | csum_fsync_flag);
 
 	if (close_tempfile_gently(tempfile)) {
-		error(_("could not close '%s'"), get_tempfile_path(tempfile));
+		_error(_("could not close '%s'"), get_tempfile_path(tempfile));
 		return -1;
 	}
 	if (stat(get_tempfile_path(tempfile), &st))
@@ -3252,7 +3252,7 @@ static int write_shared_index(struct index_state *istate,
 		return ret;
 	ret = adjust_shared_perm(get_tempfile_path(*temp));
 	if (ret) {
-		error(_("cannot fix permission bits on '%s'"), get_tempfile_path(*temp));
+		_error(_("cannot fix permission bits on '%s'"), get_tempfile_path(*temp));
 		return ret;
 	}
 	ret = rename_tempfile(temp,
@@ -3408,7 +3408,7 @@ int repo_read_index_unmerged(struct repository *repo)
 		new_ce->ce_namelen = len;
 		new_ce->ce_mode = ce->ce_mode;
 		if (add_index_entry(istate, new_ce, ADD_CACHE_SKIP_DFCHECK))
-			return error(_("%s: cannot drop to stage #0"),
+			return _error(_("%s: cannot drop to stage #0"),
 				     new_ce->name);
 	}
 	return unmerged;
@@ -3654,7 +3654,7 @@ static struct index_entry_offset_table *read_ieot_extension(const char *mmap, si
 	/* validate the version is IEOT_VERSION */
 	ext_version = get_be32(index);
 	if (ext_version != IEOT_VERSION) {
-		error("invalid IEOT version %d", ext_version);
+		_error("invalid IEOT version %d", ext_version);
 		return NULL;
 	}
 	index += sizeof(uint32_t);
@@ -3662,7 +3662,7 @@ static struct index_entry_offset_table *read_ieot_extension(const char *mmap, si
 	/* extension size - version bytes / bytes per entry */
 	nr = (extsize - sizeof(uint32_t)) / (sizeof(uint32_t) + sizeof(uint32_t));
 	if (!nr) {
-		error("invalid number of IEOT entries %d", nr);
+		_error("invalid number of IEOT entries %d", nr);
 		return NULL;
 	}
 	ieot = xmalloc(sizeof(struct index_entry_offset_table)

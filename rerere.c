@@ -486,7 +486,7 @@ static int handle_file(struct index_state *istate,
 
 	fclose(io.input);
 	if (io.io.wrerror)
-		error(_("there were errors while writing '%s' (%s)"),
+		_error(_("there were errors while writing '%s' (%s)"),
 		      path, strerror(io.io.wrerror));
 	if (io.io.output && fclose(io.io.output))
 		io.io.wrerror = error_errno(_("failed to flush '%s'"), path);
@@ -494,7 +494,7 @@ static int handle_file(struct index_state *istate,
 	if (has_conflicts < 0) {
 		if (output)
 			unlink_or_warn(output);
-		return error(_("could not parse conflict hunks in '%s'"), path);
+		return _error(_("could not parse conflict hunks in '%s'"), path);
 	}
 	if (io.io.wrerror)
 		return -1;
@@ -556,7 +556,7 @@ static int find_conflict(struct repository *r, struct string_list *conflict)
 	int i;
 
 	if (repo_read_index(r) < 0)
-		return error(_("index file corrupt"));
+		return _error(_("index file corrupt"));
 
 	for (i = 0; i < r->index->cache_nr;) {
 		int conflict_type;
@@ -590,7 +590,7 @@ int rerere_remaining(struct repository *r, struct string_list *merge_rr)
 	if (setup_rerere(r, merge_rr, RERERE_READONLY))
 		return 0;
 	if (repo_read_index(r) < 0)
-		return error(_("index file corrupt"));
+		return _error(_("index file corrupt"));
 
 	for (i = 0; i < r->index->cache_nr;) {
 		int conflict_type;
@@ -1035,7 +1035,7 @@ static int rerere_forget_one_path(struct index_state *istate,
 	 */
 	ret = handle_cache(istate, path, hash, NULL);
 	if (ret < 1)
-		return error(_("could not parse conflict hunks in '%s'"), path);
+		return _error(_("could not parse conflict hunks in '%s'"), path);
 
 	/* Nuke the recorded resolution for the conflict */
 	id = new_rerere_id(hash);
@@ -1053,7 +1053,7 @@ static int rerere_forget_one_path(struct index_state *istate,
 		handle_cache(istate, path, hash, rerere_path(id, "thisimage"));
 		if (read_mmfile(&cur, rerere_path(id, "thisimage"))) {
 			free(cur.ptr);
-			error(_("failed to update conflicted state in '%s'"), path);
+			_error(_("failed to update conflicted state in '%s'"), path);
 			goto fail_exit;
 		}
 		cleanly_resolved = !try_merge(istate, id, path, &cur, &result);
@@ -1064,14 +1064,14 @@ static int rerere_forget_one_path(struct index_state *istate,
 	}
 
 	if (id->collection->status_nr <= id->variant) {
-		error(_("no remembered resolution for '%s'"), path);
+		_error(_("no remembered resolution for '%s'"), path);
 		goto fail_exit;
 	}
 
 	filename = rerere_path(id, "postimage");
 	if (unlink(filename)) {
 		if (errno == ENOENT)
-			error(_("no remembered resolution for '%s'"), path);
+			_error(_("no remembered resolution for '%s'"), path);
 		else
 			error_errno(_("cannot unlink '%s'"), filename);
 		goto fail_exit;
@@ -1107,7 +1107,7 @@ int rerere_forget(struct repository *r, struct pathspec *pathspec)
 	struct string_list merge_rr = STRING_LIST_INIT_DUP;
 
 	if (repo_read_index(r) < 0)
-		return error(_("index file corrupt"));
+		return _error(_("index file corrupt"));
 
 	fd = setup_rerere(r, &merge_rr, RERERE_NOAUTOUPDATE);
 	if (fd < 0)

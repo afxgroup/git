@@ -63,7 +63,7 @@ int read_fsmonitor_extension(struct index_state *istate, const void *data,
 	struct strbuf last_update = STRBUF_INIT;
 
 	if (sz < sizeof(uint32_t) + 1 + sizeof(uint32_t))
-		return error("corrupt fsmonitor extension (too short)");
+		return _error("corrupt fsmonitor extension (too short)");
 
 	hdr_version = get_be32(index);
 	index += sizeof(uint32_t);
@@ -75,7 +75,7 @@ int read_fsmonitor_extension(struct index_state *istate, const void *data,
 		strbuf_addstr(&last_update, index);
 		index += last_update.len + 1;
 	} else {
-		return error("bad fsmonitor version %d", hdr_version);
+		return _error("bad fsmonitor version %d", hdr_version);
 	}
 
 	istate->fsmonitor_last_update = strbuf_detach(&last_update, NULL);
@@ -87,7 +87,7 @@ int read_fsmonitor_extension(struct index_state *istate, const void *data,
 	ret = ewah_read_mmap(fsmonitor_dirty, index, ewah_size);
 	if (ret != ewah_size) {
 		ewah_free(fsmonitor_dirty);
-		return error("failed to parse ewah bitmap reading fsmonitor index extension");
+		return _error("failed to parse ewah bitmap reading fsmonitor index extension");
 	}
 	istate->fsmonitor_dirty = fsmonitor_dirty;
 

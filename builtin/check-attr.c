@@ -103,7 +103,7 @@ static void check_attr_stdin_paths(const char *prefix, struct attr_check *check,
 
 static NORETURN void error_with_usage(const char *msg)
 {
-	error("%s", msg);
+	_error("%s", msg);
 	usage_with_options(check_attr_usage, check_attr_options);
 }
 
@@ -179,7 +179,7 @@ int cmd_check_attr(int argc, const char **argv, const char *prefix)
 			const struct git_attr *a = git_attr(argv[i]);
 
 			if (!a)
-				return error("%s: not a valid attribute name",
+				return _error("%s: not a valid attribute name",
 					     argv[i]);
 			attr_check_append(check, a);
 		}

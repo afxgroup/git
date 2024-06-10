@@ -64,7 +64,7 @@ static int show_reference(const char *refname,
 			enum object_type obj_type, repl_type;
 
 			if (repo_get_oid(data->repo, refname, &object))
-				return error(_("failed to resolve '%s' as a valid ref"), refname);
+				return _error(_("failed to resolve '%s' as a valid ref"), refname);
 
 			obj_type = oid_object_info(data->repo, &object, NULL);
 			repl_type = oid_object_info(data->repo, oid, NULL);
@@ -97,7 +97,7 @@ static int list_replace_refs(const char *pattern, const char *format)
 	 * you add new format
 	 */
 	else
-		return error(_("invalid replace format '%s'\n"
+		return _error(_("invalid replace format '%s'\n"
 			       "valid formats are 'short', 'medium' and 'long'"),
 			     format);
 
@@ -124,7 +124,7 @@ static int for_each_replace_name(const char **argv, each_replace_name_fn fn)
 
 	for (p = argv; *p; p++) {
 		if (repo_get_oid(the_repository, *p, &oid)) {
-			error("failed to resolve '%s' as a valid ref", *p);
+			_error("failed to resolve '%s' as a valid ref", *p);
 			had_error = 1;
 			continue;
 		}
@@ -134,7 +134,7 @@ static int for_each_replace_name(const char **argv, each_replace_name_fn fn)
 		full_hex = ref.buf + base_len;
 
 		if (refs_read_ref(get_main_ref_store(the_repository), ref.buf, &oid)) {
-			error(_("replace ref '%s' not found"), full_hex);
+			_error(_("replace ref '%s' not found"), full_hex);
 			had_error = 1;
 			continue;
 		}
@@ -164,12 +164,12 @@ static int check_ref_valid(struct object_id *object,
 	strbuf_reset(ref);
 	strbuf_addf(ref, "%s%s", git_replace_ref_base, oid_to_hex(object));
 	if (check_refname_format(ref->buf, 0))
-		return error(_("'%s' is not a valid ref name"), ref->buf);
+		return _error(_("'%s' is not a valid ref name"), ref->buf);
 
 	if (refs_read_ref(get_main_ref_store(the_repository), ref->buf, prev))
 		oidclr(prev);
 	else if (!force)
-		return error(_("replace ref '%s' already exists"), ref->buf);
+		return _error(_("replace ref '%s' already exists"), ref->buf);
 	return 0;
 }
 
@@ -189,7 +189,7 @@ static int replace_object_oid(const char *object_ref,
 	obj_type = oid_object_info(the_repository, object, NULL);
 	repl_type = oid_object_info(the_repository, repl, NULL);
 	if (!force && obj_type != repl_type)
-		return error(_("Objects must be of the same type.\n"
+		return _error(_("Objects must be of the same type.\n"
 			       "'%s' points to a replaced object of type '%s'\n"
 			       "while '%s' points to a replacement object of "
 			       "type '%s'."),
@@ -207,7 +207,7 @@ static int replace_object_oid(const char *object_ref,
 	    ref_transaction_update(transaction, ref.buf, repl, &prev,
 				   NULL, NULL, 0, NULL, &err) ||
 	    ref_transaction_commit(transaction, &err))
-		res = error("%s", err.buf);
+		res = _error("%s", err.buf);
 
 	ref_transaction_free(transaction);
 	strbuf_release(&ref);
@@ -219,10 +219,10 @@ static int replace_object(const char *object_ref, const char *replace_ref, int f
 	struct object_id object, repl;
 
 	if (repo_get_oid(the_repository, object_ref, &object))
-		return error(_("failed to resolve '%s' as a valid ref"),
+		return _error(_("failed to resolve '%s' as a valid ref"),
 			     object_ref);
 	if (repo_get_oid(the_repository, replace_ref, &repl))
-		return error(_("failed to resolve '%s' as a valid ref"),
+		return _error(_("failed to resolve '%s' as a valid ref"),
 			     replace_ref);
 
 	return replace_object_oid(object_ref, &object, replace_ref, &repl, force);
@@ -254,7 +254,7 @@ static int export_object(const struct object_id *oid, enum object_type type,
 	cmd.out = fd;
 
 	if (run_command(&cmd))
-		return error(_("cat-file reported failure"));
+		return _error(_("cat-file reported failure"));
 	return 0;
 }
 
@@ -283,7 +283,7 @@ static int import_object(struct object_id *oid, enum object_type type,
 
 		if (start_command(&cmd)) {
 			close(fd);
-			return error(_("unable to spawn mktree"));
+			return _error(_("unable to spawn mktree"));
 		}
 
 		if (strbuf_read(&result, cmd.out, the_hash_algo->hexsz + 1) < 0) {
@@ -296,11 +296,11 @@ static int import_object(struct object_id *oid, enum object_type type,
 
 		if (finish_command(&cmd)) {
 			strbuf_release(&result);
-			return error(_("mktree reported failure"));
+			return _error(_("mktree reported failure"));
 		}
 		if (get_oid_hex(result.buf, oid) < 0) {
 			strbuf_release(&result);
-			return error(_("mktree did not return an object name"));
+			return _error(_("mktree did not return an object name"));
 		}
 
 		strbuf_release(&result);
@@ -314,7 +314,7 @@ static int import_object(struct object_id *oid, enum object_type type,
 			return -1;
 		}
 		if (index_fd(the_repository->index, oid, fd, &st, type, NULL, flags) < 0)
-			return error(_("unable to write object to database"));
+			return _error(_("unable to write object to database"));
 		/* index_fd close()s fd for us */
 	}
 
@@ -333,11 +333,11 @@ static int edit_and_replace(const char *object_ref, int force, int raw)
 	struct strbuf ref = STRBUF_INIT;
 
 	if (repo_get_oid(the_repository, object_ref, &old_oid) < 0)
-		return error(_("not a valid object name: '%s'"), object_ref);
+		return _error(_("not a valid object name: '%s'"), object_ref);
 
 	type = oid_object_info(the_repository, &old_oid, NULL);
 	if (type < 0)
-		return error(_("unable to get object type for %s"),
+		return _error(_("unable to get object type for %s"),
 			     oid_to_hex(&old_oid));
 
 	if (check_ref_valid(&old_oid, &prev, &ref, force)) {
@@ -353,7 +353,7 @@ static int edit_and_replace(const char *object_ref, int force, int raw)
 	}
 	if (launch_editor(tmpfile, NULL, NULL) < 0) {
 		free(tmpfile);
-		return error(_("editing object file failed"));
+		return _error(_("editing object file failed"));
 	}
 	if (import_object(&new_oid, type, raw, tmpfile)) {
 		free(tmpfile);
@@ -362,7 +362,7 @@ static int edit_and_replace(const char *object_ref, int force, int raw)
 	free(tmpfile);
 
 	if (oideq(&old_oid, &new_oid))
-		return error(_("new object is the same as the old one: '%s'"), oid_to_hex(&old_oid));
+		return _error(_("new object is the same as the old one: '%s'"), oid_to_hex(&old_oid));
 
 	return replace_object_oid(object_ref, &old_oid, "replacement", &new_oid, force);
 }
@@ -389,13 +389,13 @@ static int replace_parents(struct strbuf *buf, int argc, const char **argv)
 
 		if (repo_get_oid(the_repository, argv[i], &oid) < 0) {
 			strbuf_release(&new_parents);
-			return error(_("not a valid object name: '%s'"),
+			return _error(_("not a valid object name: '%s'"),
 				     argv[i]);
 		}
 		commit = lookup_commit_reference(the_repository, &oid);
 		if (!commit) {
 			strbuf_release(&new_parents);
-			return error(_("could not parse %s as a commit"), argv[i]);
+			return _error(_("could not parse %s as a commit"), argv[i]);
 		}
 		strbuf_addf(&new_parents, "parent %s\n", oid_to_hex(&commit->object.oid));
 	}
@@ -427,21 +427,21 @@ static int check_one_mergetag(struct commit *commit UNUSED,
 			 OBJ_TAG, &tag_oid);
 	tag = lookup_tag(the_repository, &tag_oid);
 	if (!tag)
-		return error(_("bad mergetag in commit '%s'"), ref);
+		return _error(_("bad mergetag in commit '%s'"), ref);
 	if (parse_tag_buffer(the_repository, tag, extra->value, extra->len))
-		return error(_("malformed mergetag in commit '%s'"), ref);
+		return _error(_("malformed mergetag in commit '%s'"), ref);
 
 	/* iterate over new parents */
 	for (i = 1; i < mergetag_data->argc; i++) {
 		struct object_id oid;
 		if (repo_get_oid(the_repository, mergetag_data->argv[i], &oid) < 0)
-			return error(_("not a valid object name: '%s'"),
+			return _error(_("not a valid object name: '%s'"),
 				     mergetag_data->argv[i]);
 		if (oideq(get_tagged_oid(tag), &oid))
 			return 0; /* found */
 	}
 
-	return error(_("original commit '%s' contains mergetag '%s' that is "
+	return _error(_("original commit '%s' contains mergetag '%s' that is "
 		       "discarded; use --edit instead of --graft"), ref,
 		     oid_to_hex(&tag_oid));
 }
@@ -465,10 +465,10 @@ static int create_graft(int argc, const char **argv, int force, int gentle)
 	unsigned long size;
 
 	if (repo_get_oid(the_repository, old_ref, &old_oid) < 0)
-		return error(_("not a valid object name: '%s'"), old_ref);
+		return _error(_("not a valid object name: '%s'"), old_ref);
 	commit = lookup_commit_reference(the_repository, &old_oid);
 	if (!commit)
-		return error(_("could not parse %s"), old_ref);
+		return _error(_("could not parse %s"), old_ref);
 
 	buffer = repo_get_commit_buffer(the_repository, commit, &size);
 	strbuf_add(&buf, buffer, size);
@@ -491,7 +491,7 @@ static int create_graft(int argc, const char **argv, int force, int gentle)
 
 	if (write_object_file(buf.buf, buf.len, OBJ_COMMIT, &new_oid)) {
 		strbuf_release(&buf);
-		return error(_("could not write replacement commit for: '%s'"),
+		return _error(_("could not write replacement commit for: '%s'"),
 			     old_ref);
 	}
 
@@ -503,7 +503,7 @@ static int create_graft(int argc, const char **argv, int force, int gentle)
 				oid_to_hex(&commit->object.oid));
 			return 0;
 		}
-		return error(_("new commit is the same as the old one: '%s'"),
+		return _error(_("new commit is the same as the old one: '%s'"),
 			     oid_to_hex(&commit->object.oid));
 	}
 

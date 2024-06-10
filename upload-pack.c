@@ -445,7 +445,7 @@ static void create_pack_file(struct upload_pack_data *pack_data,
 	}
 
 	if (finish_command(&pack_objects)) {
-		error("git upload-pack: git-pack-objects died with error.");
+		_error("git upload-pack: git-pack-objects died with error.");
 		goto fail;
 	}
 
@@ -796,7 +796,7 @@ error:
 	for (i = 0; i < data->want_obj.nr; i++) {
 		struct object *o = data->want_obj.objects[i].item;
 		if (!is_our_ref(o, data->allow_uor)) {
-			error("git upload-pack: not our ref %s",
+			_error("git upload-pack: not our ref %s",
 			      oid_to_hex(&o->oid));
 			packet_writer_error(&data->writer,
 					    "upload-pack: not our ref %s",

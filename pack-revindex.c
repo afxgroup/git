@@ -227,12 +227,12 @@ static int load_revindex_from_disk(char *revindex_name,
 	revindex_size = xsize_t(st.st_size);
 
 	if (revindex_size < RIDX_MIN_SIZE) {
-		ret = error(_("reverse-index file %s is too small"), revindex_name);
+		ret = _error(_("reverse-index file %s is too small"), revindex_name);
 		goto cleanup;
 	}
 
 	if (revindex_size - RIDX_MIN_SIZE != st_mult(sizeof(uint32_t), num_objects)) {
-		ret = error(_("reverse-index file %s is corrupt"), revindex_name);
+		ret = _error(_("reverse-index file %s is corrupt"), revindex_name);
 		goto cleanup;
 	}
 
@@ -240,16 +240,16 @@ static int load_revindex_from_disk(char *revindex_name,
 	hdr = data;
 
 	if (ntohl(hdr->signature) != RIDX_SIGNATURE) {
-		ret = error(_("reverse-index file %s has unknown signature"), revindex_name);
+		ret = _error(_("reverse-index file %s has unknown signature"), revindex_name);
 		goto cleanup;
 	}
 	if (ntohl(hdr->version) != 1) {
-		ret = error(_("reverse-index file %s has unsupported version %"PRIu32),
+		ret = _error(_("reverse-index file %s has unsupported version %"PRIu32),
 			    revindex_name, ntohl(hdr->version));
 		goto cleanup;
 	}
 	if (!(ntohl(hdr->hash_id) == 1 || ntohl(hdr->hash_id) == 2)) {
-		ret = error(_("reverse-index file %s has unsupported hash id %"PRIu32),
+		ret = _error(_("reverse-index file %s has unsupported hash id %"PRIu32),
 			    revindex_name, ntohl(hdr->hash_id));
 		goto cleanup;
 	}
@@ -321,7 +321,7 @@ int verify_pack_revindex(struct packed_git *p)
 		return res;
 
 	if (!hashfile_checksum_valid((const unsigned char *)p->revindex_map, p->revindex_size)) {
-		error(_("invalid checksum"));
+		_error(_("invalid checksum"));
 		res = -1;
 	}
 
@@ -334,7 +334,7 @@ int verify_pack_revindex(struct packed_git *p)
 		uint32_t rev_val = get_be32(p->revindex_data + i);
 
 		if (nr != rev_val) {
-			error(_("invalid rev-index position at %"PRIu64": %"PRIu32" != %"PRIu32""),
+			_error(_("invalid rev-index position at %"PRIu64": %"PRIu32" != %"PRIu32""),
 			      (uint64_t)i, nr, rev_val);
 			res = -1;
 		}
@@ -348,7 +348,7 @@ static int can_use_midx_ridx_chunk(struct multi_pack_index *m)
 	if (!m->chunk_revindex)
 		return 0;
 	if (m->chunk_revindex_len != st_mult(sizeof(uint32_t), m->num_objects)) {
-		error(_("multi-pack-index reverse-index chunk is the wrong size"));
+		_error(_("multi-pack-index reverse-index chunk is the wrong size"));
 		return 0;
 	}
 	return 1;
@@ -435,7 +435,7 @@ int offset_to_pack_pos(struct packed_git *p, off_t ofs, uint32_t *pos)
 			lo = mi + 1;
 	} while (lo < hi);
 
-	error("bad offset for revindex");
+	_error("bad offset for revindex");
 	return -1;
 }
 
@@ -537,7 +537,7 @@ static int midx_key_to_pack_pos(struct multi_pack_index *m,
 	 * broken first by pack identifier).
 	 */
 	if (midx_preferred_pack(key->midx, &key->preferred_pack) < 0)
-		return error(_("could not determine preferred pack"));
+		return _error(_("could not determine preferred pack"));
 
 	found = bsearch(key, m->revindex_data, m->num_objects,
 			sizeof(*m->revindex_data),

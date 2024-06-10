@@ -181,7 +181,7 @@ static int err(struct merge_options *opt, const char *err, ...)
 	if (opt->buffer_output > 1)
 		strbuf_addch(&opt->obuf, '\n');
 	else {
-		error("%s", opt->obuf.buf);
+		_error("%s", opt->obuf.buf);
 		strbuf_reset(&opt->obuf);
 	}
 

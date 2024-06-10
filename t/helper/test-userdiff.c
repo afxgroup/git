@@ -35,7 +35,7 @@ int cmd__userdiff(int argc, const char **argv)
 	else if (!strcmp(argv[1], "list-custom-drivers"))
 		want = USERDIFF_DRIVER_TYPE_CUSTOM;
 	else
-		return error("unknown argument %s", argv[1]);
+		return _error("unknown argument %s", argv[1]);
 
 	if (want & USERDIFF_DRIVER_TYPE_CUSTOM) {
 		setup_git_directory();

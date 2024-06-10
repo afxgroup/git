@@ -1215,7 +1215,7 @@ static void prune_ref(struct files_ref_store *refs, struct ref_to_prune *r)
 
 cleanup:
 	if (ret)
-		error("%s", err.buf);
+		_error("%s", err.buf);
 	strbuf_release(&err);
 	ref_transaction_free(transaction);
 	return;
@@ -1379,9 +1379,9 @@ static int rename_tmp_log(struct files_ref_store *refs, const char *newrefname)
 	ret = raceproof_create_file(path.buf, rename_tmp_log_callback, &cb);
 	if (ret) {
 		if (errno == EISDIR)
-			error("directory not empty: %s", path.buf);
+			_error("directory not empty: %s", path.buf);
 		else
-			error("unable to move logfile %s to %s: %s",
+			_error("unable to move logfile %s to %s: %s",
 			      tmp.buf, path.buf,
 			      strerror(cb.true_errno));
 	}
@@ -1422,7 +1422,7 @@ static int refs_rename_ref_available(struct ref_store *refs,
 	ok = !refs_verify_refname_available(refs, new_refname,
 					    NULL, &skip, &err);
 	if (!ok)
-		error("%s", err.buf);
+		_error("%s", err.buf);
 
 	string_list_clear(&skip, 0);
 	strbuf_release(&err);
@@ -1451,23 +1451,23 @@ static int files_copy_or_rename_ref(struct ref_store *ref_store,
 
 	log = !lstat(sb_oldref.buf, &loginfo);
 	if (log && S_ISLNK(loginfo.st_mode)) {
-		ret = error("reflog for %s is a symlink", oldrefname);
+		ret = _error("reflog for %s is a symlink", oldrefname);
 		goto out;
 	}
 
 	if (!refs_resolve_ref_unsafe(&refs->base, oldrefname,
 				     RESOLVE_REF_READING | RESOLVE_REF_NO_RECURSE,
 				     &orig_oid, &flag)) {
-		ret = error("refname %s not found", oldrefname);
+		ret = _error("refname %s not found", oldrefname);
 		goto out;
 	}
 
 	if (flag & REF_ISSYMREF) {
 		if (copy)
-			ret = error("refname %s is a symbolic ref, copying it is not supported",
+			ret = _error("refname %s is a symbolic ref, copying it is not supported",
 				    oldrefname);
 		else
-			ret = error("refname %s is a symbolic ref, renaming it is not supported",
+			ret = _error("refname %s is a symbolic ref, renaming it is not supported",
 				    oldrefname);
 		goto out;
 	}
@@ -1477,20 +1477,20 @@ static int files_copy_or_rename_ref(struct ref_store *ref_store,
 	}
 
 	if (!copy && log && rename(sb_oldref.buf, tmp_renamed_log.buf)) {
-		ret = error("unable to move logfile logs/%s to logs/"TMP_RENAMED_LOG": %s",
+		ret = _error("unable to move logfile logs/%s to logs/"TMP_RENAMED_LOG": %s",
 			    oldrefname, strerror(errno));
 		goto out;
 	}
 
 	if (copy && log && copy_file(tmp_renamed_log.buf, sb_oldref.buf, 0644)) {
-		ret = error("unable to copy logfile logs/%s to logs/"TMP_RENAMED_LOG": %s",
+		ret = _error("unable to copy logfile logs/%s to logs/"TMP_RENAMED_LOG": %s",
 			    oldrefname, strerror(errno));
 		goto out;
 	}
 
 	if (!copy && refs_delete_ref(&refs->base, logmsg, oldrefname,
 			    &orig_oid, REF_NO_DEREF)) {
-		error("unable to delete old %s", oldrefname);
+		_error("unable to delete old %s", oldrefname);
 		goto rollback;
 	}
 
@@ -1515,11 +1515,11 @@ static int files_copy_or_rename_ref(struct ref_store *ref_store,
 			strbuf_release(&path);
 
 			if (result) {
-				error("Directory not empty: %s", newrefname);
+				_error("Directory not empty: %s", newrefname);
 				goto rollback;
 			}
 		} else {
-			error("unable to delete existing %s", newrefname);
+			_error("unable to delete existing %s", newrefname);
 			goto rollback;
 		}
 	}
@@ -1532,9 +1532,9 @@ static int files_copy_or_rename_ref(struct ref_store *ref_store,
 	lock = lock_ref_oid_basic(refs, newrefname, &err);
 	if (!lock) {
 		if (copy)
-			error("unable to copy '%s' to '%s': %s", oldrefname, newrefname, err.buf);
+			_error("unable to copy '%s' to '%s': %s", oldrefname, newrefname, err.buf);
 		else
-			error("unable to rename '%s' to '%s': %s", oldrefname, newrefname, err.buf);
+			_error("unable to rename '%s' to '%s': %s", oldrefname, newrefname, err.buf);
 		strbuf_release(&err);
 		goto rollback;
 	}
@@ -1542,7 +1542,7 @@ static int files_copy_or_rename_ref(struct ref_store *ref_store,
 
 	if (write_ref_to_lockfile(refs, lock, &orig_oid, 0, &err) ||
 	    commit_ref_update(refs, lock, &orig_oid, logmsg, &err)) {
-		error("unable to write current sha1 into %s: %s", newrefname, err.buf);
+		_error("unable to write current sha1 into %s: %s", newrefname, err.buf);
 		strbuf_release(&err);
 		goto rollback;
 	}
@@ -1553,7 +1553,7 @@ static int files_copy_or_rename_ref(struct ref_store *ref_store,
  rollback:
 	lock = lock_ref_oid_basic(refs, oldrefname, &err);
 	if (!lock) {
-		error("unable to lock %s for rollback: %s", oldrefname, err.buf);
+		_error("unable to lock %s for rollback: %s", oldrefname, err.buf);
 		strbuf_release(&err);
 		goto rollbacklog;
 	}
@@ -1562,18 +1562,18 @@ static int files_copy_or_rename_ref(struct ref_store *ref_store,
 	log_all_ref_updates = LOG_REFS_NONE;
 	if (write_ref_to_lockfile(refs, lock, &orig_oid, 0, &err) ||
 	    commit_ref_update(refs, lock, &orig_oid, NULL, &err)) {
-		error("unable to write current sha1 into %s: %s", oldrefname, err.buf);
+		_error("unable to write current sha1 into %s: %s", oldrefname, err.buf);
 		strbuf_release(&err);
 	}
 	log_all_ref_updates = flag;
 
  rollbacklog:
 	if (logmoved && rename(sb_newref.buf, sb_oldref.buf))
-		error("unable to restore logfile %s from %s: %s",
+		_error("unable to restore logfile %s from %s: %s",
 			oldrefname, newrefname, strerror(errno));
 	if (!logmoved && log &&
 	    rename(tmp_renamed_log.buf, sb_oldref.buf))
-		error("unable to restore logfile %s from logs/"TMP_RENAMED_LOG": %s",
+		_error("unable to restore logfile %s from logs/"TMP_RENAMED_LOG": %s",
 			oldrefname, strerror(errno));
 	ret = 1;
  out:
@@ -1884,7 +1884,7 @@ static int commit_ref_update(struct files_ref_store *refs,
 			if (files_log_ref_write(refs, "HEAD",
 						&lock->old_oid, oid,
 						logmsg, 0, &log_err)) {
-				error("%s", log_err.buf);
+				_error("%s", log_err.buf);
 				strbuf_release(&log_err);
 			}
 		}
@@ -2024,7 +2024,7 @@ static int files_for_each_reflog_ent_reverse(struct ref_store *ref_store,
 
 	/* Jump to the end */
 	if (fseek(logfp, 0, SEEK_END) < 0)
-		ret = error("cannot seek back reflog for %s: %s",
+		ret = _error("cannot seek back reflog for %s: %s",
 			    refname, strerror(errno));
 	pos = ftell(logfp);
 	while (!ret && 0 < pos) {
@@ -2036,13 +2036,13 @@ static int files_for_each_reflog_ent_reverse(struct ref_store *ref_store,
 		/* Fill next block from the end */
 		cnt = (sizeof(buf) < pos) ? sizeof(buf) : pos;
 		if (fseek(logfp, pos - cnt, SEEK_SET)) {
-			ret = error("cannot seek back reflog for %s: %s",
+			ret = _error("cannot seek back reflog for %s: %s",
 				    refname, strerror(errno));
 			break;
 		}
 		nread = fread(buf, cnt, 1, logfp);
 		if (nread != 1) {
-			ret = error("cannot read %d bytes from reflog for %s: %s",
+			ret = _error("cannot read %d bytes from reflog for %s: %s",
 				    cnt, refname, strerror(errno));
 			break;
 		}
@@ -2627,7 +2627,7 @@ static void files_transaction_cleanup(struct files_ref_store *refs,
 	if (backend_data) {
 		if (backend_data->packed_transaction &&
 		    ref_transaction_abort(backend_data->packed_transaction, &err)) {
-			error("error aborting transaction: %s", err.buf);
+			_error("error aborting transaction: %s", err.buf);
 			strbuf_release(&err);
 		}
 
@@ -3162,7 +3162,7 @@ static int files_reflog_expire(struct ref_store *ref_store,
 	 */
 	lock = lock_ref_oid_basic(refs, refname, &err);
 	if (!lock) {
-		error("cannot lock ref '%s': %s", refname, err.buf);
+		_error("cannot lock ref '%s': %s", refname, err.buf);
 		strbuf_release(&err);
 		return -1;
 	}
@@ -3198,13 +3198,13 @@ static int files_reflog_expire(struct ref_store *ref_store,
 		if (hold_lock_file_for_update(&reflog_lock, log_file, 0) < 0) {
 			struct strbuf err = STRBUF_INIT;
 			unable_to_lock_message(log_file, errno, &err);
-			error("%s", err.buf);
+			_error("%s", err.buf);
 			strbuf_release(&err);
 			goto failure;
 		}
 		cb.newlog = fdopen_lock_file(&reflog_lock, "w");
 		if (!cb.newlog) {
-			error("cannot fdopen %s (%s)",
+			_error("cannot fdopen %s (%s)",
 			      get_lock_file_path(&reflog_lock), strerror(errno));
 			goto failure;
 		}
@@ -3236,7 +3236,7 @@ static int files_reflog_expire(struct ref_store *ref_store,
 		}
 
 		if (close_lock_file_gently(&reflog_lock)) {
-			status |= error("couldn't write %s: %s", log_file,
+			status |= _error("couldn't write %s: %s", log_file,
 					strerror(errno));
 			rollback_lock_file(&reflog_lock);
 		} else if (update &&
@@ -3244,14 +3244,14 @@ static int files_reflog_expire(struct ref_store *ref_store,
 				oid_to_hex(&cb.last_kept_oid), refs->base.repo->hash_algo->hexsz) < 0 ||
 			    write_str_in_full(get_lock_file_fd(&lock->lk), "\n") < 0 ||
 			    close_ref_gently(lock) < 0)) {
-			status |= error("couldn't write %s",
+			status |= _error("couldn't write %s",
 					get_lock_file_path(&lock->lk));
 			rollback_lock_file(&reflog_lock);
 		} else if (commit_lock_file(&reflog_lock)) {
-			status |= error("unable to write reflog '%s' (%s)",
+			status |= _error("unable to write reflog '%s' (%s)",
 					log_file, strerror(errno));
 		} else if (update && commit_ref(lock)) {
-			status |= error("couldn't set %s", lock->ref_name);
+			status |= _error("couldn't set %s", lock->ref_name);
 		}
 	}
 	free(log_file);

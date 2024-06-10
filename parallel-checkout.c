@@ -249,7 +249,7 @@ static int handle_results(struct checkout *state)
 	}
 
 	if (have_pending)
-		error("parallel checkout finished with pending entries");
+		_error("parallel checkout finished with pending entries");
 
 	return ret;
 }
@@ -289,7 +289,7 @@ static int write_pc_item_to_fd(struct parallel_checkout_item *pc_item, int fd,
 
 	blob = read_blob_entry(pc_item->ce, &size);
 	if (!blob)
-		return error("cannot read object %s '%s'",
+		return _error("cannot read object %s '%s'",
 			     oid_to_hex(&pc_item->ce->oid), pc_item->ce->name);
 
 	/*
@@ -311,7 +311,7 @@ static int write_pc_item_to_fd(struct parallel_checkout_item *pc_item, int fd,
 	wrote = write_in_full(fd, blob, size);
 	free(blob);
 	if (wrote < 0)
-		return error("unable to write file '%s'", path);
+		return _error("unable to write file '%s'", path);
 
 	return 0;
 }
@@ -527,7 +527,7 @@ static void finish_workers(struct pc_worker *workers, int num_workers)
 			 * already printed something useful to stderr. But a
 			 * death by signal should be mentioned to the user.
 			 */
-			error("checkout worker %d died of signal %d", i, rc - 128);
+			_error("checkout worker %d died of signal %d", i, rc - 128);
 		}
 	}
 

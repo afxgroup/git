@@ -126,7 +126,7 @@ no_promisor_pack_found:
 
 	if (start_command(&rev_list)) {
 		free(new_pack);
-		return error(_("Could not run 'git rev-list'"));
+		return _error(_("Could not run 'git rev-list'"));
 	}
 
 	sigchain_push(SIGPIPE, SIG_IGN);

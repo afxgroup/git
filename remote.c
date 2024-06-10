@@ -458,7 +458,7 @@ static int handle_config(const char *key, const char *value,
 		if (!remote->receivepack)
 			remote->receivepack = v;
 		else
-			error(_("more than one receivepack given, using the first"));
+			_error(_("more than one receivepack given, using the first"));
 	} else if (!strcmp(subkey, "uploadpack")) {
 		char *v;
 		if (git_config_string(&v, key, value))
@@ -466,7 +466,7 @@ static int handle_config(const char *key, const char *value,
 		if (!remote->uploadpack)
 			remote->uploadpack = v;
 		else
-			error(_("more than one uploadpack given, using the first"));
+			_error(_("more than one uploadpack given, using the first"));
 	} else if (!strcmp(subkey, "tagopt")) {
 		if (!strcmp(value, "--no-tags"))
 			remote->fetch_tags = -1;
@@ -1235,12 +1235,12 @@ static int match_explicit_lhs(struct ref *src,
 		 * way to delete 'other' ref at the remote end.
 		 */
 		if (try_explicit_object_name(rs->src, match) < 0)
-			return error(_("src refspec %s does not match any"), rs->src);
+			return _error(_("src refspec %s does not match any"), rs->src);
 		if (allocated_match)
 			*allocated_match = 1;
 		return 0;
 	default:
-		return error(_("src refspec %s matches more than one"), rs->src);
+		return _error(_("src refspec %s matches more than one"), rs->src);
 	}
 }
 
@@ -1255,7 +1255,7 @@ static void show_push_unqualified_ref_name_error(const char *dst_value,
 	 * <remote> <src>:<dst>" push, and "being pushed ('%s')" is
 	 * the <src>.
 	 */
-	error(_("The destination you provided is not a full refname (i.e.,\n"
+	_error(_("The destination you provided is not a full refname (i.e.,\n"
 		"starting with \"refs/\"). We tried to guess what you meant by:\n"
 		"\n"
 		"- Looking for a ref that matches '%s' on the remote side.\n"
@@ -1338,7 +1338,7 @@ static int match_explicit(struct ref *src, struct ref *dst,
 		if (starts_with(dst_value, "refs/")) {
 			matched_dst = make_linked_ref(dst_value, dst_tail);
 		} else if (is_null_oid(&matched_src->new_oid)) {
-			error(_("unable to delete '%s': remote ref does not exist"),
+			_error(_("unable to delete '%s': remote ref does not exist"),
 			      dst_value);
 		} else if ((dst_guess = guess_ref(dst_value, matched_src))) {
 			matched_dst = make_linked_ref(dst_guess, dst_tail);
@@ -1350,14 +1350,14 @@ static int match_explicit(struct ref *src, struct ref *dst,
 		break;
 	default:
 		matched_dst = NULL;
-		error(_("dst refspec %s matches more than one"),
+		_error(_("dst refspec %s matches more than one"),
 		      dst_value);
 		break;
 	}
 	if (!matched_dst)
 		return -1;
 	if (matched_dst->peer_ref)
-		return error(_("dst ref %s receives from more than one src"),
+		return _error(_("dst ref %s receives from more than one src"),
 			     matched_dst->name);
 	else {
 		matched_dst->peer_ref = allocated_src ?
@@ -2118,7 +2118,7 @@ int get_fetch_map(const struct ref *remote_refs,
 			if (!starts_with((*rmp)->peer_ref->name, "refs/") ||
 			    check_refname_format((*rmp)->peer_ref->name, 0)) {
 				struct ref *ignore = *rmp;
-				error(_("* Ignoring funny ref '%s' locally"),
+				_error(_("* Ignoring funny ref '%s' locally"),
 				      (*rmp)->peer_ref->name);
 				*rmp = (*rmp)->next;
 				free(ignore->peer_ref);
@@ -2533,7 +2533,7 @@ static int parse_push_cas_option(struct push_cas_option *cas, const char *arg, i
 	else if (!colon[1])
 		oidclr(&entry->expect);
 	else if (repo_get_oid(the_repository, colon + 1, &entry->expect))
-		return error(_("cannot parse expected object name '%s'"),
+		return _error(_("cannot parse expected object name '%s'"),
 			     colon + 1);
 	return 0;
 }

@@ -125,7 +125,7 @@ int edit_todo_list(struct repository *r, struct todo_list *todo_list,
 	    todo_list_write_to_file(r, todo_list, todo_backup,
 				    shortrevisions, shortonto, -1,
 				    (flags | TODO_LIST_APPEND_TODO_HELP) & ~TODO_LIST_SHORTEN_IDS) < 0)
-		return error(_("could not write '%s'."), rebase_path_todo_backup());
+		return _error(_("could not write '%s'."), rebase_path_todo_backup());
 
 	if (launch_sequence_editor(todo_file, &new_todo->buf, NULL))
 		return -2;

@@ -253,7 +253,7 @@ static int read_pack_info_file(const char *infofile)
 			/* we used to emit T but nobody uses it. */
 			goto out_stale;
 		} else {
-			error("unrecognized: %s", line.buf);
+			_error("unrecognized: %s", line.buf);
 		}
 	}
 	stale = 0;

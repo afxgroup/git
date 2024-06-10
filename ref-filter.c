@@ -1354,7 +1354,7 @@ int verify_ref_format(struct ref_format *format)
 		int at;
 
 		if (!ep)
-			return error(_("malformed format string %s"), sp);
+			return _error(_("malformed format string %s"), sp);
 		/* sp points at "%(" and ep points at the closing ")" */
 		at = parse_ref_filter_atom(format, sp + 2, ep, &err);
 		if (at < 0)
@@ -1911,7 +1911,7 @@ static void grab_describe_values(struct atom_value *val, int deref,
 		strvec_pushv(&cmd.args, atom->u.describe_args);
 		strvec_push(&cmd.args, oid_to_hex(&commit->object.oid));
 		if (pipe_command(&cmd, NULL, 0, &out, 0, &err, 0) < 0) {
-			error(_("failed to run 'describe'"));
+			_error(_("failed to run 'describe'"));
 			v->s = xstrdup("");
 			continue;
 		}
@@ -3480,7 +3480,7 @@ int parse_opt_merge_filter(const struct option *opt, const char *arg, int unset)
 	merge_commit = lookup_commit_reference_gently(the_repository, &oid, 0);
 
 	if (!merge_commit)
-		return error(_("option `%s' must point to a commit"), opt->long_name);
+		return _error(_("option `%s' must point to a commit"), opt->long_name);
 
 	if (starts_with(opt->long_name, "no"))
 		commit_list_insert(merge_commit, &rf->unreachable_from);

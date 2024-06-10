@@ -22,11 +22,11 @@ int parse_opt_abbrev_cb(const struct option *opt, const char *arg, int unset)
 		v = unset ? 0 : DEFAULT_ABBREV;
 	} else {
 		if (!*arg)
-			return error(_("option `%s' expects a numerical value"),
+			return _error(_("option `%s' expects a numerical value"),
 				     opt->long_name);
 		v = strtol(arg, (char **)&arg, 10);
 		if (*arg)
-			return error(_("option `%s' expects a numerical value"),
+			return _error(_("option `%s' expects a numerical value"),
 				     opt->long_name);
 		if (v && v < MINIMUM_ABBREV)
 			v = MINIMUM_ABBREV;
@@ -56,7 +56,7 @@ int parse_opt_color_flag_cb(const struct option *opt, const char *arg,
 		arg = unset ? "never" : (const char *)opt->defval;
 	value = git_config_colorbool(NULL, arg);
 	if (value < 0)
-		return error(_("option `%s' expects \"always\", \"auto\", or \"never\""),
+		return _error(_("option `%s' expects \"always\", \"auto\", or \"never\""),
 			     opt->long_name);
 	*(int *)opt->value = value;
 	return 0;
@@ -96,10 +96,10 @@ int parse_opt_commits(const struct option *opt, const char *arg, int unset)
 	if (!arg)
 		return -1;
 	if (repo_get_oid(the_repository, arg, &oid))
-		return error("malformed object name %s", arg);
+		return _error("malformed object name %s", arg);
 	commit = lookup_commit_reference(the_repository, &oid);
 	if (!commit)
-		return error("no such commit %s", arg);
+		return _error("no such commit %s", arg);
 	commit_list_insert(commit, opt->value);
 	return 0;
 }
@@ -115,10 +115,10 @@ int parse_opt_commit(const struct option *opt, const char *arg, int unset)
 	if (!arg)
 		return -1;
 	if (repo_get_oid(the_repository, arg, &oid))
-		return error("malformed object name %s", arg);
+		return _error("malformed object name %s", arg);
 	commit = lookup_commit_reference(the_repository, &oid);
 	if (!commit)
-		return error("no such commit %s", arg);
+		return _error("no such commit %s", arg);
 	*target = commit;
 	return 0;
 }
@@ -134,7 +134,7 @@ int parse_opt_object_name(const struct option *opt, const char *arg, int unset)
 	if (!arg)
 		return -1;
 	if (repo_get_oid(the_repository, arg, &oid))
-		return error(_("malformed object name '%s'"), arg);
+		return _error(_("malformed object name '%s'"), arg);
 	oid_array_append(opt->value, &oid);
 	return 0;
 }
@@ -151,7 +151,7 @@ int parse_opt_object_id(const struct option *opt, const char *arg, int unset)
 	if (!arg)
 		return -1;
 	if (repo_get_oid(the_repository, arg, &oid))
-		return error(_("malformed object name '%s'"), arg);
+		return _error(_("malformed object name '%s'"), arg);
 	*target = oid;
 	return 0;
 }
@@ -311,7 +311,7 @@ int parse_opt_tracking_mode(const struct option *opt, const char *arg, int unset
 	else if (!strcmp(arg, "inherit"))
 		*(enum branch_track *)opt->value = BRANCH_TRACK_INHERIT;
 	else
-		return error(_("option `%s' expects \"%s\" or \"%s\""),
+		return _error(_("option `%s' expects \"%s\" or \"%s\""),
 			     "--track", "direct", "inherit");
 
 	return 0;

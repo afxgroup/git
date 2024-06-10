@@ -292,7 +292,7 @@ static int do_interactive_rebase(struct rebase_options *opts, unsigned flags)
 				    flags);
 
 	if (ret)
-		error(_("could not generate todo list"));
+		_error(_("could not generate todo list"));
 	else {
 		discard_index(the_repository->index);
 		if (todo_list_parse_insn_buffer(the_repository, todo_list.buf.buf,
@@ -422,7 +422,7 @@ static int read_basic_state(struct rebase_options *opts)
 	strbuf_release(&head_name);
 	if (get_oid_hex(buf.buf, &oid) ||
 	    !(opts->onto = lookup_commit_object(the_repository, &oid)))
-		return error(_("invalid onto: '%s'"), buf.buf);
+		return _error(_("invalid onto: '%s'"), buf.buf);
 
 	/*
 	 * We always write to orig-head, but interactive rebase used to write to
@@ -439,7 +439,7 @@ static int read_basic_state(struct rebase_options *opts)
 		return -1;
 	if (get_oid_hex(buf.buf, &oid) ||
 	    !(opts->orig_head = lookup_commit_object(the_repository, &oid)))
-		return error(_("invalid orig-head: '%s'"), buf.buf);
+		return _error(_("invalid orig-head: '%s'"), buf.buf);
 
 	if (file_exists(state_dir_path("quiet", opts)))
 		opts->flags &= ~REBASE_NO_QUIET;
@@ -532,7 +532,7 @@ static int finish_rebase(struct rebase_options *opts)
 	} else {
 		strbuf_addstr(&dir, opts->state_dir);
 		if (remove_dir_recursively(&dir, 0))
-			ret = error(_("could not remove '%s'"),
+			ret = _error(_("could not remove '%s'"),
 				    opts->state_dir);
 		strbuf_release(&dir);
 	}
@@ -645,7 +645,7 @@ static int run_am(struct rebase_options *opts)
 		ropts.branch = opts->head_name;
 		ropts.default_reflog_action = opts->reflog_action;
 		reset_head(the_repository, &ropts);
-		error(_("\ngit encountered an error while preparing the "
+		_error(_("\ngit encountered an error while preparing the "
 			"patches to replay\n"
 			"these revisions:\n"
 			"\n    %s\n\n"
@@ -817,7 +817,7 @@ static int checkout_up_to_date(struct rebase_options *options)
 		ropts.flags |=  RESET_HEAD_DETACH;
 	ropts.head_msg = buf.buf;
 	if (reset_head(the_repository, &ropts) < 0)
-		ret = error(_("could not switch to %s"), options->switch_to);
+		ret = _error(_("could not switch to %s"), options->switch_to);
 	strbuf_release(&buf);
 
 	return ret;
@@ -1034,11 +1034,11 @@ static void NORETURN error_on_missing_default_upstream(void)
 static int check_exec_cmd(const char *cmd)
 {
 	if (strchr(cmd, '\n'))
-		return error(_("exec commands cannot contain newlines"));
+		return _error(_("exec commands cannot contain newlines"));
 
 	/* Does the command consist purely of whitespace? */
 	if (!cmd[strspn(cmd, " \t\r\f\v")])
-		return error(_("empty exec command"));
+		return _error(_("empty exec command"));
 
 	return 0;
 }
@@ -1352,7 +1352,7 @@ int cmd_rebase(int argc, const char **argv, const char *prefix)
 			strbuf_addstr(&buf, options.state_dir);
 			ret = remove_dir_recursively(&buf, 0);
 			if (ret)
-				error(_("could not remove '%s'"),
+				_error(_("could not remove '%s'"),
 				       options.state_dir);
 		}
 		goto cleanup;

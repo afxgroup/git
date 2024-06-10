@@ -1487,11 +1487,11 @@ static int tloop_join(pthread_t thread, const char *name)
 	void *tret;
 	err = pthread_join(thread, &tret);
 	if (!tret) {
-		error(_("%s thread failed"), name);
+		_error(_("%s thread failed"), name);
 		return 1;
 	}
 	if (err) {
-		error(_("%s thread failed to join: %s"), name, strerror(err));
+		_error(_("%s thread failed to join: %s"), name, strerror(err));
 		return 1;
 	}
 	return 0;
@@ -1555,7 +1555,7 @@ static int tloop_join(pid_t pid, const char *name)
 		return 1;
 	}
 	if (!WIFEXITED(tret) || WEXITSTATUS(tret)) {
-		error(_("%s process failed"), name);
+		_error(_("%s process failed"), name);
 		return 1;
 	}
 	return 0;

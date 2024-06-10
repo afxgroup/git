@@ -46,7 +46,7 @@ static int load_pack_mtimes_file(char *mtimes_file,
 	mtimes_size = xsize_t(st.st_size);
 
 	if (mtimes_size < MTIMES_HEADER_SIZE) {
-		ret = error(_("mtimes file %s is too small"), mtimes_file);
+		ret = _error(_("mtimes file %s is too small"), mtimes_file);
 		goto cleanup;
 	}
 
@@ -57,18 +57,18 @@ static int load_pack_mtimes_file(char *mtimes_file,
 	header.hash_id = ntohl(data[2]);
 
 	if (header.signature != MTIMES_SIGNATURE) {
-		ret = error(_("mtimes file %s has unknown signature"), mtimes_file);
+		ret = _error(_("mtimes file %s has unknown signature"), mtimes_file);
 		goto cleanup;
 	}
 
 	if (header.version != 1) {
-		ret = error(_("mtimes file %s has unsupported version %"PRIu32),
+		ret = _error(_("mtimes file %s has unsupported version %"PRIu32),
 			    mtimes_file, header.version);
 		goto cleanup;
 	}
 
 	if (!(header.hash_id == 1 || header.hash_id == 2)) {
-		ret = error(_("mtimes file %s has unsupported hash id %"PRIu32),
+		ret = _error(_("mtimes file %s has unsupported hash id %"PRIu32),
 			    mtimes_file, header.hash_id);
 		goto cleanup;
 	}
@@ -79,7 +79,7 @@ static int load_pack_mtimes_file(char *mtimes_file,
 	expected_size = st_add(expected_size, 2 * (header.hash_id == 1 ? GIT_SHA1_RAWSZ : GIT_SHA256_RAWSZ));
 
 	if (mtimes_size != expected_size) {
-		ret = error(_("mtimes file %s is corrupt"), mtimes_file);
+		ret = _error(_("mtimes file %s is corrupt"), mtimes_file);
 		goto cleanup;
 	}
 

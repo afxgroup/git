@@ -75,7 +75,7 @@ void *patch_delta(const void *src_buf, unsigned long src_size,
 			 * extensions. In the mean time we must fail when
 			 * encountering them (might be data corruption).
 			 */
-			error("unexpected delta opcode 0");
+			_error("unexpected delta opcode 0");
 			goto bad;
 		}
 	}
@@ -83,7 +83,7 @@ void *patch_delta(const void *src_buf, unsigned long src_size,
 	/* sanity check */
 	if (data != top || size != 0) {
 		bad_length:
-		error("delta replay has gone wild");
+			_error("delta replay has gone wild");
 		bad:
 		free(dst_buf);
 		return NULL;

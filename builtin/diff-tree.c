@@ -48,7 +48,7 @@ static int stdin_diff_trees(struct tree *tree1, const char *p)
 	struct object_id oid;
 	struct tree *tree2;
 	if (!isspace(*p++) || parse_oid_hex(p, &oid, &p) || *p)
-		return error("Need exactly two trees, separated by a space");
+		return _error("Need exactly two trees, separated by a space");
 	tree2 = lookup_tree(the_repository, &oid);
 	if (!tree2 || parse_tree(tree2))
 		return -1;
@@ -79,7 +79,7 @@ static int diff_tree_stdin(char *line)
 		return stdin_diff_commit((struct commit *)obj, p);
 	if (obj->type == OBJ_TREE)
 		return stdin_diff_trees((struct tree *)obj, p);
-	error("Object %s is a %s, not a commit or tree",
+	_error("Object %s is a %s, not a commit or tree",
 	      oid_to_hex(&oid), type_name(obj->type));
 	return -1;
 }

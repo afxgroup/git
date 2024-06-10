@@ -134,7 +134,7 @@ static int stream_blocked(struct repository *r, const struct object_id *oid)
 
 	st = open_istream(r, oid, &type, &sz, NULL);
 	if (!st)
-		return error(_("cannot stream blob %s"), oid_to_hex(oid));
+		return _error(_("cannot stream blob %s"), oid_to_hex(oid));
 	for (;;) {
 		readlen = read_istream(st, buf, sizeof(buf));
 		if (readlen <= 0)
@@ -274,7 +274,7 @@ static int write_tar_entry(struct archiver_args *args,
 		*header.typeflag = TYPEFLAG_REG;
 		mode = (mode | ((mode & 0100) ? 0777 : 0666)) & ~tar_umask;
 	} else {
-		return error(_("unsupported file mode: 0%o (SHA1: %s)"),
+		return _error(_("unsupported file mode: 0%o (SHA1: %s)"),
 			     mode, oid_to_hex(oid));
 	}
 	if (pathlen > sizeof(header.name)) {

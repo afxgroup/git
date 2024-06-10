@@ -24,7 +24,7 @@ int read_tree_at(struct repository *r,
 	enum interesting retval = entry_not_interesting;
 
 	if (depth > max_allowed_tree_depth)
-		return error("exceeded maximum allowed tree depth");
+		return _error("exceeded maximum allowed tree depth");
 
 	if (parse_tree(tree))
 		return -1;
@@ -195,11 +195,11 @@ int parse_tree_gently(struct tree *item, int quiet_on_missing)
 				       &type, &size);
 	if (!buffer)
 		return quiet_on_missing ? -1 :
-			error("Could not read %s",
+					  _error("Could not read %s",
 			     oid_to_hex(&item->object.oid));
 	if (type != OBJ_TREE) {
 		free(buffer);
-		return error("Object %s not a tree",
+		return _error("Object %s not a tree",
 			     oid_to_hex(&item->object.oid));
 	}
 	return parse_tree_buffer(item, buffer, size);

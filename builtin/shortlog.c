@@ -313,11 +313,11 @@ static int parse_wrap_args(const struct option *opt, const char *arg, int unset)
 	log->in1 = parse_uint(&arg, ',', DEFAULT_INDENT1);
 	log->in2 = parse_uint(&arg, '\0', DEFAULT_INDENT2);
 	if (log->wrap < 0 || log->in1 < 0 || log->in2 < 0)
-		return error(wrap_arg_usage);
+		return _error(wrap_arg_usage);
 	if (log->wrap &&
 	    ((log->in1 && log->wrap <= log->in1) ||
 	     (log->in2 && log->wrap <= log->in2)))
-		return error(wrap_arg_usage);
+		return _error(wrap_arg_usage);
 	return 0;
 }
 
@@ -344,7 +344,7 @@ static int parse_group_option(const struct option *opt, const char *arg, int uns
 		log->groups |= SHORTLOG_GROUP_FORMAT;
 		string_list_append(&log->format, arg);
 	} else {
-		return error(_("unknown group type: %s"), arg);
+		return _error(_("unknown group type: %s"), arg);
 	}
 
 	return 0;
@@ -431,12 +431,12 @@ parse_done:
 	argc = parse_options_end(&ctx);
 
 	if (nongit && argc > 1) {
-		error(_("too many arguments given outside repository"));
+		_error(_("too many arguments given outside repository"));
 		usage_with_options(shortlog_usage, options);
 	}
 
 	if (!nongit && setup_revisions(argc, argv, &rev, NULL) != 1) {
-		error(_("unrecognized argument: %s"), argv[1]);
+		_error(_("unrecognized argument: %s"), argv[1]);
 		usage_with_options(shortlog_usage, options);
 	}
 

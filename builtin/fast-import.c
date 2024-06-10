@@ -1619,7 +1619,7 @@ static int update_branch(struct branch *b)
 		new_cmit = lookup_commit_reference_gently(the_repository,
 							  &b->oid, 0);
 		if (!old_cmit || !new_cmit)
-			return error("Branch %s is missing commits.", b->name);
+			return _error("Branch %s is missing commits.", b->name);
 
 		ret = repo_in_merge_bases(the_repository, old_cmit, new_cmit);
 		if (ret < 0)
@@ -1639,7 +1639,7 @@ static int update_branch(struct branch *b)
 				   NULL, NULL, 0, msg, &err) ||
 	    ref_transaction_commit(transaction, &err)) {
 		ref_transaction_free(transaction);
-		error("%s", err.buf);
+		_error("%s", err.buf);
 		strbuf_release(&err);
 		return -1;
 	}
@@ -1670,7 +1670,7 @@ static void dump_tags(void)
 	transaction = ref_store_transaction_begin(get_main_ref_store(the_repository),
 						  &err);
 	if (!transaction) {
-		failure |= error("%s", err.buf);
+		failure |= _error("%s", err.buf);
 		goto cleanup;
 	}
 	for (t = first_tag; t; t = t->next_tag) {
@@ -1680,12 +1680,12 @@ static void dump_tags(void)
 		if (ref_transaction_update(transaction, ref_name.buf,
 					   &t->oid, NULL, NULL, NULL,
 					   0, msg, &err)) {
-			failure |= error("%s", err.buf);
+			failure |= _error("%s", err.buf);
 			goto cleanup;
 		}
 	}
 	if (ref_transaction_commit(transaction, &err))
-		failure |= error("%s", err.buf);
+		failure |= _error("%s", err.buf);
 
  cleanup:
 	ref_transaction_free(transaction);
@@ -1717,7 +1717,7 @@ static void dump_marks(void)
 	if (!f) {
 		int saved_errno = errno;
 		rollback_lock_file(&mark_lock);
-		failure |= error("Unable to write marks file %s: %s",
+		failure |= _error("Unable to write marks file %s: %s",
 			export_marks_file, strerror(saved_errno));
 		return;
 	}

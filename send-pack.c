@@ -143,7 +143,7 @@ static int pack_objects(int fd, struct ref *refs, struct oid_array *advertised,
 		 * status).
 		 */
 		if (rc > 128 && rc != 141)
-			error("pack-objects died of signal %d", rc - 128);
+			_error("pack-objects died of signal %d", rc - 128);
 		return -1;
 	}
 	return 0;
@@ -152,11 +152,11 @@ static int pack_objects(int fd, struct ref *refs, struct oid_array *advertised,
 static int receive_unpack_status(struct packet_reader *reader)
 {
 	if (packet_reader_read(reader) != PACKET_READ_NORMAL)
-		return error(_("unexpected flush packet while reading remote unpack status"));
+		return _error(_("unexpected flush packet while reading remote unpack status"));
 	if (!skip_prefix(reader->line, "unpack ", &reader->line))
-		return error(_("unable to parse remote unpack status: %s"), reader->line);
+		return _error(_("unable to parse remote unpack status: %s"), reader->line);
 	if (strcmp(reader->line, "ok"))
-		return error(_("remote unpack failed: %s"), reader->line);
+		return _error(_("remote unpack failed: %s"), reader->line);
 	return 0;
 }
 
@@ -180,7 +180,7 @@ static int receive_status(struct packet_reader *reader, struct ref *refs)
 		head = reader->line;
 		p = strchr(head, ' ');
 		if (!p) {
-			error("invalid status line from remote: %s", reader->line);
+			_error("invalid status line from remote: %s", reader->line);
 			ret = -1;
 			break;
 		}
@@ -191,7 +191,7 @@ static int receive_status(struct packet_reader *reader, struct ref *refs)
 
 			if (!hint || !(report || new_report)) {
 				if (!once++)
-					error("'option' without a matching 'ok/ng' directive");
+					_error("'option' without a matching 'ok/ng' directive");
 				ret = -1;
 				continue;
 			}
@@ -229,7 +229,7 @@ static int receive_status(struct packet_reader *reader, struct ref *refs)
 		report = NULL;
 		new_report = 0;
 		if (strcmp(head, "ok") && strcmp(head, "ng")) {
-			error("invalid ref status from remote: %s", head);
+			_error("invalid ref status from remote: %s", head);
 			ret = -1;
 			break;
 		}
@@ -607,7 +607,7 @@ int send_pack(struct send_pack_args *args,
 				strbuf_release(&req_buf);
 				strbuf_release(&cap_buf);
 				reject_atomic_push(remote_refs, args->send_mirror);
-				error("atomic push failed for ref %s. status: %d\n",
+				_error("atomic push failed for ref %s. status: %d\n",
 				      ref->name, ref->status);
 				return args->porcelain ? 0 : -1;
 			}
@@ -729,7 +729,7 @@ int send_pack(struct send_pack_args *args,
 	if (use_sideband && cmds_sent) {
 		close(demux.out);
 		if (finish_async(&demux)) {
-			error("error in sideband demultiplexer");
+			_error("error in sideband demultiplexer");
 			ret = -1;
 		}
 	}

@@ -30,7 +30,7 @@ static int mode34_callback(const struct option *opt, const char *arg, int unset)
 	else if (!strcmp(arg, "4"))
 		*(int *)opt->value = 4;
 	else
-		return error("invalid value for '%s': '%s'", "--mode34", arg);
+		return _error("invalid value for '%s': '%s'", "--mode34", arg);
 	return 0;
 }
 
@@ -274,7 +274,7 @@ int cmd__parse_options_flags(int argc, const char **argv)
 			     PARSE_OPT_STOP_AT_NON_OPTION);
 
 	if (!argc || strcmp(argv[0], "cmd")) {
-		error("'cmd' is mandatory");
+		_error("'cmd' is mandatory");
 		usage_with_options(usage, test_flag_options);
 	}
 
@@ -332,7 +332,7 @@ int cmd__parse_subcommand(int argc, const char **argv)
 			     PARSE_OPT_STOP_AT_NON_OPTION);
 
 	if (!argc || strcmp(argv[0], "cmd")) {
-		error("'cmd' is mandatory");
+		_error("'cmd' is mandatory");
 		usage_with_options(usage, test_flag_options);
 	}
 

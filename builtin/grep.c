@@ -800,7 +800,7 @@ static int context_callback(const struct option *opt, const char *arg,
 	}
 	value = strtol(arg, (char **)&endp, 10);
 	if (*endp) {
-		return error(_("switch `%c' expects a numerical value"),
+		return _error(_("switch `%c' expects a numerical value"),
 			     opt->short_name);
 	}
 	grep_opt->pre_context = grep_opt->post_context = value;

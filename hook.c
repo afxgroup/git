@@ -155,7 +155,7 @@ int run_hooks_opt(const char *hook_name, struct run_hooks_opt *options)
 		goto cleanup;
 
 	if (!hook_path) {
-		ret = error("cannot find a hook named %s", hook_name);
+		ret = _error("cannot find a hook named %s", hook_name);
 		goto cleanup;
 	}
 

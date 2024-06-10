@@ -141,7 +141,7 @@ static int send_pack_config(const char *k, const char *v,
 			if (!strcasecmp(v, "if-asked"))
 				args.push_cert = SEND_PACK_PUSH_CERT_IF_ASKED;
 			else
-				return error(_("invalid value for '%s'"), k);
+				return _error(_("invalid value for '%s'"), k);
 		}
 	}
 	return git_default_config(k, v, ctx, cb);

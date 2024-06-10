@@ -64,26 +64,26 @@ static int parse_index_info(char *p, int *mode1, int *mode2,
 			    char *status)
 {
 	if (*p != ':')
-		return error("expected ':', got '%c'", *p);
+		return _error("expected ':', got '%c'", *p);
 	*mode1 = (int)strtol(p + 1, &p, 8);
 	if (*p != ' ')
-		return error("expected ' ', got '%c'", *p);
+		return _error("expected ' ', got '%c'", *p);
 	*mode2 = (int)strtol(p + 1, &p, 8);
 	if (*p != ' ')
-		return error("expected ' ', got '%c'", *p);
+		return _error("expected ' ', got '%c'", *p);
 	if (parse_oid_hex(++p, oid1, (const char **)&p))
-		return error("expected object ID, got '%s'", p);
+		return _error("expected object ID, got '%s'", p);
 	if (*p != ' ')
-		return error("expected ' ', got '%c'", *p);
+		return _error("expected ' ', got '%c'", *p);
 	if (parse_oid_hex(++p, oid2, (const char **)&p))
-		return error("expected object ID, got '%s'", p);
+		return _error("expected object ID, got '%s'", p);
 	if (*p != ' ')
-		return error("expected ' ', got '%c'", *p);
+		return _error("expected ' ', got '%c'", *p);
 	*status = *++p;
 	if (!*status)
-		return error("missing status");
+		return _error("missing status");
 	if (p[1] && !isdigit(p[1]))
-		return error("unexpected trailer: '%s'", p + 1);
+		return _error("unexpected trailer: '%s'", p + 1);
 	return 0;
 }
 
@@ -264,7 +264,7 @@ static int ensure_leading_directories(char *path)
 		case SCLD_EXISTS:
 			return 0;
 		default:
-			return error(_("could not create leading directories "
+			return _error(_("could not create leading directories "
 				       "of '%s'"), path);
 	}
 }
@@ -385,7 +385,7 @@ static int run_dir_diff(const char *extcmd, int symlinks, const char *prefix,
 	strbuf_trim_trailing_dir_sep(&tmpdir);
 	strbuf_addstr(&tmpdir, "/git-difftool.XXXXXX");
 	if (!mkdtemp(tmpdir.buf)) {
-		ret = error("could not create '%s'", tmpdir.buf);
+		ret = _error("could not create '%s'", tmpdir.buf);
 		goto finish;
 	}
 	strbuf_addf(&ldir, "%s/left/", tmpdir.buf);
@@ -476,7 +476,7 @@ static int run_dir_diff(const char *extcmd, int symlinks, const char *prefix,
 
 		if (lmode && status != 'C') {
 			if (checkout_path(lmode, &loid, src_path, &lstate)) {
-				ret = error("could not write '%s'", src_path);
+				ret = _error("could not write '%s'", src_path);
 				goto finish;
 			}
 		}
@@ -497,7 +497,7 @@ static int run_dir_diff(const char *extcmd, int symlinks, const char *prefix,
 			if (!use_wt_file(workdir, dst_path, &roid)) {
 				if (checkout_path(rmode, &roid, dst_path,
 						  &rstate)) {
-					ret = error("could not write '%s'",
+					ret = _error("could not write '%s'",
 						    dst_path);
 					goto finish;
 				}
@@ -516,7 +516,7 @@ static int run_dir_diff(const char *extcmd, int symlinks, const char *prefix,
 
 				add_path(&rdir, rdir_len, dst_path);
 				if (ensure_leading_directories(rdir.buf)) {
-					ret = error("could not create "
+					ret = _error("could not create "
 						    "directory for '%s'",
 						    dst_path);
 					goto finish;
@@ -533,7 +533,7 @@ static int run_dir_diff(const char *extcmd, int symlinks, const char *prefix,
 						st.st_mode = 0644;
 					if (copy_file(rdir.buf, wtdir.buf,
 						      st.st_mode)) {
-						ret = error("could not copy '%s' to '%s'", wtdir.buf, rdir.buf);
+						ret = _error("could not copy '%s' to '%s'", wtdir.buf, rdir.buf);
 						goto finish;
 					}
 				}
@@ -544,7 +544,7 @@ static int run_dir_diff(const char *extcmd, int symlinks, const char *prefix,
 	fclose(fp);
 	fp = NULL;
 	if (finish_command(child)) {
-		ret = error("error occurred running diff --raw");
+		ret = _error("error occurred running diff --raw");
 		goto finish;
 	}
 
@@ -620,7 +620,7 @@ static int run_dir_diff(const char *extcmd, int symlinks, const char *prefix,
 			strbuf_addf(&buf, "%s/wtindex", tmpdir.buf);
 			if (hold_lock_file_for_update(&lock, buf.buf, 0) < 0 ||
 			    write_locked_index(&wtindex, &lock, COMMIT_LOCK)) {
-				ret = error("could not write %s", buf.buf);
+				ret = _error("could not write %s", buf.buf);
 				goto finish;
 			}
 			changed_files(&wt_modified, buf.buf, workdir);

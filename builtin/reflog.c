@@ -262,7 +262,7 @@ static int cmd_reflog_list(int argc, const char **argv, const char *prefix)
 
 	argc = parse_options(argc, argv, prefix, options, reflog_list_usage, 0);
 	if (argc)
-		return error(_("%s does not accept arguments: '%s'"),
+		return _error(_("%s does not accept arguments: '%s'"),
 			     "list", argv[0]);
 
 	ref_store = get_main_ref_store(the_repository);
@@ -379,7 +379,7 @@ static int cmd_reflog_expire(int argc, const char **argv, const char *prefix)
 		struct expire_reflog_policy_cb cb = { .cmd = cmd };
 
 		if (!repo_dwim_log(the_repository, argv[i], strlen(argv[i]), NULL, &ref)) {
-			status |= error(_("%s points nowhere!"), argv[i]);
+			status |= _error(_("%s points nowhere!"), argv[i]);
 			continue;
 		}
 		set_reflog_expiry_param(&cb.cmd, ref);
@@ -416,7 +416,7 @@ static int cmd_reflog_delete(int argc, const char **argv, const char *prefix)
 	argc = parse_options(argc, argv, prefix, options, reflog_delete_usage, 0);
 
 	if (argc < 1)
-		return error(_("no reflog specified to delete"));
+		return _error(_("no reflog specified to delete"));
 
 	for (i = 0; i < argc; i++)
 		status |= reflog_delete(argv[i], flags, verbose);

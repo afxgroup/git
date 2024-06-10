@@ -118,7 +118,7 @@ static int paint_down_to_common(struct repository *r,
 				 */
 				if (ignore_missing_commits)
 					return 0;
-				return error(_("could not parse commit %s"),
+				return _error(_("could not parse commit %s"),
 					     oid_to_hex(&p->object.oid));
 			}
 			p->object.flags |= flags;
@@ -152,13 +152,13 @@ static int merge_bases_many(struct repository *r,
 	if (!one)
 		return 0;
 	if (repo_parse_commit(r, one))
-		return error(_("could not parse commit %s"),
+		return _error(_("could not parse commit %s"),
 			     oid_to_hex(&one->object.oid));
 	for (i = 0; i < n; i++) {
 		if (!twos[i])
 			return 0;
 		if (repo_parse_commit(r, twos[i]))
-			return error(_("could not parse commit %s"),
+			return _error(_("could not parse commit %s"),
 				     oid_to_hex(&twos[i]->object.oid));
 	}
 

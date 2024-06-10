@@ -1486,7 +1486,7 @@ static const char *update(struct command *cmd, struct shallow_info *si)
 	}
 
 	if (!is_null_oid(new_oid) && !repo_has_object_file(the_repository, new_oid)) {
-		error("unpack should have generated %s, "
+		_error("unpack should have generated %s, "
 		      "but I can't find it!", oid_to_hex(new_oid));
 		ret = "bad pack";
 		goto out;
@@ -1534,7 +1534,7 @@ static const char *update(struct command *cmd, struct shallow_info *si)
 		if (!old_object || !new_object ||
 		    old_object->type != OBJ_COMMIT ||
 		    new_object->type != OBJ_COMMIT) {
-			error("bad sha1 objects for %s", name);
+			_error("bad sha1 objects for %s", name);
 			ret = "bad ref";
 			goto out;
 		}

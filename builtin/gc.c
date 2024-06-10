@@ -936,7 +936,7 @@ static int maintenance_task_commit_graph(struct maintenance_run_opts *opts)
 		return 0;
 
 	if (run_write_commit_graph(opts)) {
-		error(_("failed to write commit-graph"));
+		_error(_("failed to write commit-graph"));
 		return 1;
 	}
 
@@ -966,7 +966,7 @@ static int fetch_remote(struct remote *remote, void *cbdata)
 static int maintenance_task_prefetch(struct maintenance_run_opts *opts)
 {
 	if (for_each_remote(fetch_remote, opts)) {
-		error(_("failed to prefetch remotes"));
+		_error(_("failed to prefetch remotes"));
 		return 1;
 	}
 
@@ -1082,7 +1082,7 @@ static int pack_loose(struct maintenance_run_opts *opts)
 	pack_proc.in = -1;
 
 	if (start_command(&pack_proc)) {
-		error(_("failed to start 'git pack-objects' process"));
+		_error(_("failed to start 'git pack-objects' process"));
 		return 1;
 	}
 
@@ -1099,7 +1099,7 @@ static int pack_loose(struct maintenance_run_opts *opts)
 	fclose(data.in);
 
 	if (finish_command(&pack_proc)) {
-		error(_("failed to finish 'git pack-objects' process"));
+		_error(_("failed to finish 'git pack-objects' process"));
 		result = 1;
 	}
 
@@ -1150,7 +1150,7 @@ static int multi_pack_index_write(struct maintenance_run_opts *opts)
 		strvec_push(&child.args, "--no-progress");
 
 	if (run_command(&child))
-		return error(_("failed to write multi-pack-index"));
+		return _error(_("failed to write multi-pack-index"));
 
 	return 0;
 }
@@ -1166,7 +1166,7 @@ static int multi_pack_index_expire(struct maintenance_run_opts *opts)
 		strvec_push(&child.args, "--no-progress");
 
 	if (run_command(&child))
-		return error(_("'git multi-pack-index expire' failed"));
+		return _error(_("'git multi-pack-index expire' failed"));
 
 	return 0;
 }
@@ -1225,7 +1225,7 @@ static int multi_pack_index_repack(struct maintenance_run_opts *opts)
 				  (uintmax_t)get_auto_pack_size());
 
 	if (run_command(&child))
-		return error(_("'git multi-pack-index repack' failed"));
+		return _error(_("'git multi-pack-index repack' failed"));
 
 	return 0;
 }
@@ -1368,7 +1368,7 @@ static int maintenance_run_tasks(struct maintenance_run_opts *opts)
 
 		trace2_region_enter("maintenance", tasks[i].name, r);
 		if (tasks[i].fn(opts)) {
-			error(_("task '%s' failed"), tasks[i].name);
+			_error(_("task '%s' failed"), tasks[i].name);
 			result = 1;
 		}
 		trace2_region_leave("maintenance", tasks[i].name, r);
@@ -1450,12 +1450,12 @@ static int task_option_parse(const struct option *opt UNUSED,
 	}
 
 	if (!task) {
-		error(_("'%s' is not a valid task"), arg);
+		_error(_("'%s' is not a valid task"), arg);
 		return 1;
 	}
 
 	if (task->selected_order >= 0) {
-		error(_("task '%s' cannot be selected multiple times"), arg);
+		_error(_("task '%s' cannot be selected multiple times"), arg);
 		return 1;
 	}
 
@@ -2214,19 +2214,19 @@ static int crontab_update_schedule(int run_maintenance, int fd)
 	crontab_list.git_cmd = 0;
 
 	if (start_command(&crontab_list))
-		return error(_("failed to run 'crontab -l'; your system might not support 'cron'"));
+		return _error(_("failed to run 'crontab -l'; your system might not support 'cron'"));
 
 	/* Ignore exit code, as an empty crontab will return error. */
 	finish_command(&crontab_list);
 
 	tmpedit = mks_tempfile_t(".git_cron_edit_tmpXXXXXX");
 	if (!tmpedit) {
-		result = error(_("failed to create crontab temporary file"));
+		result = _error(_("failed to create crontab temporary file"));
 		goto out;
 	}
 	cron_in = fdopen_tempfile(tmpedit, "w");
 	if (!cron_in) {
-		result = error(_("failed to open temporary file"));
+		result = _error(_("failed to open temporary file"));
 		goto out;
 	}
 
@@ -2276,12 +2276,12 @@ static int crontab_update_schedule(int run_maintenance, int fd)
 	crontab_edit.git_cmd = 0;
 
 	if (start_command(&crontab_edit)) {
-		result = error(_("failed to run 'crontab'; your system might not support 'cron'"));
+		result = _error(_("failed to run 'crontab'; your system might not support 'cron'"));
 		goto out;
 	}
 
 	if (finish_command(&crontab_edit))
-		result = error(_("'crontab' died"));
+		result = _error(_("'crontab' died"));
 	else
 		fclose(cron_list);
 out:
@@ -2371,7 +2371,7 @@ static int systemd_timer_write_timer_file(enum schedule_priority schedule,
 	filename = xdg_config_home_systemd(local_timer_name);
 
 	if (safe_create_leading_directories(filename)) {
-		error(_("failed to create directories for '%s'"), filename);
+		_error(_("failed to create directories for '%s'"), filename);
 		goto error;
 	}
 	file = fopen_or_warn(filename, "w");
@@ -2409,7 +2409,7 @@ static int systemd_timer_write_timer_file(enum schedule_priority schedule,
 	       "[Install]\n"
 	       "WantedBy=timers.target\n";
 	if (fprintf(file, unit, schedule_pattern) < 0) {
-		error(_("failed to write to '%s'"), filename);
+		_error(_("failed to write to '%s'"), filename);
 		fclose(file);
 		goto error;
 	}
@@ -2444,7 +2444,7 @@ static int systemd_timer_write_service_template(const char *exec_path)
 
 	filename = xdg_config_home_systemd(local_service_name);
 	if (safe_create_leading_directories(filename)) {
-		error(_("failed to create directories for '%s'"), filename);
+		_error(_("failed to create directories for '%s'"), filename);
 		goto error;
 	}
 	file = fopen_or_warn(filename, "w");
@@ -2471,7 +2471,7 @@ static int systemd_timer_write_service_template(const char *exec_path)
 	       "SystemCallArchitectures=native\n"
 	       "SystemCallFilter=@system-service\n";
 	if (fprintf(file, unit, exec_path, exec_path) < 0) {
-		error(_("failed to write to '%s'"), filename);
+		_error(_("failed to write to '%s'"), filename);
 		fclose(file);
 		goto error;
 	}
@@ -2517,7 +2517,7 @@ static int systemd_timer_enable_unit(int enable,
 	strvec_pushf(&child.args, SYSTEMD_UNIT_FORMAT, frequency, "timer");
 
 	if (start_command(&child))
-		return error(_("failed to start systemctl"));
+		return _error(_("failed to start systemctl"));
 	if (finish_command(&child))
 		/*
 		 * Disabling an already disabled systemd unit makes
@@ -2527,7 +2527,7 @@ static int systemd_timer_enable_unit(int enable,
 		 * Enabling an enabled systemd unit doesn't fail.
 		 */
 		if (enable)
-			return error(_("failed to run systemctl"));
+			return _error(_("failed to run systemctl"));
 	return 0;
 }
 
@@ -2658,7 +2658,7 @@ static int maintenance_opt_scheduler(const struct option *opt, const char *arg,
 
 	*scheduler = parse_scheduler(arg);
 	if (*scheduler == SCHEDULER_INVALID)
-		return error(_("unrecognized --scheduler argument '%s'"), arg);
+		return _error(_("unrecognized --scheduler argument '%s'"), arg);
 	return 0;
 }
 
@@ -2712,7 +2712,7 @@ static int update_background_schedule(const struct maintenance_start_opts *opts,
 
 	if (hold_lock_file_for_update(&lk, lock_path, LOCK_NO_DEREF) < 0) {
 		free(lock_path);
-		return error(_("another process is scheduling background maintenance"));
+		return _error(_("another process is scheduling background maintenance"));
 	}
 
 	for (i = 1; i < ARRAY_SIZE(scheduler_fn); i++) {

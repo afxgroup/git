@@ -131,6 +131,7 @@ static void print_cmd_by_category(const struct category_description *catdesc,
 		if (longest < strlen(cmds[i].name))
 			longest = strlen(cmds[i].name);
 	}
+
 	QSORT(cmds, nr, cmd_name_cmp);
 
 	for (i = 0; catdesc[i].desc; i++) {

@@ -56,7 +56,7 @@ static enum parse_opt_result get_arg(struct parse_opt_ctx_t *p,
 		p->argc--;
 		*arg = *++p->argv;
 	} else
-		return error(_("%s requires a value"), optname(opt, flags));
+		return _error(_("%s requires a value"), optname(opt, flags));
 	return 0;
 }
 
@@ -78,11 +78,11 @@ static enum parse_opt_result do_get_value(struct parse_opt_ctx_t *p,
 	int err;
 
 	if (unset && p->opt)
-		return error(_("%s takes no value"), optname(opt, flags));
+		return _error(_("%s takes no value"), optname(opt, flags));
 	if (unset && (opt->flags & PARSE_OPT_NONEG))
-		return error(_("%s isn't available"), optname(opt, flags));
+		return _error(_("%s isn't available"), optname(opt, flags));
 	if (!(flags & OPT_SHORT) && p->opt && (opt->flags & PARSE_OPT_NOARG))
-		return error(_("%s takes no value"), optname(opt, flags));
+		return _error(_("%s takes no value"), optname(opt, flags));
 
 	switch (opt->type) {
 	case OPTION_LOWLEVEL_CALLBACK:
@@ -177,11 +177,11 @@ static enum parse_opt_result do_get_value(struct parse_opt_ctx_t *p,
 		if (get_arg(p, opt, flags, &arg))
 			return -1;
 		if (!*arg)
-			return error(_("%s expects a numerical value"),
+			return _error(_("%s expects a numerical value"),
 				     optname(opt, flags));
 		*(int *)opt->value = strtol(arg, (char **)&s, 10);
 		if (*s)
-			return error(_("%s expects a numerical value"),
+			return _error(_("%s expects a numerical value"),
 				     optname(opt, flags));
 		return 0;
 
@@ -197,7 +197,7 @@ static enum parse_opt_result do_get_value(struct parse_opt_ctx_t *p,
 		if (get_arg(p, opt, flags, &arg))
 			return -1;
 		if (!git_parse_ulong(arg, opt->value))
-			return error(_("%s expects a non-negative integer value"
+			return _error(_("%s expects a non-negative integer value"
 				       " with an optional k/m/g suffix"),
 				     optname(opt, flags));
 		return 0;
@@ -277,7 +277,7 @@ static enum parse_opt_result get_value(struct parse_opt_ctx_t *p,
 
 	opt_name = optnamearg(opt, arg, flags);
 	other_opt_name = optnamearg(elem->opt, elem->arg, elem->flags);
-	error(_("options '%s' and '%s' cannot be used together"),
+	_error(_("options '%s' and '%s' cannot be used together"),
 	      opt_name, other_opt_name);
 	free(opt_name);
 	free(other_opt_name);
@@ -437,7 +437,7 @@ static enum parse_opt_result parse_long_opt(
 		    (int)(arg_end - arg), arg);
 
 	if (ambiguous.option) {
-		error(_("ambiguous option: %s "
+		_error(_("ambiguous option: %s "
 			"(could be --%s%s or --%s%s)"),
 			arg,
 			(ambiguous.flags & OPT_UNSET) ?  "no-" : "",
@@ -486,7 +486,7 @@ static void check_typos(const char *arg, const struct option *options)
 		return;
 
 	if (starts_with(arg, "no-")) {
-		error(_("did you mean `--%s` (with two dashes)?"), arg);
+		_error(_("did you mean `--%s` (with two dashes)?"), arg);
 		exit(129);
 	}
 
@@ -494,7 +494,7 @@ static void check_typos(const char *arg, const struct option *options)
 		if (!options->long_name)
 			continue;
 		if (starts_with(options->long_name, arg)) {
-			error(_("did you mean `--%s` (with two dashes)?"), arg);
+			_error(_("did you mean `--%s` (with two dashes)?"), arg);
 			exit(129);
 		}
 	}
@@ -864,7 +864,7 @@ enum parse_opt_result parse_options_step(struct parse_opt_ctx_t *ctx,
 					 * So we are done parsing.
 					 */
 					return PARSE_OPT_DONE;
-				error(_("unknown subcommand: `%s'"), arg);
+				_error(_("unknown subcommand: `%s'"), arg);
 				usage_with_options(usagestr, options);
 			case PARSE_OPT_COMPLETE:
 			case PARSE_OPT_HELP:
@@ -1036,17 +1036,17 @@ int parse_options(int argc, const char **argv,
 	case PARSE_OPT_DONE:
 		if (ctx.has_subcommands &&
 		    !(flags & PARSE_OPT_SUBCOMMAND_OPTIONAL)) {
-			error(_("need a subcommand"));
+			_error(_("need a subcommand"));
 			usage_with_options(usagestr, options);
 		}
 		break;
 	case PARSE_OPT_UNKNOWN:
 		if (ctx.argv[0][1] == '-') {
-			error(_("unknown option `%s'"), ctx.argv[0] + 2);
+			_error(_("unknown option `%s'"), ctx.argv[0] + 2);
 		} else if (isascii(*ctx.opt)) {
-			error(_("unknown switch `%c'"), *ctx.opt);
+			_error(_("unknown switch `%c'"), *ctx.opt);
 		} else {
-			error(_("unknown non-ascii option in string: `%s'"),
+			_error(_("unknown non-ascii option in string: `%s'"),
 			      ctx.argv[0]);
 		}
 		usage_with_options(usagestr, options);

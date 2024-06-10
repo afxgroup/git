@@ -124,7 +124,7 @@ static int option_parse_message(const struct option *opt,
 		strbuf_addf(buf, "%s%s", buf->len ? "\n\n" : "", arg);
 		have_message = 1;
 	} else
-		return error(_("switch `m' requires a value"));
+		return _error(_("switch `m' requires a value"));
 	return 0;
 }
 
@@ -147,14 +147,14 @@ static enum parse_opt_result option_read_message(struct parse_opt_ctx_t *ctx,
 		ctx->argc--;
 		arg = *++ctx->argv;
 	} else
-		return error(_("option `%s' requires a value"), opt->long_name);
+		return _error(_("option `%s' requires a value"), opt->long_name);
 
 	if (buf->len)
 		strbuf_addch(buf, '\n');
 	if (ctx->prefix && !is_absolute_path(arg))
 		arg = prefix_filename(ctx->prefix, arg);
 	if (strbuf_read_file(buf, arg, 0) < 0)
-		return error(_("could not read file '%s'"), arg);
+		return _error(_("could not read file '%s'"), arg);
 	have_message = 1;
 
 	return 0;
@@ -701,7 +701,7 @@ static int try_merge_strategy(const char *strategy, struct commit_list *common,
 	if (repo_refresh_and_write_index(the_repository, REFRESH_QUIET,
 					 SKIP_IF_UNCHANGED, 0, NULL, NULL,
 					 NULL) < 0)
-		return error(_("Unable to write index."));
+		return _error(_("Unable to write index."));
 
 	if (!strcmp(strategy, "recursive") || !strcmp(strategy, "subtree") ||
 	    !strcmp(strategy, "ort")) {
@@ -713,7 +713,7 @@ static int try_merge_strategy(const char *strategy, struct commit_list *common,
 		struct commit_list *j;
 
 		if (remoteheads->next) {
-			error(_("Not handling anything other than two heads merge."));
+			_error(_("Not handling anything other than two heads merge."));
 			return 2;
 		}
 
@@ -807,7 +807,7 @@ static void write_merge_state(struct commit_list *);
 static void abort_commit(struct commit_list *remoteheads, const char *err_msg)
 {
 	if (err_msg)
-		error("%s", err_msg);
+		_error("%s", err_msg);
 	fprintf(stderr,
 		_("Not committing merge; use 'git commit' to complete the merge.\n"));
 	write_merge_state(remoteheads);
@@ -900,7 +900,7 @@ static int merge_trivial(struct commit *head, struct commit_list *remoteheads)
 	if (repo_refresh_and_write_index(the_repository, REFRESH_QUIET,
 					 SKIP_IF_UNCHANGED, 0, NULL, NULL,
 					 NULL) < 0)
-		return error(_("Unable to write index."));
+		return _error(_("Unable to write index."));
 
 	write_tree_trivial(&result_tree);
 	printf(_("Wonderful.\n"));
@@ -1616,7 +1616,7 @@ int cmd_merge(int argc, const char **argv, const char *prefix)
 
 			if (repo_index_has_changes(the_repository, head_tree,
 						   &sb)) {
-				error(_("Your local changes to the following files would be overwritten by merge:\n  %s"),
+				_error(_("Your local changes to the following files would be overwritten by merge:\n  %s"),
 				      sb.buf);
 				strbuf_release(&sb);
 				ret = 2;

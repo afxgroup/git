@@ -363,7 +363,7 @@ static int set_config(enum sparse_checkout_mode mode)
 {
 	/* Update to use worktree config, if not already. */
 	if (init_worktree_config(the_repository)) {
-		error(_("failed to initialize worktree config"));
+		_error(_("failed to initialize worktree config"));
 		return 1;
 	}
 

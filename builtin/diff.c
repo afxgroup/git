@@ -262,7 +262,7 @@ static void builtin_diff_files(struct rev_info *revs, int argc, const char **arg
 		else if (!strcmp(argv[1], "-h"))
 			usage(builtin_diff_usage);
 		else {
-			error(_("invalid option: %s"), argv[1]);
+			_error(_("invalid option: %s"), argv[1]);
 			usage(builtin_diff_usage);
 		}
 		argv++; argc--;

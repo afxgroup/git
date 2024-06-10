@@ -178,7 +178,7 @@ static int option_parse_type(const struct option *opt, const char *arg,
 		 * --int' and '--type=bool
 		 * --type=int'.
 		 */
-		error(_("only one type at a time"));
+		_error(_("only one type at a time"));
 		exit(129);
 	}
 	*to_type = new_type;
@@ -191,9 +191,9 @@ static void check_argc(int argc, int min, int max)
 	if (argc >= min && argc <= max)
 		return;
 	if (min == max)
-		error(_("wrong number of arguments, should be %d"), min);
+		_error(_("wrong number of arguments, should be %d"), min);
 	else
-		error(_("wrong number of arguments, should be from %d to %d"),
+		_error(_("wrong number of arguments, should be from %d to %d"),
 		      min, max);
 	exit(129);
 }
@@ -393,7 +393,7 @@ static int get_value(const struct config_location_options *opts,
 
 		data.key_regexp = (regex_t*)xmalloc(sizeof(regex_t));
 		if (regcomp(data.key_regexp, key, REG_EXTENDED)) {
-			error(_("invalid key pattern: %s"), key_);
+			_error(_("invalid key pattern: %s"), key_);
 			FREE_AND_NULL(data.key_regexp);
 			ret = CONFIG_INVALID_PATTERN;
 			goto free_strings;
@@ -417,7 +417,7 @@ static int get_value(const struct config_location_options *opts,
 
 		data.regexp = (regex_t*)xmalloc(sizeof(regex_t));
 		if (regcomp(data.regexp, regex_, REG_EXTENDED)) {
-			error(_("invalid pattern: %s"), regex_);
+			_error(_("invalid pattern: %s"), regex_);
 			FREE_AND_NULL(data.regexp);
 			ret = CONFIG_INVALID_PATTERN;
 			goto free_strings;
@@ -740,7 +740,7 @@ static void location_options_init(struct config_location_options *opts,
 	if (opts->use_global_config + opts->use_system_config +
 	    opts->use_local_config + opts->use_worktree_config +
 	    !!opts->source.file + !!opts->source.blob > 1) {
-		error(_("only one config file at a time"));
+		_error(_("only one config file at a time"));
 		exit(129);
 	}
 
@@ -963,7 +963,7 @@ static int cmd_config_set(int argc, const char **argv, const char *prefix)
 		ret = git_config_set_in_file_gently(location_opts.source.file,
 						    argv[0], comment, value);
 		if (ret == CONFIG_NOTHING_SET)
-			error(_("cannot overwrite multiple values with a single value\n"
+			_error(_("cannot overwrite multiple values with a single value\n"
 			"       Use a regexp, --add or --replace-all to change %s."), argv[0]);
 	}
 
@@ -1183,7 +1183,7 @@ static int cmd_config_actions(int argc, const char **argv, const char *prefix)
 	display_options_init(&display_opts);
 
 	if ((actions & (ACTION_GET_COLOR|ACTION_GET_COLORBOOL)) && display_opts.type) {
-		error(_("--get-color and variable type are incoherent"));
+		_error(_("--get-color and variable type are incoherent"));
 		exit(129);
 	}
 
@@ -1193,30 +1193,30 @@ static int cmd_config_actions(int argc, const char **argv, const char *prefix)
 		case 2: actions = ACTION_SET; break;
 		case 3: actions = ACTION_SET_ALL; break;
 		default:
-			error(_("no action specified"));
+			_error(_("no action specified"));
 			exit(129);
 		}
 	if (display_opts.omit_values &&
 	    !(actions == ACTION_LIST || actions == ACTION_GET_REGEXP)) {
-		error(_("--name-only is only applicable to --list or --get-regexp"));
+		_error(_("--name-only is only applicable to --list or --get-regexp"));
 		exit(129);
 	}
 
 	if (display_opts.show_origin && !(actions &
 		(ACTION_GET|ACTION_GET_ALL|ACTION_GET_REGEXP|ACTION_LIST))) {
-		error(_("--show-origin is only applicable to --get, --get-all, "
+		_error(_("--show-origin is only applicable to --get, --get-all, "
 			"--get-regexp, and --list"));
 		exit(129);
 	}
 
 	if (display_opts.default_value && !(actions & ACTION_GET)) {
-		error(_("--default is only applicable to --get"));
+		_error(_("--default is only applicable to --get"));
 		exit(129);
 	}
 
 	if (comment_arg &&
 	    !(actions & (ACTION_ADD|ACTION_SET|ACTION_SET_ALL|ACTION_REPLACE_ALL))) {
-		error(_("--comment is only applicable to add/set/replace operations"));
+		_error(_("--comment is only applicable to add/set/replace operations"));
 		exit(129);
 	}
 
@@ -1249,7 +1249,7 @@ static int cmd_config_actions(int argc, const char **argv, const char *prefix)
 		}
 
 		if (!allowed_usage) {
-			error(_("--fixed-value only applies with 'value-pattern'"));
+			_error(_("--fixed-value only applies with 'value-pattern'"));
 			exit(129);
 		}
 	}
@@ -1284,7 +1284,7 @@ static int cmd_config_actions(int argc, const char **argv, const char *prefix)
 		value = normalize_value(argv[0], argv[1], display_opts.type, &default_kvi);
 		ret = git_config_set_in_file_gently(location_opts.source.file, argv[0], comment, value);
 		if (ret == CONFIG_NOTHING_SET)
-			error(_("cannot overwrite multiple values with a single value\n"
+			_error(_("cannot overwrite multiple values with a single value\n"
 			"       Use a regexp, --add or --replace-all to change %s."), argv[0]);
 	}
 	else if (actions == ACTION_SET_ALL) {

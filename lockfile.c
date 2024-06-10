@@ -183,7 +183,7 @@ int hold_lock_file_for_update_timeout_mode(struct lock_file *lk,
 		if (flags & LOCK_REPORT_ON_ERROR) {
 			struct strbuf buf = STRBUF_INIT;
 			unable_to_lock_message(path, errno, &buf);
-			error("%s", buf.buf);
+			_error("%s", buf.buf);
 			strbuf_release(&buf);
 		}
 	}

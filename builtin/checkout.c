@@ -207,9 +207,9 @@ static int check_stage(int stage, const struct cache_entry *ce, int pos,
 	if (!overlay_mode)
 		return 0;
 	if (stage == 2)
-		return error(_("path '%s' does not have our version"), ce->name);
+		return _error(_("path '%s' does not have our version"), ce->name);
 	else
-		return error(_("path '%s' does not have their version"), ce->name);
+		return _error(_("path '%s' does not have their version"), ce->name);
 }
 
 static int check_stages(unsigned stages, const struct cache_entry *ce, int pos)
@@ -225,7 +225,7 @@ static int check_stages(unsigned stages, const struct cache_entry *ce, int pos)
 		pos++;
 	}
 	if ((stages & seen) != stages)
-		return error(_("path '%s' does not have all necessary versions"),
+		return _error(_("path '%s' does not have all necessary versions"),
 			     name);
 	return 0;
 }
@@ -246,9 +246,9 @@ static int checkout_stage(int stage, const struct cache_entry *ce, int pos,
 		return 0;
 	}
 	if (stage == 2)
-		return error(_("path '%s' does not have our version"), ce->name);
+		return _error(_("path '%s' does not have our version"), ce->name);
 	else
-		return error(_("path '%s' does not have their version"), ce->name);
+		return _error(_("path '%s' does not have their version"), ce->name);
 }
 
 static int checkout_merged(int pos, const struct checkout *state,
@@ -280,7 +280,7 @@ static int checkout_merged(int pos, const struct checkout *state,
 		ce = the_repository->index->cache[pos];
 	}
 	if (is_null_oid(&threeway[1]) || is_null_oid(&threeway[2]))
-		return error(_("path '%s' does not have necessary versions"), path);
+		return _error(_("path '%s' does not have necessary versions"), path);
 
 	read_mmblob(&ancestor, &threeway[0]);
 	read_mmblob(&ours, &threeway[1]);
@@ -300,7 +300,7 @@ static int checkout_merged(int pos, const struct checkout *state,
 			path, "ours", "theirs");
 	if (merge_status < 0 || !result_buf.ptr) {
 		free(result_buf.ptr);
-		return error(_("path '%s': cannot merge"), path);
+		return _error(_("path '%s': cannot merge"), path);
 	}
 
 	/*
@@ -565,7 +565,7 @@ static int checkout_paths(const struct checkout_opts *opts,
 
 	repo_hold_locked_index(the_repository, &lock_file, LOCK_DIE_ON_ERROR);
 	if (repo_read_index_preload(the_repository, &opts->pathspec, 0) < 0)
-		return error(_("index file corrupt"));
+		return _error(_("index file corrupt"));
 
 	if (opts->source_tree)
 		read_tree_some(opts->source_tree, &opts->pathspec);
@@ -609,7 +609,7 @@ static int checkout_paths(const struct checkout_opts *opts,
 				errs |= check_stages((1<<2) | (1<<3), ce, pos);
 			} else {
 				errs = 1;
-				error(_("path '%s' is unmerged"), ce->name);
+				_error(_("path '%s' is unmerged"), ce->name);
 			}
 			pos = skip_same_name(ce, pos) - 1;
 		}
@@ -781,7 +781,7 @@ static int merge_working_tree(const struct checkout_opts *opts,
 
 	repo_hold_locked_index(the_repository, &lock_file, LOCK_DIE_ON_ERROR);
 	if (repo_read_index_preload(the_repository, NULL, 0) < 0)
-		return error(_("index file corrupt"));
+		return _error(_("index file corrupt"));
 
 	resolve_undo_clear_index(the_repository->index);
 	if (opts->new_orphan_branch && opts->orphan_from_empty_tree) {
@@ -794,7 +794,7 @@ static int merge_working_tree(const struct checkout_opts *opts,
 		new_tree = repo_get_commit_tree(the_repository,
 						new_branch_info->commit);
 		if (!new_tree)
-			return error(_("unable to read tree (%s)"),
+			return _error(_("unable to read tree (%s)"),
 				     oid_to_hex(&new_branch_info->commit->object.oid));
 	}
 	if (opts->discard_changes) {
@@ -810,7 +810,7 @@ static int merge_working_tree(const struct checkout_opts *opts,
 		refresh_index(the_repository->index, REFRESH_QUIET, NULL, NULL, NULL);
 
 		if (unmerged_index(the_repository->index)) {
-			error(_("you need to resolve your current index first"));
+			_error(_("you need to resolve your current index first"));
 			return 1;
 		}
 
@@ -1661,7 +1661,7 @@ static int parse_opt_conflict(const struct option *o, const char *arg, int unset
 	}
 	opts->conflict_style = parse_conflict_style_name(arg);
 	if (opts->conflict_style < 0)
-		return error(_("unknown conflict style '%s'"), arg);
+		return _error(_("unknown conflict style '%s'"), arg);
 	/* --conflict overrides a previous --no-merge */
 	if (!opts->merge)
 		opts->merge = -1;

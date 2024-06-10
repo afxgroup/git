@@ -136,6 +136,6 @@ int cmd_main(int argc, const char **argv)
 			return cmds[i].fn(argc, argv);
 		}
 	}
-	error("there is no tool named '%s'", argv[1]);
+	_error("there is no tool named '%s'", argv[1]);
 	die_usage();
 }

@@ -27,7 +27,7 @@ int fmt_merge_msg_config(const char *key, const char *value,
 		int is_bool;
 		merge_log_config = git_config_bool_or_int(key, value, ctx->kvi, &is_bool);
 		if (!is_bool && merge_log_config < 0)
-			return error("%s: negative length %s", key, value);
+			return _error("%s: negative length %s", key, value);
 		if (is_bool && merge_log_config)
 			merge_log_config = DEFAULT_MERGE_LOG_LEN;
 	} else if (!strcmp(key, "merge.branchdesc")) {

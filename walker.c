@@ -137,7 +137,7 @@ static int process_object(struct walker *walker, struct object *obj)
 			return -1;
 		return 0;
 	}
-	return error("Unable to determine requirements "
+	return _error("Unable to determine requirements "
 		     "of type %s for %s",
 		     type_name(obj->type), oid_to_hex(&obj->oid));
 }
@@ -289,7 +289,7 @@ int walker_fetch(struct walker *walker, int targets, char **target,
 		transaction = ref_store_transaction_begin(get_main_ref_store(the_repository),
 							  &err);
 		if (!transaction) {
-			error("%s", err.buf);
+			_error("%s", err.buf);
 			goto done;
 		}
 	}
@@ -302,7 +302,7 @@ int walker_fetch(struct walker *walker, int targets, char **target,
 
 	for (i = 0; i < targets; i++) {
 		if (interpret_target(walker, target[i], oids + i)) {
-			error("Could not interpret response from server '%s' as something to pull", target[i]);
+			_error("Could not interpret response from server '%s' as something to pull", target[i]);
 			goto done;
 		}
 		if (process(walker, lookup_unknown_object(the_repository, &oids[i])))
@@ -329,12 +329,12 @@ int walker_fetch(struct walker *walker, int targets, char **target,
 					   oids + i, NULL, NULL, NULL, 0,
 					   msg ? msg : "fetch (unknown)",
 					   &err)) {
-			error("%s", err.buf);
+			_error("%s", err.buf);
 			goto done;
 		}
 	}
 	if (ref_transaction_commit(transaction, &err)) {
-		error("%s", err.buf);
+		_error("%s", err.buf);
 		goto done;
 	}
 

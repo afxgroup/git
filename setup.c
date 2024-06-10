@@ -641,7 +641,7 @@ static enum extension_result handle_extension(const char *var,
 			return config_error_nonbool(var);
 		format = hash_algo_by_name(value);
 		if (format == GIT_HASH_UNKNOWN)
-			return error(_("invalid value for '%s': '%s'"),
+			return _error(_("invalid value for '%s': '%s'"),
 				     "extensions.objectformat", value);
 		data->hash_algo = format;
 		return EXTENSION_OK;
@@ -653,12 +653,12 @@ static enum extension_result handle_extension(const char *var,
 			return config_error_nonbool(var);
 		format = hash_algo_by_name(value);
 		if (format == GIT_HASH_UNKNOWN)
-			return error(_("invalid value for '%s': '%s'"),
+			return _error(_("invalid value for '%s': '%s'"),
 				     "extensions.compatobjectformat", value);
 		/* For now only support compatObjectFormat being specified once. */
 		for_each_string_list_item(item, &data->v1_only_extensions) {
 			if (!strcmp(item->string, "compatobjectformat"))
-				return error(_("'%s' already specified as '%s'"),
+				return _error(_("'%s' already specified as '%s'"),
 					"extensions.compatobjectformat",
 					hash_algos[data->compat_hash_algo].name);
 		}
@@ -671,7 +671,7 @@ static enum extension_result handle_extension(const char *var,
 			return config_error_nonbool(var);
 		format = ref_storage_format_by_name(value);
 		if (format == REF_STORAGE_FORMAT_UNKNOWN)
-			return error(_("invalid value for '%s': '%s'"),
+			return _error(_("invalid value for '%s': '%s'"),
 				     "extensions.refstorage", value);
 		data->ref_storage_format = format;
 		return EXTENSION_OK;
@@ -790,12 +790,12 @@ int upgrade_repository_format(int target_version)
 	}
 
 	if (verify_repository_format(&repo_fmt, &err) < 0) {
-		ret = error("cannot upgrade repository format from %d to %d: %s",
+		ret = _error("cannot upgrade repository format from %d to %d: %s",
 			    repo_fmt.version, target_version, err.buf);
 		goto out;
 	}
 	if (!repo_fmt.version && repo_fmt.unknown_extensions.nr) {
-		ret = error("cannot upgrade repository format: "
+		ret = _error("cannot upgrade repository format: "
 			    "unknown extension %s",
 			    repo_fmt.unknown_extensions.items[0].string);
 		goto out;
@@ -1825,7 +1825,11 @@ const char *resolve_gitdir_gently(const char *suspect, int *return_error_code)
 /* if any standard file descriptor is missing open it to /dev/null */
 void sanitize_stdfds(void)
 {
+#ifndef __amigaos4__
 	int fd = xopen("/dev/null", O_RDWR);
+#else
+	int fd = xopen("NIL:", O_RDWR);
+#endif
 	while (fd < 2)
 		fd = xdup(fd);
 	if (fd > 2)
@@ -1978,7 +1982,7 @@ static void copy_templates_1(struct strbuf *path, struct strbuf *template_path,
 					  template_path->buf, path->buf);
 		}
 		else
-			error(_("ignoring template %s"), template_path->buf);
+			_error(_("ignoring template %s"), template_path->buf);
 	}
 }
 

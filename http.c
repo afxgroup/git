@@ -166,7 +166,7 @@ int seek_buffer(void *clientp, curl_off_t offset, int origin)
 	if (origin != SEEK_SET)
 		BUG("seek_buffer only handles SEEK_SET");
 	if (offset < 0 || offset >= buffer->buf.len) {
-		error("curl seek would be outside of buffer");
+		_error("curl seek would be outside of buffer");
 		return CURL_SEEKFUNC_FAIL;
 	}
 
@@ -2252,7 +2252,7 @@ int http_get_file(const char *url, const char *filename,
 	strbuf_addf(&tmpfile, "%s.temp", filename);
 	result = fopen(tmpfile.buf, "a");
 	if (!result) {
-		error("Unable to open local file %s", tmpfile.buf);
+		_error("Unable to open local file %s", tmpfile.buf);
 		ret = HTTP_ERROR;
 		goto cleanup;
 	}
@@ -2309,7 +2309,7 @@ static char *fetch_pack_index(unsigned char *hash, const char *base_url)
 	tmp = strbuf_detach(&buf, NULL);
 
 	if (http_get_file(url, tmp, NULL) != HTTP_OK) {
-		error("Unable to get pack index %s", url);
+		_error("Unable to get pack index %s", url);
 		FREE_AND_NULL(tmp);
 	}
 
@@ -2482,7 +2482,7 @@ struct http_pack_request *new_direct_http_pack_request(
 	strbuf_addf(&preq->tmpfile, "%s.temp", sha1_pack_name(packed_git_hash));
 	preq->packfile = fopen(preq->tmpfile.buf, "a");
 	if (!preq->packfile) {
-		error("Unable to open local file %s for pack",
+		_error("Unable to open local file %s for pack",
 		      preq->tmpfile.buf);
 		goto abort;
 	}
@@ -2584,7 +2584,7 @@ struct http_object_request *new_http_object_request(const char *base_url,
 	strbuf_release(&filename);
 
 	if (freq->localfile != -1)
-		error("fd leakage in start: %d", freq->localfile);
+		_error("fd leakage in start: %d", freq->localfile);
 	freq->localfile = open(freq->tmpfile.buf,
 			       O_WRONLY | O_CREAT | O_EXCL, 0666);
 	/*

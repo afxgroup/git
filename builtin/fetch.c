@@ -694,7 +694,7 @@ static int s_update_ref(const char *action,
 out:
 	ref_transaction_free(our_transaction);
 	if (ret)
-		error("%s", err.buf);
+		_error("%s", err.buf);
 	strbuf_release(&err);
 	free(msg);
 	return ret;
@@ -1156,7 +1156,7 @@ static int store_updated_refs(struct display_state *display_state,
 		opt.exclude_hidden_refs_section = "fetch";
 		rm = ref_map;
 		if (check_connected(iterate_ref_map, &rm, &opt)) {
-			rc = error(_("%s did not send all necessary objects\n"),
+			rc = _error(_("%s did not send all necessary objects\n"),
 				   display_state->url);
 			goto abort;
 		}
@@ -1273,7 +1273,7 @@ static int store_updated_refs(struct display_state *display_state,
 	}
 
 	if (rc & STORE_REF_ERROR_DF_CONFLICT)
-		error(_("some local refs could not be updated; try running\n"
+		_error(_("some local refs could not be updated; try running\n"
 		      " 'git remote prune %s' to remove any old, conflicting "
 		      "branches"), remote_name);
 
@@ -1791,12 +1791,12 @@ static int do_fetch(struct transport *transport,
 cleanup:
 	if (retcode) {
 		if (err.len) {
-			error("%s", err.buf);
+			_error("%s", err.buf);
 			strbuf_reset(&err);
 		}
 		if (transaction && ref_transaction_abort(transaction, &err) &&
 		    err.len)
-			error("%s", err.buf);
+			_error("%s", err.buf);
 	}
 
 	display_state_release(&display_state);
@@ -1935,7 +1935,7 @@ static int fetch_failed_to_start(struct strbuf *out UNUSED,
 	struct parallel_fetch_state *state = cb;
 	const char *remote = task_cb;
 
-	state->result = error(_("could not fetch %s"), remote);
+	state->result = _error(_("could not fetch %s"), remote);
 
 	return 0;
 }
@@ -2005,7 +2005,7 @@ static int fetch_multiple(struct string_list *list, int max_children,
 				printf(_("Fetching %s\n"), name);
 			cmd.git_cmd = 1;
 			if (run_command(&cmd)) {
-				error(_("could not fetch %s"), name);
+				_error(_("could not fetch %s"), name);
 				result = 1;
 			}
 		}

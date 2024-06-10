@@ -215,7 +215,7 @@ int finish_delayed_checkout(struct checkout *state, int show_progress)
 				struct cache_entry* ce;
 
 				if (!path->util) {
-					error("external filter '%s' signaled that '%s' "
+					_error("external filter '%s' signaled that '%s' "
 					      "is now available although it has not been "
 					      "delayed earlier",
 					      filter->string, path->string);
@@ -247,7 +247,7 @@ int finish_delayed_checkout(struct checkout *state, int show_progress)
 	/* At this point we should not have any delayed paths anymore. */
 	errs |= dco->paths.nr;
 	for_each_string_list_item(path, &dco->paths) {
-		error("'%s' was not filtered properly", path->string);
+		_error("'%s' was not filtered properly", path->string);
 	}
 	string_list_clear(&dco->paths, 0);
 
@@ -302,7 +302,7 @@ static int write_entry(struct cache_entry *ce, char *path, struct conv_attrs *ca
 	case S_IFLNK:
 		new_blob = read_blob_entry(ce, &size);
 		if (!new_blob)
-			return error("unable to read sha1 file of %s (%s)",
+			return _error("unable to read sha1 file of %s (%s)",
 				     ce->name, oid_to_hex(&ce->oid));
 
 		/*
@@ -329,7 +329,7 @@ static int write_entry(struct cache_entry *ce, char *path, struct conv_attrs *ca
 		} else {
 			new_blob = read_blob_entry(ce, &size);
 			if (!new_blob)
-				return error("unable to read sha1 file of %s (%s)",
+				return _error("unable to read sha1 file of %s (%s)",
 					     ce->name, oid_to_hex(&ce->oid));
 		}
 
@@ -379,14 +379,14 @@ static int write_entry(struct cache_entry *ce, char *path, struct conv_attrs *ca
 		close(fd);
 		free(new_blob);
 		if (wrote < 0)
-			return error("unable to write file %s", path);
+			return _error("unable to write file %s", path);
 		break;
 
 	case S_IFGITLINK:
 		if (to_tempfile)
-			return error("cannot create temporary submodule %s", ce->name);
+			return _error("cannot create temporary submodule %s", ce->name);
 		if (mkdir(path, 0777) < 0)
-			return error("cannot create submodule directory %s", path);
+			return _error("cannot create submodule directory %s", path);
 		sub = submodule_from_ce(ce);
 		if (sub)
 			return submodule_move_head(ce->name, state->super_prefix,
@@ -395,7 +395,7 @@ static int write_entry(struct cache_entry *ce, char *path, struct conv_attrs *ca
 		break;
 
 	default:
-		return error("unknown file mode for %s in index", ce->name);
+		return _error("unknown file mode for %s in index", ce->name);
 	}
 
 finish:

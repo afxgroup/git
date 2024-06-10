@@ -1095,7 +1095,7 @@ static void handle_remote_ls_ctx(struct xml_ctx *ctx, int tag_closed)
 				if (repo->path)
 					url = repo->path;
 				if (strncmp(path, url, repo->path_len))
-					error("Parsed path '%s' does not match url: '%s'",
+					_error("Parsed path '%s' does not match url: '%s'",
 					      path, url);
 				else {
 					path += repo->path_len;
@@ -1248,16 +1248,16 @@ static int locking_available(void)
 			}
 			XML_ParserFree(parser);
 			if (!lock_flags)
-				error("no DAV locking support on %s",
+				_error("no DAV locking support on %s",
 				      repo->url);
 
 		} else {
-			error("Cannot access URL %s, return code %d",
+			_error("Cannot access URL %s, return code %d",
 			      repo->url, results.curl_result);
 			lock_flags = 0;
 		}
 	} else {
-		error("Unable to start PROPFIND request on %s", repo->url);
+		_error("Unable to start PROPFIND request on %s", repo->url);
 	}
 
 	strbuf_release(&out_buffer.buf);
@@ -1531,7 +1531,7 @@ static int remote_exists(const char *path)
 		ret = 0;
 		break;
 	case HTTP_ERROR:
-		error("unable to access '%s': %s", url, curl_errorstr);
+		_error("unable to access '%s': %s", url, curl_errorstr);
 		/* fallthrough */
 	default:
 		ret = -1;
@@ -1608,9 +1608,9 @@ static int delete_remote_branch(const char *pattern, int force)
 		remote_ref = refs;
 	}
 	if (match == 0)
-		return error("No remote branch matches %s", pattern);
+		return _error("No remote branch matches %s", pattern);
 	if (match != 1)
-		return error("More than one remote branch matches %s",
+		return _error("More than one remote branch matches %s",
 			     pattern);
 
 	/*
@@ -1619,12 +1619,12 @@ static int delete_remote_branch(const char *pattern, int force)
 	 */
 	fetch_symref("HEAD", &symref, &head_oid);
 	if (!symref)
-		return error("Remote HEAD is not a symref");
+		return _error("Remote HEAD is not a symref");
 
 	/* Remote branch must not be the remote HEAD */
 	for (i = 0; symref && i < MAXDEPTH; i++) {
 		if (!strcmp(remote_ref->name, symref))
-			return error("Remote branch %s is the current HEAD",
+			return _error("Remote branch %s is the current HEAD",
 				     remote_ref->name);
 		fetch_symref(symref, &symref, &head_oid);
 	}
@@ -1633,22 +1633,22 @@ static int delete_remote_branch(const char *pattern, int force)
 	if (!force) {
 		/* Remote HEAD must resolve to a known object */
 		if (symref)
-			return error("Remote HEAD symrefs too deep");
+			return _error("Remote HEAD symrefs too deep");
 		if (is_null_oid(&head_oid))
-			return error("Unable to resolve remote HEAD");
+			return _error("Unable to resolve remote HEAD");
 		if (!repo_has_object_file(the_repository, &head_oid))
-			return error("Remote HEAD resolves to object %s\nwhich does not exist locally, perhaps you need to fetch?", oid_to_hex(&head_oid));
+			return _error("Remote HEAD resolves to object %s\nwhich does not exist locally, perhaps you need to fetch?", oid_to_hex(&head_oid));
 
 		/* Remote branch must resolve to a known object */
 		if (is_null_oid(&remote_ref->old_oid))
-			return error("Unable to resolve remote branch %s",
+			return _error("Unable to resolve remote branch %s",
 				     remote_ref->name);
 		if (!repo_has_object_file(the_repository, &remote_ref->old_oid))
-			return error("Remote branch %s resolves to object %s\nwhich does not exist locally, perhaps you need to fetch?", remote_ref->name, oid_to_hex(&remote_ref->old_oid));
+			return _error("Remote branch %s resolves to object %s\nwhich does not exist locally, perhaps you need to fetch?", remote_ref->name, oid_to_hex(&remote_ref->old_oid));
 
 		/* Remote branch must be an ancestor of remote HEAD */
 		if (!verify_merge_base(&head_oid, remote_ref)) {
-			return error("The branch '%s' is not an ancestor "
+			return _error("The branch '%s' is not an ancestor "
 				     "of your current HEAD.\n"
 				     "If you are sure you want to delete it,"
 				     " run:\n\t'git http-push -D %s %s'",
@@ -1668,11 +1668,11 @@ static int delete_remote_branch(const char *pattern, int force)
 		run_active_slot(slot);
 		free(url);
 		if (results.curl_result != CURLE_OK)
-			return error("DELETE request failed (%d/%ld)",
+			return _error("DELETE request failed (%d/%ld)",
 				     results.curl_result, results.http_code);
 	} else {
 		free(url);
-		return error("Unable to start DELETE request");
+		return _error("Unable to start DELETE request");
 	}
 
 	return 0;
@@ -1792,7 +1792,7 @@ int cmd_main(int argc, const char **argv)
 		if (info_ref_lock)
 			repo->can_update_info_refs = 1;
 		else {
-			error("cannot lock existing info/refs");
+			_error("cannot lock existing info/refs");
 			rc = 1;
 			goto cleanup;
 		}
@@ -1841,7 +1841,7 @@ int cmd_main(int argc, const char **argv)
 
 		if (is_null_oid(&ref->peer_ref->new_oid)) {
 			if (delete_remote_branch(ref->name, 1) == -1) {
-				error("Could not remove %s", ref->name);
+				_error("Could not remove %s", ref->name);
 				if (helper_status)
 					printf("error %s cannot remove\n", ref->name);
 				rc = -4;
@@ -1876,7 +1876,7 @@ int cmd_main(int argc, const char **argv)
 				 * we were not up to date to begin with.
 				 */
 				/* stable plumbing output; do not modify or localize */
-				error("remote '%s' is not an ancestor of\n"
+				_error("remote '%s' is not an ancestor of\n"
 				      "local '%s'.\n"
 				      "Maybe you are not up-to-date and "
 				      "need to pull first?",

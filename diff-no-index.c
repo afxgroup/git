@@ -22,7 +22,7 @@ static int read_directory_contents(const char *path, struct string_list *list)
 	struct dirent *e;
 
 	if (!(dir = opendir(path)))
-		return error("Could not open directory %s", path);
+		return _error("Could not open directory %s", path);
 
 	while ((e = readdir_skip_dot_and_dotdot(dir)))
 		string_list_insert(list, e->d_name);
@@ -62,7 +62,7 @@ static int get_mode(const char *path, int *mode, enum special *special)
 		*mode = create_ce_mode(0666);
 		*special = SPECIAL_STDIN;
 	} else if (lstat(path, &st)) {
-		return error("Could not access '%s'", path);
+		return _error("Could not access '%s'", path);
 	} else {
 		*mode = st.st_mode;
 	}
@@ -117,7 +117,11 @@ static struct diff_filespec *noindex_filespec(const char *name, int mode,
 	struct diff_filespec *s;
 
 	if (!name)
+#ifndef __amigaos4__
 		name = "/dev/null";
+#else
+		name = "NIL:";
+#endif
 	s = alloc_filespec(name);
 	fill_filespec(s, null_oid(), 0, mode);
 	if (special == SPECIAL_STDIN)

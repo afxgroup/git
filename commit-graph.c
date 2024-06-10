@@ -258,7 +258,7 @@ struct commit_graph *load_commit_graph_one_fd_st(struct repository *r,
 
 	if (graph_size < GRAPH_MIN_SIZE) {
 		close(fd);
-		error(_("commit-graph file is too small"));
+		_error(_("commit-graph file is too small"));
 		return NULL;
 	}
 	graph_map = xmmap(NULL, graph_size, PROT_READ, MAP_PRIVATE, fd, 0);
@@ -281,7 +281,7 @@ static int graph_read_oid_fanout(const unsigned char *chunk_start,
 	int i;
 
 	if (chunk_size != 256 * sizeof(uint32_t))
-		return error(_("commit-graph oid fanout chunk is wrong size"));
+		return _error(_("commit-graph oid fanout chunk is wrong size"));
 	g->chunk_oid_fanout = (const uint32_t *)chunk_start;
 	g->num_commits = ntohl(g->chunk_oid_fanout[255]);
 
@@ -290,7 +290,7 @@ static int graph_read_oid_fanout(const unsigned char *chunk_start,
 		uint32_t oid_fanout2 = ntohl(g->chunk_oid_fanout[i + 1]);
 
 		if (oid_fanout1 > oid_fanout2) {
-			error(_("commit-graph fanout values out of order"));
+			_error(_("commit-graph fanout values out of order"));
 			return 1;
 		}
 	}
@@ -304,7 +304,7 @@ static int graph_read_oid_lookup(const unsigned char *chunk_start,
 	struct commit_graph *g = data;
 	g->chunk_oid_lookup = chunk_start;
 	if (chunk_size / g->hash_len != g->num_commits)
-		return error(_("commit-graph OID lookup chunk is the wrong size"));
+		return _error(_("commit-graph OID lookup chunk is the wrong size"));
 	return 0;
 }
 
@@ -313,7 +313,7 @@ static int graph_read_commit_data(const unsigned char *chunk_start,
 {
 	struct commit_graph *g = data;
 	if (chunk_size / GRAPH_DATA_WIDTH != g->num_commits)
-		return error(_("commit-graph commit data chunk is wrong size"));
+		return _error(_("commit-graph commit data chunk is wrong size"));
 	g->chunk_commit_data = chunk_start;
 	return 0;
 }
@@ -323,7 +323,7 @@ static int graph_read_generation_data(const unsigned char *chunk_start,
 {
 	struct commit_graph *g = data;
 	if (chunk_size / sizeof(uint32_t) != g->num_commits)
-		return error(_("commit-graph generations chunk is wrong size"));
+		return _error(_("commit-graph generations chunk is wrong size"));
 	g->chunk_generation_data = chunk_start;
 	return 0;
 }
@@ -389,21 +389,21 @@ struct commit_graph *parse_commit_graph(struct repo_settings *s,
 
 	graph_signature = get_be32(data);
 	if (graph_signature != GRAPH_SIGNATURE) {
-		error(_("commit-graph signature %X does not match signature %X"),
+		_error(_("commit-graph signature %X does not match signature %X"),
 		      graph_signature, GRAPH_SIGNATURE);
 		return NULL;
 	}
 
 	graph_version = *(unsigned char*)(data + 4);
 	if (graph_version != GRAPH_VERSION) {
-		error(_("commit-graph version %X does not match version %X"),
+		_error(_("commit-graph version %X does not match version %X"),
 		      graph_version, GRAPH_VERSION);
 		return NULL;
 	}
 
 	hash_version = *(unsigned char*)(data + 5);
 	if (hash_version != oid_version(the_hash_algo)) {
-		error(_("commit-graph hash version %X does not match version %X"),
+		_error(_("commit-graph hash version %X does not match version %X"),
 		      hash_version, oid_version(the_hash_algo));
 		return NULL;
 	}
@@ -418,7 +418,7 @@ struct commit_graph *parse_commit_graph(struct repo_settings *s,
 	if (graph_size < GRAPH_HEADER_SIZE +
 			 (graph->num_chunks + 1) * CHUNK_TOC_ENTRY_SIZE +
 			 GRAPH_FANOUT_SIZE + the_hash_algo->rawsz) {
-		error(_("commit-graph file is too small to hold %u chunks"),
+		_error(_("commit-graph file is too small to hold %u chunks"),
 		      graph->num_chunks);
 		free(graph);
 		return NULL;
@@ -431,15 +431,15 @@ struct commit_graph *parse_commit_graph(struct repo_settings *s,
 		goto free_and_return;
 
 	if (read_chunk(cf, GRAPH_CHUNKID_OIDFANOUT, graph_read_oid_fanout, graph)) {
-		error(_("commit-graph required OID fanout chunk missing or corrupted"));
+		_error(_("commit-graph required OID fanout chunk missing or corrupted"));
 		goto free_and_return;
 	}
 	if (read_chunk(cf, GRAPH_CHUNKID_OIDLOOKUP, graph_read_oid_lookup, graph)) {
-		error(_("commit-graph required OID lookup chunk missing or corrupted"));
+		_error(_("commit-graph required OID lookup chunk missing or corrupted"));
 		goto free_and_return;
 	}
 	if (read_chunk(cf, GRAPH_CHUNKID_DATA, graph_read_commit_data, graph)) {
-		error(_("commit-graph required commit data chunk missing or corrupted"));
+		_error(_("commit-graph required commit data chunk missing or corrupted"));
 		goto free_and_return;
 	}
 
@@ -948,7 +948,7 @@ static int fill_commit_in_graph(struct repository *r,
 	parent_data_pos = edge_value & GRAPH_EDGE_LAST_MASK;
 	do {
 		if (g->chunk_extra_edges_size / sizeof(uint32_t) <= parent_data_pos) {
-			error(_("commit-graph extra-edges pointer out of bounds"));
+			_error(_("commit-graph extra-edges pointer out of bounds"));
 			free_commit_list(item->parents);
 			item->parents = NULL;
 			item->object.parsed = 0;
@@ -1883,11 +1883,11 @@ static int fill_oids_from_packs(struct write_commit_graph_context *ctx,
 		strbuf_addstr(&packname, pack_indexes->items[i].string);
 		p = add_packed_git(packname.buf, packname.len, 1);
 		if (!p) {
-			ret = error(_("error adding pack %s"), packname.buf);
+			ret = _error(_("error adding pack %s"), packname.buf);
 			goto cleanup;
 		}
 		if (open_pack_index(p)) {
-			ret = error(_("error opening index for %s"), packname.buf);
+			ret = _error(_("error opening index for %s"), packname.buf);
 			goto cleanup;
 		}
 		for_each_object_in_pack(p, add_packed_commits, ctx,
@@ -1992,7 +1992,7 @@ static int write_graph_chunk_base(struct hashfile *f,
 	int num = write_graph_chunk_base_1(f, ctx->new_base_graph);
 
 	if (num != ctx->num_commit_graphs_after - 1) {
-		error(_("failed to write correct number of base graph ids"));
+		_error(_("failed to write correct number of base graph ids"));
 		return -1;
 	}
 
@@ -2023,7 +2023,7 @@ static int write_commit_graph_file(struct write_commit_graph_context *ctx)
 
 	if (safe_create_leading_directories(ctx->graph_name)) {
 		UNLEAK(ctx->graph_name);
-		error(_("unable to create leading directories of %s"),
+		_error(_("unable to create leading directories of %s"),
 			ctx->graph_name);
 		return -1;
 	}
@@ -2037,12 +2037,12 @@ static int write_commit_graph_file(struct write_commit_graph_context *ctx)
 
 		fd = git_mkstemp_mode(ctx->graph_name, 0444);
 		if (fd < 0) {
-			error(_("unable to create temporary graph layer"));
+			_error(_("unable to create temporary graph layer"));
 			return -1;
 		}
 
 		if (adjust_shared_perm(ctx->graph_name)) {
-			error(_("unable to adjust shared permissions for '%s'"),
+			_error(_("unable to adjust shared permissions for '%s'"),
 			      ctx->graph_name);
 			return -1;
 		}
@@ -2136,7 +2136,7 @@ static int write_commit_graph_file(struct write_commit_graph_context *ctx)
 		close(fd);
 
 		if (!chainf) {
-			error(_("unable to open commit-graph chain file"));
+			_error(_("unable to open commit-graph chain file"));
 			return -1;
 		}
 
@@ -2152,7 +2152,7 @@ static int write_commit_graph_file(struct write_commit_graph_context *ctx)
 				result = rename(ctx->base_graph_name, dest);
 
 				if (result) {
-					error(_("failed to rename base commit-graph file"));
+					_error(_("failed to rename base commit-graph file"));
 					return -1;
 				}
 			}
@@ -2175,7 +2175,7 @@ static int write_commit_graph_file(struct write_commit_graph_context *ctx)
 			fprintf(get_lock_file_fp(&lk), "%s\n", ctx->commit_graph_hash_after[i]);
 
 		if (result) {
-			error(_("failed to rename temporary commit-graph file"));
+			_error(_("failed to rename temporary commit-graph file"));
 			return -1;
 		}
 	}
@@ -2581,7 +2581,7 @@ int write_commit_graph(struct object_directory *odb,
 	copy_oids_to_commits(ctx);
 
 	if (ctx->commits.nr >= GRAPH_EDGE_LAST_MASK) {
-		error(_("too many commits to write graph"));
+		_error(_("too many commits to write graph"));
 		res = -1;
 		goto cleanup;
 	}

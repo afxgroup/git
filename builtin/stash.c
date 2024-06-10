@@ -210,7 +210,7 @@ static int get_stash_info(struct stash_info *info, int argc, const char **argv)
 	revision = info->revision.buf;
 
 	if (repo_get_oid(the_repository, revision, &info->w_commit))
-		return error(_("%s is not a valid reference"), revision);
+		return _error(_("%s is not a valid reference"), revision);
 
 	assert_stash_like(info, revision);
 
@@ -258,7 +258,7 @@ static int clear_stash(int argc, const char **argv, const char *prefix)
 			     PARSE_OPT_STOP_AT_NON_OPTION);
 
 	if (argc)
-		return error(_("git stash clear with arguments is "
+		return _error(_("git stash clear with arguments is "
 			       "unimplemented"));
 
 	return do_clear_stash();
@@ -300,7 +300,7 @@ static int reset_tree(struct object_id *i_tree, int update, int reset)
 		return -1;
 
 	if (write_locked_index(the_repository->index, &lock_file, COMMIT_LOCK))
-		return error(_("unable to write new index file"));
+		return _error(_("unable to write new index file"));
 
 	return 0;
 }
@@ -537,11 +537,11 @@ static int do_apply_stash(const char *prefix, struct stash_info *info,
 	repo_read_index_preload(the_repository, NULL, 0);
 	if (repo_refresh_and_write_index(the_repository, REFRESH_QUIET, 0, 0,
 					 NULL, NULL, NULL))
-		return error(_("could not write index"));
+		return _error(_("could not write index"));
 
 	if (write_index_as_tree(&c_tree, the_repository->index, get_index_file(), 0,
 				NULL))
-		return error(_("cannot apply a stash in the middle of a merge"));
+		return _error(_("cannot apply a stash in the middle of a merge"));
 
 	if (index) {
 		if (oideq(&info->b_tree, &info->i_tree) ||
@@ -552,21 +552,21 @@ static int do_apply_stash(const char *prefix, struct stash_info *info,
 
 			if (diff_tree_binary(&out, &info->w_commit)) {
 				strbuf_release(&out);
-				return error(_("could not generate diff %s^!."),
+				return _error(_("could not generate diff %s^!."),
 					     oid_to_hex(&info->w_commit));
 			}
 
 			ret = apply_cached(&out);
 			strbuf_release(&out);
 			if (ret)
-				return error(_("conflicts in index. "
+				return _error(_("conflicts in index. "
 					       "Try without --index."));
 
 			discard_index(the_repository->index);
 			repo_read_index(the_repository);
 			if (write_index_as_tree(&index_tree, the_repository->index,
 						get_index_file(), 0, NULL))
-				return error(_("could not save index tree"));
+				return _error(_("could not save index tree"));
 
 			reset_head();
 			discard_index(the_repository->index);
@@ -607,7 +607,7 @@ static int do_apply_stash(const char *prefix, struct stash_info *info,
 		rollback_lock_file(&lock);
 	else if (write_locked_index(o.repo->index, &lock,
 				      COMMIT_LOCK | SKIP_IF_UNCHANGED))
-		ret = error(_("could not write index"));
+		ret = _error(_("could not write index"));
 
 	if (ret) {
 		repo_rerere(the_repository, 0);
@@ -627,7 +627,7 @@ static int do_apply_stash(const char *prefix, struct stash_info *info,
 
 restore_untracked:
 	if (info->has_u && restore_untracked(&info->u_tree))
-		ret = error(_("could not restore untracked files from stash"));
+		ret = _error(_("could not restore untracked files from stash"));
 
 	if (!quiet) {
 		struct child_process cp = CHILD_PROCESS_INIT;
@@ -700,7 +700,7 @@ static int do_drop_stash(struct stash_info *info, int quiet)
 			printf_ln(_("Dropped %s (%s)"), info->revision.buf,
 				  oid_to_hex(&info->w_commit));
 	} else {
-		return error(_("%s: Could not drop stash entry"),
+		return _error(_("%s: Could not drop stash entry"),
 			     info->revision.buf);
 	}
 
@@ -719,7 +719,7 @@ static int get_stash_info_assert(struct stash_info *info, int argc,
 		return ret;
 
 	if (!info->is_stash_ref)
-		return error(_("'%s' is not a stash reference"), info->revision.buf);
+		return _error(_("'%s' is not a stash reference"), info->revision.buf);
 
 	return 0;
 }
@@ -1366,7 +1366,7 @@ static int do_create_stash(const struct pathspec *ps, struct strbuf *stash_msg_b
 	repo_read_index_preload(the_repository, NULL, 0);
 	if (repo_refresh_and_write_index(the_repository, REFRESH_QUIET, 0, 0,
 					 NULL, NULL, NULL) < 0) {
-		ret = error(_("could not write index"));
+		ret = _error(_("could not write index"));
 		goto done;
 	}
 
@@ -1558,7 +1558,7 @@ static int do_push_stash(const struct pathspec *ps, const char *stash_msg, int q
 
 	if (repo_refresh_and_write_index(the_repository, REFRESH_QUIET, 0, 0,
 					 NULL, NULL, NULL)) {
-		ret = error(_("could not write index"));
+		ret = _error(_("could not write index"));
 		goto done;
 	}
 

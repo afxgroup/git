@@ -241,12 +241,12 @@ static int verify_hostname(X509 *cert, const char *hostname)
 
 	/* try the common name */
 	if (!(subj = X509_get_subject_name(cert)))
-		return error("cannot get certificate subject");
+		return _error("cannot get certificate subject");
 	if ((len = X509_NAME_get_text_by_NID(subj, NID_commonName, cname, sizeof(cname))) < 0)
-		return error("cannot get certificate common name");
+		return _error("cannot get certificate common name");
 	if (strlen(cname) == (size_t)len && host_matches(hostname, cname))
 		return 0;
-	return error("certificate owner '%s' does not match hostname '%s'",
+	return _error("certificate owner '%s' does not match hostname '%s'",
 		     cname, hostname);
 }
 
@@ -321,7 +321,7 @@ static int ssl_socket_connect(struct imap_socket *sock, int use_tls_only, int ve
 		/* make sure the hostname matches that of the certificate */
 		cert = SSL_get_peer_certificate(sock->ssl);
 		if (!cert)
-			return error("unable to get peer certificate.");
+			return _error("unable to get peer certificate.");
 		if (verify_hostname(cert, server.host) < 0)
 			return -1;
 	}
@@ -899,7 +899,7 @@ static int auth_cram_md5(struct imap_store *ctx, const char *prompt)
 
 	ret = socket_write(&ctx->imap->buf.sock, response, strlen(response));
 	if (ret != strlen(response))
-		return error("IMAP error: sending response failed");
+		return _error("IMAP error: sending response failed");
 
 	free(response);
 

@@ -11,6 +11,8 @@ uname_R := $(shell sh -c 'uname -r 2>/dev/null || echo not')
 uname_P := $(shell sh -c 'uname -p 2>/dev/null || echo not')
 uname_V := $(shell sh -c 'uname -v 2>/dev/null || echo not')
 
+uname_S := AmigaOS4
+
 ifneq ($(findstring MINGW,$(uname_S)),)
 	uname_S := MINGW
 endif
@@ -46,6 +48,15 @@ ifeq ($(uname_S),OSF1)
 	SOCKLEN_T = int
 	NO_STRTOULL = YesPlease
 	NO_NSEC = YesPlease
+endif
+ifeq ($(uname_S),AmigaOS4)
+	NO_STRLCPY = YesPlease
+	LIBC_CONTAINS_LIBINTL = YesPlease
+	HAVE_CLOCK_GETTIME = YesPlease
+	HAVE_CLOCK_MONOTONIC = YesPlease
+	HAVE_GETDELIM = YesPlease
+	NO_REGEX=NeedsStartEnd
+	NO_POSIX_GOODIES = UnfortunatelyYes
 endif
 ifeq ($(uname_S),Linux)
 	HAVE_ALLOCA_H = YesPlease

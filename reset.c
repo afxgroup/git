@@ -116,7 +116,7 @@ int reset_head(struct repository *r, const struct reset_head_opts *opts)
 	if (!repo_get_oid(r, "HEAD", &head_oid)) {
 		head = &head_oid;
 	} else if (!oid || !reset_hard) {
-		ret = error(_("could not determine HEAD revision"));
+		ret = _error(_("could not determine HEAD revision"));
 		goto leave_reset_head;
 	}
 
@@ -141,18 +141,18 @@ int reset_head(struct repository *r, const struct reset_head_opts *opts)
 		unpack_tree_opts.reset = UNPACK_RESET_PROTECT_UNTRACKED;
 
 	if (repo_read_index_unmerged(r) < 0) {
-		ret = error(_("could not read index"));
+		ret = _error(_("could not read index"));
 		goto leave_reset_head;
 	}
 
 	if (!reset_hard && !fill_tree_descriptor(r, &desc[nr++], &head_oid)) {
-		ret = error(_("failed to find tree of %s"),
+		ret = _error(_("failed to find tree of %s"),
 			    oid_to_hex(&head_oid));
 		goto leave_reset_head;
 	}
 
 	if (!fill_tree_descriptor(r, &desc[nr++], oid)) {
-		ret = error(_("failed to find tree of %s"), oid_to_hex(oid));
+		ret = _error(_("failed to find tree of %s"), oid_to_hex(oid));
 		goto leave_reset_head;
 	}
 
@@ -163,14 +163,14 @@ int reset_head(struct repository *r, const struct reset_head_opts *opts)
 
 	tree = parse_tree_indirect(oid);
 	if (!tree) {
-		ret = error(_("unable to read tree (%s)"), oid_to_hex(oid));
+		ret = _error(_("unable to read tree (%s)"), oid_to_hex(oid));
 		goto leave_reset_head;
 	}
 
 	prime_cache_tree(r, r->index, tree);
 
 	if (write_locked_index(r->index, &lock, COMMIT_LOCK) < 0) {
-		ret = error(_("could not write index"));
+		ret = _error(_("could not write index"));
 		goto leave_reset_head;
 	}
 

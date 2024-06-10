@@ -193,11 +193,11 @@ static int check_branch_commit(const char *branchname, const char *refname,
 {
 	struct commit *rev = lookup_commit_reference(the_repository, oid);
 	if (!force && !rev) {
-		error(_("couldn't look up commit object for '%s'"), refname);
+		_error(_("couldn't look up commit object for '%s'"), refname);
 		return -1;
 	}
 	if (!force && !branch_merged(kinds, branchname, rev, head_rev)) {
-		error(_("the branch '%s' is not fully merged"), branchname);
+		_error(_("the branch '%s' is not fully merged"), branchname);
 		advise_if_enabled(ADVICE_FORCE_DELETE_BRANCH,
 				  _("If you are sure you want to delete it, "
 				  "run 'git branch -D %s'"), branchname);
@@ -264,7 +264,7 @@ static int delete_branches(int argc, const char **argv, int force, int kinds,
 		if (kinds == FILTER_REFS_BRANCHES) {
 			const char *path;
 			if ((path = branch_checked_out(name))) {
-				error(_("cannot delete branch '%s' "
+				_error(_("cannot delete branch '%s' "
 					"used by worktree at '%s'"),
 				      bname.buf, path);
 				ret = 1;
@@ -280,7 +280,7 @@ static int delete_branches(int argc, const char **argv, int force, int kinds,
 					     &oid, &flags);
 		if (!target) {
 			if (remote_branch) {
-				error(_("remote-tracking branch '%s' not found"), bname.buf);
+				_error(_("remote-tracking branch '%s' not found"), bname.buf);
 			} else {
 				char *virtual_name = mkpathdup(fmt_remotes, bname.buf);
 				char *virtual_target = refs_resolve_refdup(get_main_ref_store(the_repository),
@@ -293,11 +293,11 @@ static int delete_branches(int argc, const char **argv, int force, int kinds,
 				FREE_AND_NULL(virtual_name);
 
 				if (virtual_target)
-					error(_("branch '%s' not found.\n"
+					_error(_("branch '%s' not found.\n"
 						"Did you forget --remote?"),
 						bname.buf);
 				else
-					error(_("branch '%s' not found"), bname.buf);
+					_error(_("branch '%s' not found"), bname.buf);
 				FREE_AND_NULL(virtual_target);
 			}
 			ret = 1;
@@ -560,7 +560,7 @@ static int replace_each_worktree_head_symref(struct worktree **worktrees,
 
 		refs = get_worktree_ref_store(worktrees[i]);
 		if (refs_update_symref(refs, "HEAD", newref, logmsg))
-			ret = error(_("HEAD of working tree %s is not updated"),
+			ret = _error(_("HEAD of working tree %s is not updated"),
 				    worktrees[i]->path);
 	}
 

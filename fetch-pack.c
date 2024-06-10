@@ -2087,7 +2087,7 @@ struct ref *fetch_pack(struct fetch_pack_args *args,
 		if (args->deepen)
 			opt.is_deepening_fetch = 1;
 		if (check_connected(iterate_ref_map, &iterator, &opt)) {
-			error(_("remote did not send all necessary objects"));
+			_error(_("remote did not send all necessary objects"));
 			free_refs(ref_cpy);
 			ref_cpy = NULL;
 			rollback_shallow_file(the_repository, &shallow_lock);
@@ -2231,10 +2231,10 @@ int report_unmatched_refs(struct ref **sought, int nr_sought)
 		case REF_MATCHED:
 			continue;
 		case REF_NOT_MATCHED:
-			error(_("no such remote ref %s"), sought[i]->name);
+			_error(_("no such remote ref %s"), sought[i]->name);
 			break;
 		case REF_UNADVERTISED_NOT_ALLOWED:
-			error(_("Server does not allow request for unadvertised object %s"),
+			_error(_("Server does not allow request for unadvertised object %s"),
 			      sought[i]->name);
 			break;
 		}

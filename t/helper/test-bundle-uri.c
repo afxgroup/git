@@ -50,7 +50,7 @@ static int cmd__bundle_uri_parse(int argc, const char **argv, enum input_mode mo
 			die("failed to open '%s'", argv[0]);
 		while (strbuf_getline(&sb, fp) != EOF) {
 			if (bundle_uri_parse_line(&list, sb.buf))
-				err = error("bad line: '%s'", sb.buf);
+				err = _error("bad line: '%s'", sb.buf);
 		}
 		fclose(fp);
 		break;
@@ -93,7 +93,7 @@ static int cmd_ls_remote(int argc, const char **argv)
 
 	transport = transport_get(remote, NULL);
 	if (transport_get_remote_bundle_uri(transport) < 0) {
-		error(_("could not get the bundle-uri list"));
+		_error(_("could not get the bundle-uri list"));
 		status = 1;
 		goto cleanup;
 	}
@@ -128,7 +128,7 @@ int cmd__bundle_uri(int argc, const char **argv)
 		return cmd__bundle_uri_parse(argc - 1, argv + 1, CONFIG_FILE);
 	if (!strcmp(argv[1], "ls-remote"))
 		return cmd_ls_remote(argc - 1, argv + 1);
-	error("there is no test-tool bundle-uri tool '%s'", argv[1]);
+	_error("there is no test-tool bundle-uri tool '%s'", argv[1]);
 
 usage:
 	usage_with_options(usage, options);

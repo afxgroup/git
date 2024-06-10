@@ -102,7 +102,7 @@ struct string_list *resolve_undo_read(const char *data, unsigned long size)
 
 error:
 	string_list_clear(resolve_undo, 1);
-	error("Index records invalid resolve-undo information");
+	_error("Index records invalid resolve-undo information");
 	return NULL;
 }
 
@@ -143,7 +143,7 @@ int unmerge_index_entry(struct index_state *istate, const char *path,
 				      path, i + 1, 0);
 		ce->ce_flags |= ce_flags;
 		if (add_index_entry(istate, ce, ADD_CACHE_OK_TO_ADD))
-			return error("cannot unmerge '%s'", path);
+			return _error("cannot unmerge '%s'", path);
 	}
 	return 0;
 }

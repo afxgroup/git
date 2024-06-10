@@ -717,7 +717,7 @@ static int git_sparse_checkout_init(const char *repo)
 
 	cmd.git_cmd = 1;
 	if (run_command(&cmd)) {
-		error(_("failed to initialize sparse-checkout"));
+		_error(_("failed to initialize sparse-checkout"));
 		result = 1;
 	}
 

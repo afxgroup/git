@@ -27,7 +27,7 @@ int read_link_extension(struct index_state *istate,
 	int ret;
 
 	if (sz < the_hash_algo->rawsz)
-		return error("corrupt link extension (too short)");
+		return _error("corrupt link extension (too short)");
 	si = init_split_index(istate);
 	oidread(&si->base_oid, data);
 	data += the_hash_algo->rawsz;
@@ -37,15 +37,15 @@ int read_link_extension(struct index_state *istate,
 	si->delete_bitmap = ewah_new();
 	ret = ewah_read_mmap(si->delete_bitmap, data, sz);
 	if (ret < 0)
-		return error("corrupt delete bitmap in link extension");
+		return _error("corrupt delete bitmap in link extension");
 	data += ret;
 	sz -= ret;
 	si->replace_bitmap = ewah_new();
 	ret = ewah_read_mmap(si->replace_bitmap, data, sz);
 	if (ret < 0)
-		return error("corrupt replace bitmap in link extension");
+		return _error("corrupt replace bitmap in link extension");
 	if (ret != sz)
-		return error("garbage at the end of link extension");
+		return _error("garbage at the end of link extension");
 	return 0;
 }
 

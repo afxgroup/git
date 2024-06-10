@@ -909,7 +909,7 @@ static enum bisect_error check_good_are_ancestors_of_bad(struct repository *r,
 	struct commit **rev;
 
 	if (!current_bad_oid)
-		return error(_("a %s revision is needed"), term_bad);
+		return _error(_("a %s revision is needed"), term_bad);
 
 	filename = git_pathdup("BISECT_ANCESTORS_OK");
 

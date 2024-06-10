@@ -38,6 +38,7 @@ static int installed_child_cleanup_handler;
 
 static void cleanup_children(int sig, int in_signal)
 {
+#ifndef __amigaos4__
 	struct child_to_clean *children_to_wait_for = NULL;
 
 	while (children_to_clean) {
@@ -76,6 +77,7 @@ static void cleanup_children(int sig, int in_signal)
 		if (!in_signal)
 			free(p);
 	}
+#endif
 }
 
 static void cleanup_children_on_signal(int sig)
@@ -278,13 +280,16 @@ static const char **prepare_shell_cmd(struct strvec *out, const char **argv)
 		BUG("shell command is empty");
 
 	if (strcspn(argv[0], "|&;<>()$`\\\"' \t\n*?[#~=%") != strlen(argv[0])) {
+#ifndef __amigaos4__
 #ifndef GIT_WINDOWS_NATIVE
 		strvec_push(out, SHELL_PATH);
 #else
 		strvec_push(out, "sh");
 #endif
 		strvec_push(out, "-c");
-
+#else
+		strvec_push(out, "run");
+#endif
 		/*
 		 * If we have no extra arguments, we do not even need to
 		 * bother with the "$@" magic.
@@ -299,7 +304,7 @@ static const char **prepare_shell_cmd(struct strvec *out, const char **argv)
 	return out->v;
 }
 
-#ifndef GIT_WINDOWS_NATIVE
+#if !defined(GIT_WINDOWS_NATIVE) && !defined(__amigaos4__)
 static int child_notifier = -1;
 
 enum child_errcode {
@@ -348,7 +353,7 @@ static void child_close_pair(int fd[2])
 
 static void child_error_fn(const char *err UNUSED, va_list params UNUSED)
 {
-	const char msg[] = "error() should not be called in child\n";
+	const char msg[] = "_error() should not be called in child\n";
 	xwrite(2, msg, sizeof(msg) - 1);
 }
 
@@ -541,6 +546,7 @@ static inline void set_cloexec(int fd)
 
 static int wait_or_whine(pid_t pid, const char *argv0, int in_signal)
 {
+#ifndef __amigaos4__
 	int status, code = -1;
 	pid_t waiting;
 	int failed_errno = 0;
@@ -554,11 +560,11 @@ static int wait_or_whine(pid_t pid, const char *argv0, int in_signal)
 			error_errno("waitpid for %s failed", argv0);
 	} else if (waiting != pid) {
 		if (!in_signal)
-			error("waitpid is confused (%s)", argv0);
+			_error("waitpid is confused (%s)", argv0);
 	} else if (WIFSIGNALED(status)) {
 		code = WTERMSIG(status);
 		if (!in_signal && code != SIGINT && code != SIGQUIT && code != SIGPIPE)
-			error("%s died of signal %d", argv0, code);
+			_error("%s died of signal %d", argv0, code);
 		/*
 		 * This return value is chosen so that code & 0xff
 		 * mimics the exit code that a POSIX shell would report for
@@ -569,7 +575,7 @@ static int wait_or_whine(pid_t pid, const char *argv0, int in_signal)
 		code = WEXITSTATUS(status);
 	} else {
 		if (!in_signal)
-			error("waitpid is confused (%s)", argv0);
+			_error("waitpid is confused (%s)", argv0);
 	}
 
 	if (!in_signal)
@@ -577,6 +583,9 @@ static int wait_or_whine(pid_t pid, const char *argv0, int in_signal)
 
 	errno = failed_errno;
 	return code;
+#else
+	return -1;
+#endif
 }
 
 static void trace_add_env(struct strbuf *dst, const char *const *deltaenv)
@@ -712,7 +721,7 @@ int start_command(struct child_process *cmd)
 				close(cmd->out);
 			str = "standard error";
 fail_pipe:
-			error("cannot create %s pipe for %s: %s",
+	_error("cannot create %s pipe for %s: %s",
 				str, cmd->args.v[0], strerror(failed_errno));
 			child_process_clear(cmd);
 			errno = failed_errno;
@@ -729,7 +738,7 @@ fail_pipe:
 	if (cmd->close_object_store)
 		close_object_store(the_repository->objects);
 
-#ifndef GIT_WINDOWS_NATIVE
+#if !defined(GIT_WINDOWS_NATIVE) && !defined(__amigaos4__)
 {
 	int notify_pipe[2];
 	int null_fd = -1;
@@ -750,8 +759,12 @@ fail_pipe:
 		notify_pipe[0] = notify_pipe[1] = -1;
 
 	if (cmd->no_stdin || cmd->no_stdout || cmd->no_stderr) {
+#ifndef __amigaos4__
 		null_fd = xopen("/dev/null", O_RDWR | O_CLOEXEC);
 		set_cloexec(null_fd);
+#else
+		null_fd = xopen("NIL:", O_RDWR);
+#endif
 	}
 
 	childenv = prep_childenv(cmd->env.v);
@@ -878,7 +891,56 @@ fail_pipe:
 	free(childenv);
 }
 end_of_spawn:
+#elif defined(__amigaos4__)
+	{
+		int fhin = 0, fhout = 1, fherr = 2;
+		const char **sargv = cmd->args.v;
+		struct strvec nargv = STRVEC_INIT;
 
+		if (cmd->no_stdin)
+			fhin = open("NIL:", O_RDWR);
+		else if (need_in)
+			fhin = dup(fdin[0]);
+		else if (cmd->in)
+			fhin = dup(cmd->in);
+
+		if (cmd->no_stderr)
+			fherr = open("NIL:", O_RDWR);
+		else if (need_err)
+			fherr = dup(fderr[1]);
+		else if (cmd->err > 2)
+			fherr = dup(cmd->err);
+
+		if (cmd->no_stdout)
+			fhout = open("NIL:", O_RDWR);
+		else if (cmd->stdout_to_stderr)
+			fhout = dup(fherr);
+		else if (need_out)
+			fhout = dup(fdout[1]);
+		else if (cmd->out > 1)
+			fhout = dup(cmd->out);
+
+		if (cmd->git_cmd)
+			cmd->args.v = prepare_git_cmd(&nargv, sargv);
+		else if (cmd->use_shell)
+			cmd->args.v = prepare_shell_cmd(&nargv, sargv);
+
+		cmd->pid = spawnvp(P_WAIT, cmd->args.v[0], cmd->args.v);
+		failed_errno = errno;
+		if (cmd->pid < 0)
+			error_errno("cannot spawn %s", cmd->args.v[0]);
+		if (cmd->clean_on_exit && cmd->pid >= 0)
+			mark_child_for_cleanup(cmd->pid, cmd);
+
+		strvec_clear(&nargv);
+		cmd->args.v = sargv;
+		if (fhin != 0)
+			close(fhin);
+		if (fhout != 1)
+			close(fhout);
+		if (fherr != 2)
+			close(fherr);
+	}
 #else
 {
 	int fhin = 0, fhout = 1, fherr = 2;
@@ -1018,7 +1080,7 @@ static void *run_thread(void *data)
 		sigemptyset(&mask);
 		sigaddset(&mask, SIGPIPE);
 		if (pthread_sigmask(SIG_BLOCK, &mask, NULL)) {
-			ret = error("unable to block SIGPIPE in async thread");
+			ret = _error("unable to block SIGPIPE in async thread");
 			return (void *)ret;
 		}
 	}
@@ -1225,7 +1287,7 @@ int start_async(struct async *async)
 	{
 		int err = pthread_create(&async->tid, NULL, run_thread, async);
 		if (err) {
-			error(_("cannot create async thread: %s"), strerror(err));
+			_error(_("cannot create async thread: %s"), strerror(err));
 			goto error;
 		}
 	}
@@ -1257,7 +1319,7 @@ int finish_async(struct async *async)
 	void *ret = (void *)(intptr_t)(-1);
 
 	if (pthread_join(async->tid, &ret))
-		error("pthread_join failed");
+		_error("pthread_join failed");
 	invalidate_lstat_cache();
 	return (int)(intptr_t)ret;
 
@@ -1871,7 +1933,7 @@ enum start_bg_result start_bg_command(struct child_process *cmd,
 
 	time(&time_limit);
 	time_limit += timeout_sec;
-
+#ifndef __amigaos4__
 wait:
 	pid_seen = waitpid(cmd->pid, &wait_status, WNOHANG);
 
@@ -1951,7 +2013,7 @@ wait:
 
 	trace2_child_exit(cmd, -1);
 	sbgr = SBGR_ERROR;
-
+#endif
 done:
 	child_process_clear(cmd);
 	invalidate_lstat_cache();

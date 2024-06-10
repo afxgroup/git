@@ -268,7 +268,7 @@ static int daemon__run_server(void)
 	 */
 	ret = ipc_server_run(cl_args.path, &opts, test_app_cb, (void*)&my_app_data);
 	if (ret == -2)
-		error("socket/pipe already in use: '%s'", cl_args.path);
+		_error("socket/pipe already in use: '%s'", cl_args.path);
 	else if (ret == -1)
 		error_errno("could not start server on: '%s'", cl_args.path);
 
@@ -324,13 +324,13 @@ static int daemon__start_server(void)
 	default:
 	case SBGR_ERROR:
 	case SBGR_CB_ERROR:
-		return error("daemon failed to start");
+		return _error("daemon failed to start");
 
 	case SBGR_TIMEOUT:
-		return error("daemon not online yet");
+		return _error("daemon not online yet");
 
 	case SBGR_DIED:
-		return error("daemon terminated");
+		return _error("daemon terminated");
 	}
 }
 
@@ -350,17 +350,17 @@ static int client__probe_server(void)
 		return 0;
 
 	case IPC_STATE__NOT_LISTENING:
-		return error("no server listening at '%s'", cl_args.path);
+		return _error("no server listening at '%s'", cl_args.path);
 
 	case IPC_STATE__PATH_NOT_FOUND:
-		return error("path not found '%s'", cl_args.path);
+		return _error("path not found '%s'", cl_args.path);
 
 	case IPC_STATE__INVALID_PATH:
-		return error("invalid pipe/socket name '%s'", cl_args.path);
+		return _error("invalid pipe/socket name '%s'", cl_args.path);
 
 	case IPC_STATE__OTHER_ERROR:
 	default:
-		return error("other error for '%s'", cl_args.path);
+		return _error("other error for '%s'", cl_args.path);
 	}
 }
 
@@ -396,7 +396,7 @@ static int client__send_ipc(void)
 		return 0;
 	}
 
-	return error("failed to send '%s' to '%s'", command, cl_args.path);
+	return _error("failed to send '%s' to '%s'", command, cl_args.path);
 }
 
 /*
@@ -436,7 +436,7 @@ static int client__stop_server(void)
 
 		time(&now);
 		if (now > time_limit)
-			return error("daemon has not shutdown yet");
+			return _error("daemon has not shutdown yet");
 	}
 }
 
@@ -466,7 +466,7 @@ static int do_sendbytes(int bytecount, char byte, const char *path,
 		return 0;
 	}
 
-	return error("client failed to sendbytes(%d, '%c') to '%s'",
+	return _error("client failed to sendbytes(%d, '%c') to '%s'",
 		     bytecount, byte, path);
 }
 

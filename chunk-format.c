@@ -118,11 +118,11 @@ int read_table_of_contents(struct chunkfile *cf,
 		chunk_offset = get_be64(table_of_contents + 4);
 
 		if (!chunk_id) {
-			error(_("terminating chunk id appears earlier than expected"));
+			_error(_("terminating chunk id appears earlier than expected"));
 			return 1;
 		}
 		if (chunk_offset % expected_alignment != 0) {
-			error(_("chunk id %"PRIx32" not %d-byte aligned"),
+			_error(_("chunk id %"PRIx32" not %d-byte aligned"),
 			      chunk_id, expected_alignment);
 			return 1;
 		}
@@ -132,14 +132,14 @@ int read_table_of_contents(struct chunkfile *cf,
 
 		if (next_chunk_offset < chunk_offset ||
 		    next_chunk_offset > mfile_size - the_hash_algo->rawsz) {
-			error(_("improper chunk offset(s) %"PRIx64" and %"PRIx64""),
+			_error(_("improper chunk offset(s) %"PRIx64" and %"PRIx64""),
 			      chunk_offset, next_chunk_offset);
 			return -1;
 		}
 
 		for (i = 0; i < cf->chunks_nr; i++) {
 			if (cf->chunks[i].id == chunk_id) {
-				error(_("duplicate chunk ID %"PRIx32" found"),
+				_error(_("duplicate chunk ID %"PRIx32" found"),
 					chunk_id);
 				return -1;
 			}
@@ -153,7 +153,7 @@ int read_table_of_contents(struct chunkfile *cf,
 
 	chunk_id = get_be32(table_of_contents);
 	if (chunk_id) {
-		error(_("final chunk has non-zero id %"PRIx32""), chunk_id);
+		_error(_("final chunk has non-zero id %"PRIx32""), chunk_id);
 		return -1;
 	}
 

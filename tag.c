@@ -25,7 +25,7 @@ static int run_gpg_verify(const char *buf, unsigned long size, unsigned flags)
 	if (!parse_signature(buf, size, &payload, &signature)) {
 		if (flags & GPG_VERIFY_VERBOSE)
 			write_in_full(1, buf, size);
-		return error("no signature found");
+		return _error("no signature found");
 	}
 
 	sigc.payload_type = SIGNATURE_PAYLOAD_TAG;
@@ -51,7 +51,7 @@ int gpg_verify_tag(const struct object_id *oid, const char *name_to_report,
 
 	type = oid_object_info(the_repository, oid, NULL);
 	if (type != OBJ_TAG)
-		return error("%s: cannot verify a non-tag object of type %s.",
+		return _error("%s: cannot verify a non-tag object of type %s.",
 				name_to_report ?
 				name_to_report :
 				repo_find_unique_abbrev(the_repository, oid, DEFAULT_ABBREV),
@@ -59,7 +59,7 @@ int gpg_verify_tag(const struct object_id *oid, const char *name_to_report,
 
 	buf = repo_read_object_file(the_repository, oid, &type, &size);
 	if (!buf)
-		return error("%s: unable to read file.",
+		return _error("%s: unable to read file.",
 				name_to_report ?
 				name_to_report :
 				repo_find_unique_abbrev(the_repository, oid, DEFAULT_ABBREV));
@@ -86,7 +86,7 @@ struct object *deref_tag(struct repository *r, struct object *o, const char *war
 			return NULL;
 		if (!warnlen)
 			warnlen = strlen(warn);
-		error("missing object referenced by '%.*s'", warnlen, warn);
+		_error("missing object referenced by '%.*s'", warnlen, warn);
 	}
 	return o;
 }
@@ -181,12 +181,12 @@ int parse_tag_buffer(struct repository *r, struct tag *item, const void *data, u
 	} else if (!strcmp(type, tag_type)) {
 		item->tagged = (struct object *)lookup_tag(r, &oid);
 	} else {
-		return error("unknown tag type '%s' in %s",
+		return _error("unknown tag type '%s' in %s",
 			     type, oid_to_hex(&item->object.oid));
 	}
 
 	if (!item->tagged)
-		return error("bad tag pointer to %s in %s",
+		return _error("bad tag pointer to %s in %s",
 			     oid_to_hex(&oid),
 			     oid_to_hex(&item->object.oid));
 
@@ -222,11 +222,11 @@ int parse_tag(struct tag *item)
 	data = repo_read_object_file(the_repository, &item->object.oid, &type,
 				     &size);
 	if (!data)
-		return error("Could not read %s",
+		return _error("Could not read %s",
 			     oid_to_hex(&item->object.oid));
 	if (type != OBJ_TAG) {
 		free(data);
-		return error("Object %s not a tag",
+		return _error("Object %s not a tag",
 			     oid_to_hex(&item->object.oid));
 	}
 	ret = parse_tag_buffer(the_repository, item, data, size);

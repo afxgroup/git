@@ -142,7 +142,7 @@ static int run_one_gc_recent_objects_hook(struct oidset *set,
 		const char *rest;
 
 		if (parse_oid_hex(buf.buf, &oid, &rest) || *rest) {
-			ret = error(_("invalid extra cruft tip: '%s'"), buf.buf);
+			ret = _error(_("invalid extra cruft tip: '%s'"), buf.buf);
 			break;
 		}
 

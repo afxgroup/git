@@ -363,7 +363,7 @@ int color_parse_mem(const char *value, int value_len, char *dst)
 	OUT(0);
 	return 0;
 bad:
-	return error(_("invalid color value: %.*s"), value_len, value);
+	return _error(_("invalid color value: %.*s"), value_len, value);
 #undef OUT
 }
 

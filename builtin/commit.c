@@ -1071,7 +1071,7 @@ static int prepare_to_commit(const char *index_file, const char *prefix,
 	read_index_from(the_repository->index, index_file, get_git_dir());
 
 	if (cache_tree_update(the_repository->index, 0)) {
-		error(_("Error building trees"));
+		_error(_("Error building trees"));
 		return 0;
 	}
 
@@ -1473,7 +1473,7 @@ static int git_status_config(const char *k, const char *v,
 
 		u = parse_untracked_setting_name(v);
 		if (u == SHOW_UNTRACKED_FILES_ERROR)
-			return error(_("Invalid untracked files mode '%s'"), v);
+			return _error(_("Invalid untracked files mode '%s'"), v);
 		s->show_untracked_files = u;
 		return 0;
 	}

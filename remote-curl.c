@@ -745,13 +745,13 @@ static int rpc_seek(void *clientp, curl_off_t offset, int origin)
 
 	if (rpc->initial_buffer) {
 		if (offset < 0 || offset > rpc->len) {
-			error("curl seek would be outside of rpc buffer");
+			_error("curl seek would be outside of rpc buffer");
 			return CURL_SEEKFUNC_FAIL;
 		}
 		rpc->pos = offset;
 		return CURL_SEEKFUNC_OK;
 	}
-	error(_("unable to rewind rpc post data - try increasing http.postBuffer"));
+	_error(_("unable to rewind rpc post data - try increasing http.postBuffer"));
 	return CURL_SEEKFUNC_FAIL;
 }
 
@@ -855,7 +855,7 @@ static int run_slot(struct active_request_slot *slot,
 				strbuf_addstr(&msg, curl_errorstr);
 			}
 		}
-		error(_("RPC failed; %s"), msg.buf);
+		_error(_("RPC failed; %s"), msg.buf);
 		strbuf_release(&msg);
 	}
 
@@ -1072,9 +1072,9 @@ retry:
 		err = -1;
 
 	if (rpc_in_data.pktline_state.len_filled)
-		err = error(_("%d bytes of length header were received"), rpc_in_data.pktline_state.len_filled);
+		err = _error(_("%d bytes of length header were received"), rpc_in_data.pktline_state.len_filled);
 	if (rpc_in_data.pktline_state.remaining)
-		err = error(_("%d bytes of body are still expected"), rpc_in_data.pktline_state.remaining);
+		err = _error(_("%d bytes of body are still expected"), rpc_in_data.pktline_state.remaining);
 
 	if (stateless_connect)
 		packet_response_end(rpc->in);
@@ -1181,7 +1181,7 @@ static int fetch_dumb(int nr_heads, struct ref **to_fetch)
 		free(targets[i]);
 	free(targets);
 
-	return ret ? error(_("fetch failed.")) : 0;
+	return ret ? _error(_("fetch failed.")) : 0;
 }
 
 static int fetch_git(struct discovery *heads,
@@ -1552,7 +1552,7 @@ int cmd_main(int argc, const char **argv)
 
 	setup_git_directory_gently(&nongit);
 	if (argc < 2) {
-		error(_("remote-curl: usage: git remote-curl <remote> [<url>]"));
+		_error(_("remote-curl: usage: git remote-curl <remote> [<url>]"));
 		goto cleanup;
 	}
 
@@ -1584,7 +1584,7 @@ int cmd_main(int argc, const char **argv)
 
 		if (strbuf_getline_lf(&buf, stdin) == EOF) {
 			if (ferror(stdin))
-				error(_("remote-curl: error reading command stream from git"));
+				_error(_("remote-curl: error reading command stream from git"));
 			goto cleanup;
 		}
 		if (buf.len == 0)
@@ -1640,7 +1640,7 @@ int cmd_main(int argc, const char **argv)
 			if (!stateless_connect(arg))
 				break;
 		} else {
-			error(_("remote-curl: unknown command '%s' from git"), buf.buf);
+			_error(_("remote-curl: unknown command '%s' from git"), buf.buf);
 			goto cleanup;
 		}
 		strbuf_reset(&buf);

@@ -636,8 +636,8 @@ perllibdir_relative = $(patsubst $(prefix)/%,%,$(perllibdir))
 export prefix bindir sharedir sysconfdir perllibdir localedir
 
 # Set our default programs
-CC = cc
-AR = ar
+CC = ppc-amigaos-gcc
+AR = ppc-amigaos-ar
 RM = rm -f
 DIFF = diff
 TAR = tar
@@ -761,7 +761,7 @@ EXTRA_PROGRAMS =
 # ... and all the rest that could be moved out of bindir to gitexecdir
 PROGRAMS += $(EXTRA_PROGRAMS)
 
-PROGRAM_OBJS += daemon.o
+#PROGRAM_OBJS += daemon.o
 PROGRAM_OBJS += http-backend.o
 PROGRAM_OBJS += imap-send.o
 PROGRAM_OBJS += sh-i18n--envsubst.o
@@ -1358,9 +1358,9 @@ endif
 # tweaked by config.* below as well as the command-line, both of
 # which'll override these defaults.
 # Older versions of GCC may require adding "-std=gnu99" at the end.
-CFLAGS = -g -O2 -Wall
-LDFLAGS =
-CC_LD_DYNPATH = -Wl,-rpath,
+CFLAGS = -mcrt=clib4 -g -O2 -Wall
+LDFLAGS = -mcrt=clib4
+#CC_LD_DYNPATH = -Wl,-rpath,
 BASIC_CFLAGS = -I.
 BASIC_LDFLAGS =
 
@@ -1607,7 +1607,7 @@ else
 		CURL_LIBCURL = $(call libpath_template,$(CURLDIR)/$(lib))
         else
 		CURL_CFLAGS =
-		CURL_LIBCURL =
+		CURL_LIBCURL = -lcurl -lssl -lcrypto -lbrotlidec -lbrotlicommon -lpsl -lidn2 -lnghttp2 -lunistring
         endif
 
         ifndef CURL_LDFLAGS

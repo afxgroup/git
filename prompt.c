@@ -30,7 +30,7 @@ static char *do_askpass(const char *cmd, const char *prompt)
 		err = 1;
 
 	if (err) {
-		error("unable to read askpass response from '%s'", cmd);
+		_error("unable to read askpass response from '%s'", cmd);
 		strbuf_release(&buffer);
 		return NULL;
 	}

@@ -16,7 +16,7 @@ static int get_disk_info(struct strbuf *out)
 
 	strbuf_realpath(&buf, ".", 1);
 	if (!GetDiskFreeSpaceExA(buf.buf, &avail2caller, &total, &avail)) {
-		error(_("could not determine free disk size for '%s'"),
+		_error(_("could not determine free disk size for '%s'"),
 		      buf.buf);
 		res = -1;
 		goto cleanup;
@@ -26,7 +26,7 @@ static int get_disk_info(struct strbuf *out)
 	if (!GetVolumeInformationA(buf.buf, volume_name, sizeof(volume_name),
 				   &serial_number, &component_length, &flags,
 				   fs_name, sizeof(fs_name))) {
-		error(_("could not get info for '%s'"), buf.buf);
+		_error(_("could not get info for '%s'"), buf.buf);
 		res = -1;
 		goto cleanup;
 	}

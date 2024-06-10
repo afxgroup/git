@@ -335,7 +335,7 @@ static void copy_sparse_checkout(const char *worktree_git_dir)
 	if (file_exists(from_file)) {
 		if (safe_create_leading_directories(to_file) ||
 			copy_file(to_file, from_file, 0666))
-			error(_("failed to copy '%s' to '%s'; sparse-checkout may not work correctly"),
+			_error(_("failed to copy '%s' to '%s'; sparse-checkout may not work correctly"),
 				from_file, to_file);
 	}
 
@@ -354,7 +354,7 @@ static void copy_filtered_worktree_config(const char *worktree_git_dir)
 
 		if (safe_create_leading_directories(to_file) ||
 			copy_file(to_file, from_file, 0666)) {
-			error(_("failed to copy worktree config from '%s' to '%s'"),
+			_error(_("failed to copy worktree config from '%s' to '%s'"),
 				from_file, to_file);
 			goto worktree_copy_cleanup;
 		}
@@ -366,12 +366,12 @@ static void copy_filtered_worktree_config(const char *worktree_git_dir)
 			bare &&
 			git_config_set_multivar_in_file_gently(
 				to_file, "core.bare", NULL, "true", NULL, 0))
-			error(_("failed to unset '%s' in '%s'"),
+			_error(_("failed to unset '%s' in '%s'"),
 				"core.bare", to_file);
 		if (!git_configset_get(&cs, "core.worktree") &&
 			git_config_set_in_file_gently(to_file,
 							"core.worktree", NULL, NULL))
-			error(_("failed to unset '%s' in '%s'"),
+			_error(_("failed to unset '%s' in '%s'"),
 				"core.worktree", to_file);
 
 		git_configset_clear(&cs);
@@ -504,7 +504,7 @@ static int add_worktree(const char *path, const char *refname,
 	 */
 	wt = get_linked_worktree(name, 1);
 	if (!wt) {
-		ret = error(_("could not find created worktree '%s'"), name);
+		ret = _error(_("could not find created worktree '%s'"), name);
 		goto done;
 	}
 	wt_refs = get_worktree_ref_store(wt);

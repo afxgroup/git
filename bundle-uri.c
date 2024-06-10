@@ -324,7 +324,7 @@ static int download_https_uri_to_file(const char *file, const char *uri)
 	strbuf_release(&line);
 
 	if (!found_get) {
-		result = error(_("insufficient capabilities"));
+		result = _error(_("insufficient capabilities"));
 		goto cleanup;
 	}
 
@@ -919,14 +919,14 @@ int bundle_uri_parse_line(struct bundle_list *list, const char *line)
 	struct strbuf key = STRBUF_INIT;
 
 	if (!strlen(line))
-		return error(_("bundle-uri: got an empty line"));
+		return _error(_("bundle-uri: got an empty line"));
 
 	equals = strchr(line, '=');
 
 	if (!equals)
-		return error(_("bundle-uri: line is not of the form 'key=value'"));
+		return _error(_("bundle-uri: line is not of the form 'key=value'"));
 	if (line == equals || !*(equals + 1))
-		return error(_("bundle-uri: line has empty key or value"));
+		return _error(_("bundle-uri: line has empty key or value"));
 
 	strbuf_add(&key, line, equals - line);
 	result = bundle_list_update(key.buf, equals + 1, list);

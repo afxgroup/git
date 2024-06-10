@@ -312,7 +312,7 @@ static int parse_color_moved(const char *arg)
 	else if (!strcmp(arg, "dimmed_zebra"))
 		return COLOR_MOVED_ZEBRA_DIM;
 	else
-		return error(_("color moved setting must be one of 'no', 'default', 'blocks', 'zebra', 'dimmed-zebra', 'plain'"));
+		return _error(_("color moved setting must be one of 'no', 'default', 'blocks', 'zebra', 'dimmed-zebra', 'plain'"));
 }
 
 static unsigned parse_color_moved_ws(const char *arg)
@@ -340,7 +340,7 @@ static unsigned parse_color_moved_ws(const char *arg)
 			ret |= COLOR_MOVED_WS_ALLOW_INDENTATION_CHANGE;
 		else {
 			ret |= COLOR_MOVED_WS_ERROR;
-			error(_("unknown color-moved-ws mode '%s', possible values are 'ignore-space-change', 'ignore-space-at-eol', 'ignore-all-space', 'allow-indentation-change'"), sb.buf);
+			_error(_("unknown color-moved-ws mode '%s', possible values are 'ignore-space-change', 'ignore-space-at-eol', 'ignore-all-space', 'allow-indentation-change'"), sb.buf);
 		}
 
 		strbuf_release(&sb);
@@ -348,7 +348,7 @@ static unsigned parse_color_moved_ws(const char *arg)
 
 	if ((ret & COLOR_MOVED_WS_ALLOW_INDENTATION_CHANGE) &&
 	    (ret & XDF_WHITESPACE_FLAGS)) {
-		error(_("color-moved-ws: allow-indentation-change cannot be combined with other whitespace modes"));
+		_error(_("color-moved-ws: allow-indentation-change cannot be combined with other whitespace modes"));
 		ret |= COLOR_MOVED_WS_ERROR;
 	}
 
@@ -457,7 +457,7 @@ int git_diff_ui_config(const char *var, const char *value,
 			return config_error_nonbool(var);
 		diff_algorithm = parse_algorithm_value(value);
 		if (diff_algorithm < 0)
-			return error(_("unknown value for config '%s': %s"),
+			return _error(_("unknown value for config '%s': %s"),
 				     var, value);
 		return 0;
 	}
@@ -497,7 +497,7 @@ int git_diff_basic_config(const char *var, const char *value,
 			return config_error_nonbool(var);
 		val = parse_ws_error_highlight(value);
 		if (val < 0)
-			return error(_("unknown value for config '%s': %s"),
+			return _error(_("unknown value for config '%s': %s"),
 				     var, value);
 		ws_error_highlight_default = val;
 		return 0;
@@ -4979,27 +4979,27 @@ static int diff_opt_stat(const struct option *opt, const char *value, int unset)
 			if (*end == ',')
 				count = strtoul(end+1, &end, 10);
 			if (*end)
-				return error(_("invalid --stat value: %s"), value);
+				return _error(_("invalid --stat value: %s"), value);
 		}
 	} else if (!strcmp(opt->long_name, "stat-width")) {
 		width = strtoul(value, &end, 10);
 		if (*end)
-			return error(_("%s expects a numerical value"),
+			return _error(_("%s expects a numerical value"),
 				     opt->long_name);
 	} else if (!strcmp(opt->long_name, "stat-name-width")) {
 		name_width = strtoul(value, &end, 10);
 		if (*end)
-			return error(_("%s expects a numerical value"),
+			return _error(_("%s expects a numerical value"),
 				     opt->long_name);
 	} else if (!strcmp(opt->long_name, "stat-graph-width")) {
 		graph_width = strtoul(value, &end, 10);
 		if (*end)
-			return error(_("%s expects a numerical value"),
+			return _error(_("%s expects a numerical value"),
 				     opt->long_name);
 	} else if (!strcmp(opt->long_name, "stat-count")) {
 		count = strtoul(value, &end, 10);
 		if (*end)
-			return error(_("%s expects a numerical value"),
+			return _error(_("%s expects a numerical value"),
 				     opt->long_name);
 	} else
 		BUG("%s should not get here", opt->long_name);
@@ -5051,7 +5051,7 @@ static int diff_opt_diff_filter(const struct option *option,
 
 		bit = (0 <= optch && optch <= 'Z') ? filter_bit[optch] : 0;
 		if (!bit)
-			return error(_("unknown change class '%c' in --diff-filter=%s"),
+			return _error(_("unknown change class '%c' in --diff-filter=%s"),
 				     optarg[i], optarg);
 		if (negate)
 			opt->filter_not |= bit;
@@ -5075,7 +5075,7 @@ static int diff_opt_ws_error_highlight(const struct option *option,
 
 	BUG_ON_OPT_NEG(unset);
 	if (val < 0)
-		return error(_("unknown value after ws-error-highlight=%.*s"),
+		return _error(_("unknown value after ws-error-highlight=%.*s"),
 			     -1 - val, arg);
 	opt->ws_error_highlight = val;
 	return 0;
@@ -5089,7 +5089,7 @@ static int diff_opt_find_object(const struct option *option,
 
 	BUG_ON_OPT_NEG(unset);
 	if (repo_get_oid(the_repository, arg, &oid))
-		return error(_("unable to resolve '%s'"), arg);
+		return _error(_("unable to resolve '%s'"), arg);
 
 	if (!opt->objfind)
 		CALLOC_ARRAY(opt->objfind, 1);
@@ -5139,13 +5139,13 @@ static int diff_opt_break_rewrites(const struct option *opt,
 	if (*arg == 0)
 		opt2 = 0;
 	else if (*arg != '/')
-		return error(_("%s expects <n>/<m> form"), opt->long_name);
+		return _error(_("%s expects <n>/<m> form"), opt->long_name);
 	else {
 		arg++;
 		opt2 = parse_rename_score(&arg);
 	}
 	if (*arg != 0)
-		return error(_("%s expects <n>/<m> form"), opt->long_name);
+		return _error(_("%s expects <n>/<m> form"), opt->long_name);
 	*break_opt = opt1 | (opt2 << 16);
 	return 0;
 }
@@ -5157,7 +5157,7 @@ static int diff_opt_char(const struct option *opt,
 
 	BUG_ON_OPT_NEG(unset);
 	if (arg[1])
-		return error(_("%s expects a character, got '%s'"),
+		return _error(_("%s expects a character, got '%s'"),
 			     opt->long_name, arg);
 	*value = arg[0];
 	return 0;
@@ -5178,7 +5178,7 @@ static int diff_opt_color_moved(const struct option *opt,
 	} else {
 		int cm = parse_color_moved(arg);
 		if (cm < 0)
-			return error(_("bad --color-moved argument: %s"), arg);
+			return _error(_("bad --color-moved argument: %s"), arg);
 		options->color_moved = cm;
 	}
 	return 0;
@@ -5197,7 +5197,7 @@ static int diff_opt_color_moved_ws(const struct option *opt,
 
 	cm = parse_color_moved_ws(arg);
 	if (cm & COLOR_MOVED_WS_ERROR)
-		return error(_("invalid mode '%s' in --color-moved-ws"), arg);
+		return _error(_("invalid mode '%s' in --color-moved-ws"), arg);
 	options->color_moved_ws_handling = cm;
 	return 0;
 }
@@ -5238,7 +5238,7 @@ static int diff_opt_diff_algorithm(const struct option *opt,
 	BUG_ON_OPT_NEG(unset);
 
 	if (set_diff_algorithm(options, arg))
-		return error(_("option diff-algorithm accepts \"myers\", "
+		return _error(_("option diff-algorithm accepts \"myers\", "
 			       "\"minimal\", \"patience\" and \"histogram\""));
 
 	options->ignore_driver_algorithm = 1;
@@ -5289,7 +5289,7 @@ static int diff_opt_find_copies(const struct option *opt,
 		arg = "";
 	options->rename_score = parse_rename_score(&arg);
 	if (*arg != 0)
-		return error(_("invalid argument to %s"), opt->long_name);
+		return _error(_("invalid argument to %s"), opt->long_name);
 
 	if (options->detect_rename == DIFF_DETECT_COPY)
 		options->flags.find_copies_harder = 1;
@@ -5309,7 +5309,7 @@ static int diff_opt_find_renames(const struct option *opt,
 		arg = "";
 	options->rename_score = parse_rename_score(&arg);
 	if (*arg != 0)
-		return error(_("invalid argument to %s"), opt->long_name);
+		return _error(_("invalid argument to %s"), opt->long_name);
 
 	options->detect_rename = DIFF_DETECT_RENAME;
 	return 0;
@@ -5426,7 +5426,7 @@ static int diff_opt_ignore_regex(const struct option *opt,
 	BUG_ON_OPT_NEG(unset);
 	regex = xmalloc(sizeof(*regex));
 	if (regcomp(regex, arg, REG_EXTENDED | REG_NEWLINE))
-		return error(_("invalid regex given to -I: '%s'"), arg);
+		return _error(_("invalid regex given to -I: '%s'"), arg);
 	ALLOC_GROW(options->ignore_regex, options->ignore_regex_nr + 1,
 		   options->ignore_regex_alloc);
 	options->ignore_regex[options->ignore_regex_nr++] = regex;
@@ -5475,7 +5475,7 @@ static int diff_opt_submodule(const struct option *opt,
 	if (!arg)
 		arg = "log";
 	if (parse_submodule_params(options, arg))
-		return error(_("failed to parse --submodule option parameter: '%s'"),
+		return _error(_("failed to parse --submodule option parameter: '%s'"),
 			     arg);
 	return 0;
 }
@@ -5506,7 +5506,7 @@ static int diff_opt_unified(const struct option *opt,
 	if (arg) {
 		options->context = strtol(arg, &s, 10);
 		if (*s)
-			return error(_("%s expects a numerical value"), "--unified");
+			return _error(_("%s expects a numerical value"), "--unified");
 	}
 	enable_patch_output(&options->output_format);
 
@@ -5531,7 +5531,7 @@ static int diff_opt_word_diff(const struct option *opt,
 		else if (!strcmp(arg, "none"))
 			options->word_diff = DIFF_WORDS_NONE;
 		else
-			return error(_("bad --word-diff argument: %s"), arg);
+			return _error(_("bad --word-diff argument: %s"), arg);
 	} else {
 		if (options->word_diff == DIFF_WORDS_NONE)
 			options->word_diff = DIFF_WORDS_PLAIN;
@@ -6213,7 +6213,7 @@ static void diff_resolve_rename_copy(void)
 			/* This is a "no-change" entry and should not
 			 * happen anymore, but prepare for broken callers.
 			 */
-			error("feeding unmodified %s to diffcore",
+			_error("feeding unmodified %s to diffcore",
 			      p->one->path);
 			p->status = DIFF_STATUS_UNKNOWN;
 		}
@@ -6416,7 +6416,7 @@ static int diff_get_patch_id(struct diff_options *options, struct object_id *oid
 		memset(&xpp, 0, sizeof(xpp));
 		memset(&xecfg, 0, sizeof(xecfg));
 		if (p->status == 0)
-			return error("internal diff status error");
+			return _error("internal diff status error");
 		if (p->status == DIFF_STATUS_UNKNOWN)
 			continue;
 		if (diff_unmodified_pair(p))
@@ -6477,13 +6477,13 @@ static int diff_get_patch_id(struct diff_options *options, struct object_id *oid
 
 			if (fill_mmfile(options->repo, &mf1, p->one) < 0 ||
 			    fill_mmfile(options->repo, &mf2, p->two) < 0)
-				return error("unable to read files to diff");
+				return _error("unable to read files to diff");
 			xpp.flags = 0;
 			xecfg.ctxlen = 3;
 			xecfg.flags = XDL_EMIT_NO_HUNK_HDR;
 			if (xdi_diff_outf(&mf1, &mf2, NULL,
 					  patch_id_consume, &data, &xpp, &xecfg))
-				return error("unable to generate patch-id diff for %s",
+				return _error("unable to generate patch-id diff for %s",
 					     p->one->path);
 		}
 		flush_one_hunk(oid, &ctx);
@@ -7213,7 +7213,7 @@ static char *run_textconv(struct repository *r,
 	}
 
 	if (strbuf_read(&buf, child.out, 0) < 0)
-		err = error("error reading from textconv command '%s'", pgm);
+		err = _error("error reading from textconv command '%s'", pgm);
 	close(child.out);
 
 	if (finish_command(&child) || err) {

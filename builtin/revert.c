@@ -63,7 +63,7 @@ static int parse_opt_empty(const struct option *opt, const char *arg, int unset)
 	else if (!strcmp(arg, "keep"))
 		*opt_value = KEEP_EMPTY_COMMIT;
 	else
-		return error(_("invalid value for '%s': '%s'"), "--empty", arg);
+		return _error(_("invalid value for '%s': '%s'"), "--empty", arg);
 
 	return 0;
 }
@@ -81,7 +81,7 @@ static int option_parse_m(const struct option *opt,
 
 	replay->mainline = strtol(arg, &end, 10);
 	if (*end || replay->mainline <= 0)
-		return error(_("option `%s' expects a number greater than zero"),
+		return _error(_("option `%s' expects a number greater than zero"),
 			     opt->long_name);
 
 	return 0;

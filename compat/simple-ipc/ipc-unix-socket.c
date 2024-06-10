@@ -203,14 +203,14 @@ int ipc_client_send_command_to_connection(
 	if (write_packetized_from_buf_no_flush(message, message_len,
 					       connection->fd) < 0 ||
 	    packet_flush_gently(connection->fd) < 0) {
-		ret = error(_("could not send IPC command"));
+		ret = _error(_("could not send IPC command"));
 		goto done;
 	}
 
 	if (read_packetized_to_strbuf(
 		    connection->fd, answer,
 		    PACKET_READ_GENTLE_ON_EOF | PACKET_READ_GENTLE_ON_READ_ERROR) < 0) {
-		ret = error(_("could not read IPC response"));
+		ret = _error(_("could not read IPC response"));
 		goto done;
 	}
 

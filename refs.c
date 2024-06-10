@@ -366,7 +366,7 @@ int ref_resolves_to_object(const char *refname,
 	if (flags & REF_ISBROKEN)
 		return 0;
 	if (!repo_has_object_file(repo, oid)) {
-		error(_("%s does not point to a valid object!"), refname);
+		_error(_("%s does not point to a valid object!"), refname);
 		return 0;
 	}
 	return 1;
@@ -915,7 +915,7 @@ int refs_delete_ref(struct ref_store *refs, const char *msg,
 	    ref_transaction_delete(transaction, refname, old_oid,
 				   flags, msg, &err) ||
 	    ref_transaction_commit(transaction, &err)) {
-		error("%s", err.buf);
+		_error("%s", err.buf);
 		ref_transaction_free(transaction);
 		strbuf_release(&err);
 		return 1;
@@ -1293,7 +1293,7 @@ int refs_update_ref(struct ref_store *refs, const char *msg,
 
 		switch (onerr) {
 		case UPDATE_REFS_MSG_ON_ERR:
-			error(str, refname, err.buf);
+			_error(str, refname, err.buf);
 			break;
 		case UPDATE_REFS_DIE_ON_ERR:
 			die(str, refname, err.buf);
@@ -2062,7 +2062,7 @@ int refs_update_symref(struct ref_store *refs, const char *ref,
 				   target, NULL, REF_NO_DEREF,
 				   logmsg, &err) ||
 	    ref_transaction_commit(transaction, &err)) {
-		ret = error("%s", err.buf);
+		ret = _error("%s", err.buf);
 	}
 
 	strbuf_release(&err);
@@ -2464,7 +2464,7 @@ int refs_delete_refs(struct ref_store *refs, const char *logmsg,
 	 */
 	transaction = ref_store_transaction_begin(refs, &err);
 	if (!transaction) {
-		ret = error("%s", err.buf);
+		ret = _error("%s", err.buf);
 		goto out;
 	}
 
@@ -2482,10 +2482,10 @@ int refs_delete_refs(struct ref_store *refs, const char *logmsg,
 	ret = ref_transaction_commit(transaction, &err);
 	if (ret) {
 		if (refnames->nr == 1)
-			error(_("could not delete reference %s: %s"),
+			_error(_("could not delete reference %s: %s"),
 			      refnames->items[0].string, err.buf);
 		else
-			error(_("could not delete references: %s"), err.buf);
+			_error(_("could not delete references: %s"), err.buf);
 	}
 
 out:

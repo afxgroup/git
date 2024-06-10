@@ -70,7 +70,7 @@ static int filter_object(const char *path, unsigned mode,
 
 	*buf = repo_read_object_file(the_repository, oid, &type, size);
 	if (!*buf)
-		return error(_("cannot read object %s '%s'"),
+		return _error(_("cannot read object %s '%s'"),
 			     oid_to_hex(oid), path);
 	if ((type == OBJ_BLOB) && S_ISREG(mode)) {
 		struct strbuf strbuf = STRBUF_INIT;
@@ -899,7 +899,7 @@ static int batch_option_callback(const struct option *opt,
 	BUG_ON_OPT_NEG(unset);
 
 	if (bo->enabled) {
-		return error(_("only one batch option may be specified"));
+		return _error(_("only one batch option may be specified"));
 	}
 
 	bo->enabled = 1;

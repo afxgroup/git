@@ -261,7 +261,7 @@ static void handle_content_type(struct mailinfo *mi, struct strbuf *line)
 	if (slurp_attr(line->buf, "boundary=", boundary)) {
 		strbuf_insertstr(boundary, 0, "--");
 		if (++mi->content_top >= &mi->content[MAX_BOUNDARIES]) {
-			error("Too many boundaries to handle");
+			_error("Too many boundaries to handle");
 			mi->input_error = -1;
 			mi->content_top = &mi->content[MAX_BOUNDARIES] - 1;
 			return;
@@ -464,7 +464,7 @@ static int convert_to_utf8(struct mailinfo *mi,
 				  mi->metainfo_charset, charset, &out_len);
 	if (!out) {
 		mi->input_error = -1;
-		return error("cannot convert from %s to %s",
+		return _error("cannot convert from %s to %s",
 			     charset, mi->metainfo_charset);
 	}
 	strbuf_attach(line, out, out_len, out_len);
@@ -960,7 +960,7 @@ again:
 		   will fail first.  But just in case..
 		 */
 		if (--mi->content_top < mi->content) {
-			error("Detected mismatched boundaries, can't recover");
+			_error("Detected mismatched boundaries, can't recover");
 			mi->input_error = -1;
 			mi->content_top = mi->content;
 			strbuf_release(&newline);
@@ -1165,7 +1165,7 @@ static void handle_info(struct mailinfo *mi)
 			continue;
 
 		if (memchr(hdr->buf, '\0', hdr->len)) {
-			error("a NUL byte in '%s' is not allowed.", header[i]);
+			_error("a NUL byte in '%s' is not allowed.", header[i]);
 			mi->input_error = -1;
 		}
 
@@ -1213,7 +1213,7 @@ int mailinfo(struct mailinfo *mi, const char *msg, const char *patch)
 		peek = fgetc(mi->input);
 		if (peek == EOF) {
 			fclose(cmitmsg);
-			return error("empty patch: '%s'", patch);
+			return _error("empty patch: '%s'", patch);
 		}
 	} while (isspace(peek));
 	ungetc(peek, mi->input);
@@ -1260,7 +1260,7 @@ static int git_mailinfo_config(const char *var, const char *value,
 		if (!value)
 			return config_error_nonbool(var);
 		if (mailinfo_parse_quoted_cr_action(value, &mi->quoted_cr) != 0)
-			return error(_("bad action '%s' for '%s'"), value, var);
+			return _error(_("bad action '%s' for '%s'"), value, var);
 		return 0;
 	}
 	/* perhaps others here */

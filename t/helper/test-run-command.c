@@ -306,20 +306,20 @@ static int quote_stress_test(int argc, const char **argv)
 		strvec_pushv(&cp.args, args.v);
 		strbuf_reset(&out);
 		if (pipe_command(&cp, NULL, 0, &out, 0, NULL, 0) < 0)
-			return error("Failed to spawn child process");
+			return _error("Failed to spawn child process");
 
 		for (j = 0, k = 0; j < arg_count; j++) {
 			const char *arg = args.v[j + arg_offset];
 
 			if (strcmp(arg, out.buf + k))
-				ret = error("incorrectly quoted arg: '%s', "
+				ret = _error("incorrectly quoted arg: '%s', "
 					    "echoed back as '%s'",
 					     arg, out.buf + k);
 			k += strlen(out.buf + k) + 1;
 		}
 
 		if (k != out.len)
-			ret = error("got %d bytes, but consumed only %d",
+			ret = _error("got %d bytes, but consumed only %d",
 				     (int)out.len, (int)k);
 
 		if (ret) {

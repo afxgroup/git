@@ -262,7 +262,7 @@ int error_errno(const char *fmt, ...)
 }
 
 #undef error
-int error(const char *err, ...)
+int _error(const char *err, ...)
 {
 	va_list params;
 

@@ -45,7 +45,7 @@ static enum rebase_type parse_config_rebase(const char *key, const char *value,
 	if (fatal)
 		die(_("invalid value for '%s': '%s'"), key, value);
 	else
-		error(_("invalid value for '%s': '%s'"), key, value);
+		_error(_("invalid value for '%s': '%s'"), key, value);
 
 	return REBASE_INVALID;
 }

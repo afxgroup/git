@@ -15,11 +15,11 @@ static int cmd_sync(void)
 
 	dwRet = GetCurrentDirectory(MAX_PATH, Buffer);
 	if ((0 == dwRet) || (dwRet > MAX_PATH))
-		return error("Error getting current directory");
+		return _error("Error getting current directory");
 
 	dos_drive_prefix = has_dos_drive_prefix(Buffer);
 	if (!dos_drive_prefix)
-		return error("'%s': invalid drive letter", Buffer);
+		return _error("'%s': invalid drive letter", Buffer);
 
 	memcpy(szVolumeAccessPath, Buffer, dos_drive_prefix);
 	szVolumeAccessPath[dos_drive_prefix] = '\0';
@@ -27,11 +27,11 @@ static int cmd_sync(void)
 	hVolWrite = CreateFile(szVolumeAccessPath, GENERIC_READ | GENERIC_WRITE,
 		FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 	if (INVALID_HANDLE_VALUE == hVolWrite)
-		return error("Unable to open volume for writing, need admin access");
+		return _error("Unable to open volume for writing, need admin access");
 
 	success = FlushFileBuffers(hVolWrite);
 	if (!success)
-		error("Unable to flush volume");
+		_error("Unable to flush volume");
 
 	CloseHandle(hVolWrite);
 
@@ -93,15 +93,15 @@ static int cmd_dropcaches(void)
 	int status;
 
 	if (!OpenProcessToken(hProcess, TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, &hToken))
-		return error("Can't open current process token");
+		return _error("Can't open current process token");
 
 	if (!GetPrivilege(hToken, "SeProfileSingleProcessPrivilege", 1))
-		return error("Can't get SeProfileSingleProcessPrivilege");
+		return _error("Can't get SeProfileSingleProcessPrivilege");
 
 	CloseHandle(hToken);
 
 	if (!INIT_PROC_ADDR(NtSetSystemInformation))
-		return error("Could not find NtSetSystemInformation() function");
+		return _error("Could not find NtSetSystemInformation() function");
 
 	command = MemoryPurgeStandbyList;
 	status = NtSetSystemInformation(
@@ -110,9 +110,9 @@ static int cmd_dropcaches(void)
 		sizeof(SYSTEM_MEMORY_LIST_COMMAND)
 	);
 	if (status == STATUS_PRIVILEGE_NOT_HELD)
-		error("Insufficient privileges to purge the standby list, need admin access");
+		_error("Insufficient privileges to purge the standby list, need admin access");
 	else if (status != STATUS_SUCCESS)
-		error("Unable to execute the memory list command %d", status);
+		_error("Unable to execute the memory list command %d", status);
 
 	return status;
 }
@@ -150,7 +150,7 @@ static int cmd_sync(void)
 
 static int cmd_dropcaches(void)
 {
-	return error("drop caches not implemented on this platform");
+	return _error("drop caches not implemented on this platform");
 }
 
 #endif

@@ -1300,7 +1300,7 @@ static int reftable_be_pack_refs(struct ref_store *ref_store,
 	else
 		ret = reftable_stack_compact_all(stack, NULL);
 	if (ret < 0) {
-		ret = error(_("unable to compact stack: %s"),
+		ret = _error(_("unable to compact stack: %s"),
 			    reftable_error_str(ret));
 		goto out;
 	}
@@ -1350,11 +1350,11 @@ static int write_copy_table(struct reftable_writer *writer, void *cb_data)
 		BUG("failed splitting committer info");
 
 	if (reftable_stack_read_ref(arg->stack, arg->oldname, &old_ref)) {
-		ret = error(_("refname %s not found"), arg->oldname);
+		ret = _error(_("refname %s not found"), arg->oldname);
 		goto done;
 	}
 	if (old_ref.value_type == REFTABLE_REF_SYMREF) {
-		ret = error(_("refname %s is a symbolic ref, copying it is not supported"),
+		ret = _error(_("refname %s is a symbolic ref, copying it is not supported"),
 			    arg->oldname);
 		goto done;
 	}
@@ -1376,7 +1376,7 @@ static int write_copy_table(struct reftable_writer *writer, void *cb_data)
 	ret = refs_verify_refname_available(&arg->refs->base, arg->newname,
 					    NULL, &skip, &errbuf);
 	if (ret < 0) {
-		error("%s", errbuf.buf);
+		_error("%s", errbuf.buf);
 		goto done;
 	}
 

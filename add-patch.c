@@ -346,7 +346,7 @@ static int parse_hunk_header(struct add_p_state *s, struct hunk *hunk)
 	    !skip_prefix(p, " +", &p) ||
 	    parse_range(&p, &header->new_offset, &header->new_count) < 0 ||
 	    !skip_prefix(p, " @@", &p))
-		return error(_("could not parse hunk header '%.*s'"),
+		return _error(_("could not parse hunk header '%.*s'"),
 			     (int)(eol - line), line);
 
 	hunk->start = eol - s->plain.buf + (*eol == '\n');
@@ -434,7 +434,7 @@ static int parse_diff(struct add_p_state *s, const struct pathspec *ps)
 	res = capture_command(&cp, plain, 0);
 	if (res) {
 		strvec_clear(&args);
-		return error(_("could not parse diff"));
+		return _error(_("could not parse diff"));
 	}
 	if (!plain->len) {
 		strvec_clear(&args);
@@ -453,7 +453,7 @@ static int parse_diff(struct add_p_state *s, const struct pathspec *ps)
 		res = capture_command(&colored_cp, colored, 0);
 		strvec_clear(&args);
 		if (res)
-			return error(_("could not parse colored diff"));
+			return _error(_("could not parse colored diff"));
 
 		if (diff_filter) {
 			struct child_process filter_cp = CHILD_PROCESS_INIT;
@@ -467,7 +467,7 @@ static int parse_diff(struct add_p_state *s, const struct pathspec *ps)
 					 colored->buf, colored->len,
 					 &s->buf, colored->len,
 					 NULL, 0) < 0)
-				return error(_("failed to run '%s'"),
+				return _error(_("failed to run '%s'"),
 					     diff_filter);
 			strbuf_swap(colored, &s->buf);
 		}
@@ -625,7 +625,7 @@ static int parse_diff(struct add_p_state *s, const struct pathspec *ps)
 	/* non-colored shorter than colored? */
 	if (colored_p != colored_pend) {
 mismatched_output:
-		error(_("mismatched output from interactive.diffFilter"));
+	_error(_("mismatched output from interactive.diffFilter"));
 		advise(_("Your filter must maintain a one-to-one correspondence\n"
 			 "between its input and output lines."));
 		return -1;
@@ -813,7 +813,7 @@ static int merge_hunks(struct add_p_state *s, struct file_diff *file_diff,
 					    plain + hunk->start);
 
 				if (plain[overlap_end] != ' ')
-					return error(_("expected context line "
+					return _error(_("expected context line "
 						       "#%d in\n%.*s"),
 						     (int)(j + 1),
 						     (int)(hunk->end
@@ -828,7 +828,7 @@ static int merge_hunks(struct add_p_state *s, struct file_diff *file_diff,
 			if (len > merged->end - merged->start ||
 			    memcmp(plain + merged->end - len,
 				   plain + overlap_start, len))
-				return error(_("hunks do not overlap:\n%.*s\n"
+				return _error(_("hunks do not overlap:\n%.*s\n"
 					       "\tdoes not end with:\n%.*s"),
 					     (int)(merged->end - merged->start),
 					     plain + merged->start,
@@ -1157,7 +1157,7 @@ static int edit_hunk_manually(struct add_p_state *s, struct hunk *hunk)
 	 */
 	if (s->plain.buf[hunk->start] == '@' &&
 	    parse_hunk_header(s, hunk) < 0)
-		return error(_("could not parse hunk header"));
+		return _error(_("could not parse hunk header"));
 
 	return 1;
 }
@@ -1202,7 +1202,7 @@ static int run_apply_check(struct add_p_state *s,
 			    "apply", "--check", NULL);
 	strvec_pushv(&cp.args, s->mode->apply_check_args);
 	if (pipe_command(&cp, s->buf.buf, s->buf.len, NULL, 0, NULL, 0))
-		return error(_("'git apply --cached' failed"));
+		return _error(_("'git apply --cached' failed"));
 
 	return 0;
 }
@@ -1724,7 +1724,7 @@ soft_increment:
 			strvec_pushv(&cp.args, s->mode->apply_args);
 			if (pipe_command(&cp, s->buf.buf, s->buf.len,
 					 NULL, 0, NULL, 0))
-				error(_("'git apply' failed"));
+				_error(_("'git apply' failed"));
 		}
 		if (repo_read_index(s->s.r) >= 0)
 			repo_refresh_and_write_index(s->s.r, REFRESH_QUIET, 0,

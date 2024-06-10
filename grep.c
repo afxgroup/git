@@ -1920,7 +1920,7 @@ static int grep_source_load_oid(struct grep_source *gs)
 	gs->buf = repo_read_object_file(gs->repo, gs->identifier, &type,
 					&gs->size);
 	if (!gs->buf)
-		return error(_("'%s': unable to read %s"),
+		return _error(_("'%s': unable to read %s"),
 			     gs->name,
 			     oid_to_hex(gs->identifier));
 	return 0;

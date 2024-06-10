@@ -352,7 +352,7 @@ static int fsck_walk_tree(struct tree *tree, void *data, struct fsck_options *op
 			result = options->walk(obj, OBJ_BLOB, data, options);
 		}
 		else {
-			result = error("in tree %s: entry %s has bad mode %.6o",
+			result = _error("in tree %s: entry %s has bad mode %.6o",
 				       fsck_describe_object(options, &tree->object.oid),
 				       entry.path, entry.mode);
 		}
@@ -462,7 +462,7 @@ int fsck_walk(struct object *obj, void *data, struct fsck_options *options)
 	case OBJ_TAG:
 		return fsck_walk_tag((struct tag *)obj, data, options);
 	default:
-		error("Unknown object type for %s",
+		_error("Unknown object type for %s",
 		      fsck_describe_object(options, &obj->oid));
 		return -1;
 	}
@@ -1208,7 +1208,7 @@ int fsck_error_function(struct fsck_options *o,
 		warning("object %s: %s", fsck_describe_object(o, oid), message);
 		return 0;
 	}
-	error("object %s: %s", fsck_describe_object(o, oid), message);
+	_error("object %s: %s", fsck_describe_object(o, oid), message);
 	return 1;
 }
 

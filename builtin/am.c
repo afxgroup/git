@@ -195,7 +195,7 @@ static int am_option_parse_quoted_cr(const struct option *opt,
 	BUG_ON_OPT_NEG(unset);
 
 	if (mailinfo_parse_quoted_cr_action(arg, opt->value) != 0)
-		return error(_("bad action '%s' for '%s'"), arg, "--quoted-cr");
+		return _error(_("bad action '%s' for '%s'"), arg, "--quoted-cr");
 	return 0;
 }
 
@@ -213,7 +213,7 @@ static int am_option_parse_empty(const struct option *opt,
 	else if (!strcmp(arg, "keep"))
 		*opt_value = KEEP_EMPTY_COMMIT;
 	else
-		return error(_("invalid value for '%s': '%s'"), "--empty", arg);
+		return _error(_("invalid value for '%s': '%s'"), "--empty", arg);
 
 	return 0;
 }
@@ -543,27 +543,27 @@ static int copy_notes_for_rebase(const struct am_state *state)
 		const char *p;
 
 		if (sb.len != the_hash_algo->hexsz * 2 + 1) {
-			ret = error(invalid_line, sb.buf);
+			ret = _error(invalid_line, sb.buf);
 			goto finish;
 		}
 
 		if (parse_oid_hex(sb.buf, &from_obj, &p)) {
-			ret = error(invalid_line, sb.buf);
+			ret = _error(invalid_line, sb.buf);
 			goto finish;
 		}
 
 		if (*p != ' ') {
-			ret = error(invalid_line, sb.buf);
+			ret = _error(invalid_line, sb.buf);
 			goto finish;
 		}
 
 		if (get_oid_hex(p + 1, &to_obj)) {
-			ret = error(invalid_line, sb.buf);
+			ret = _error(invalid_line, sb.buf);
 			goto finish;
 		}
 
 		if (copy_note_for_rewrite(c, &from_obj, &to_obj))
-			ret = error(_("Failed to copy notes from '%s' to '%s'"),
+			ret = _error(_("Failed to copy notes from '%s' to '%s'"),
 					oid_to_hex(&from_obj), oid_to_hex(&to_obj));
 	}
 
@@ -777,7 +777,7 @@ static int split_mail_conv(mail_conv_fn fn, struct am_state *state,
 			fclose(in);
 
 		if (ret)
-			return error(_("could not parse patch '%s'"), *paths);
+			return _error(_("could not parse patch '%s'"), *paths);
 	}
 
 	state->cur = 1;
@@ -842,7 +842,7 @@ static int split_mail_stgit_series(struct am_state *state, const char **paths,
 	int ret;
 
 	if (!paths[0] || paths[1])
-		return error(_("Only one StGIT patch series can be applied at once"));
+		return _error(_("Only one StGIT patch series can be applied at once"));
 
 	series_dir_buf = xstrdup(*paths);
 	series_dir = dirname(series_dir_buf);
@@ -890,24 +890,24 @@ static int hg_patch_to_mail(FILE *out, FILE *in, int keep_cr UNUSED)
 			errno = 0;
 			timestamp = parse_timestamp(str, &end, 10);
 			if (errno) {
-				rc = error(_("invalid timestamp"));
+				rc = _error(_("invalid timestamp"));
 				goto exit;
 			}
 
 			if (!skip_prefix(end, " ", &str)) {
-				rc = error(_("invalid Date line"));
+				rc = _error(_("invalid Date line"));
 				goto exit;
 			}
 
 			errno = 0;
 			tz = strtol(str, &end, 10);
 			if (errno) {
-				rc = error(_("invalid timezone offset"));
+				rc = _error(_("invalid timezone offset"));
 				goto exit;
 			}
 
 			if (*end) {
-				rc = error(_("invalid Date line"));
+				rc = _error(_("invalid Date line"));
 				goto exit;
 			}
 
@@ -1583,13 +1583,13 @@ static int fall_back_threeway(const struct am_state *state, const char *index_pa
 		oidcpy(&our_tree, the_hash_algo->empty_tree);
 
 	if (build_fake_ancestor(state, index_path))
-		return error("could not build fake ancestor");
+		return _error("could not build fake ancestor");
 
 	discard_index(the_repository->index);
 	read_index_from(the_repository->index, index_path, get_git_dir());
 
 	if (write_index_as_tree(&orig_tree, the_repository->index, index_path, 0, NULL))
-		return error(_("Repository lacks necessary blobs to fall back on 3-way merge."));
+		return _error(_("Repository lacks necessary blobs to fall back on 3-way merge."));
 
 	say(state, stdout, _("Using index info to reconstruct a base tree..."));
 
@@ -1611,11 +1611,11 @@ static int fall_back_threeway(const struct am_state *state, const char *index_pa
 	}
 
 	if (run_apply(state, index_path))
-		return error(_("Did you hand edit your patch?\n"
+		return _error(_("Did you hand edit your patch?\n"
 				"It does not apply to blobs recorded in its index."));
 
 	if (write_index_as_tree(&their_tree, the_repository->index, index_path, 0, NULL))
-		return error("could not write tree");
+		return _error("could not write tree");
 
 	say(state, stdout, _("Falling back to patching base and 3-way merge..."));
 
@@ -1643,7 +1643,7 @@ static int fall_back_threeway(const struct am_state *state, const char *index_pa
 	if (merge_recursive_generic(&o, &our_tree, &their_tree, 1, bases, &result)) {
 		repo_rerere(the_repository, state->allow_rerere_autoupdate);
 		free(their_tree_name);
-		return error(_("Failed to merge in the changes."));
+		return _error(_("Failed to merge in the changes."));
 	}
 
 	free(their_tree_name);
@@ -2064,11 +2064,11 @@ static int clean_index(const struct object_id *head, const struct object_id *rem
 
 	head_tree = parse_tree_indirect(head);
 	if (!head_tree)
-		return error(_("Could not parse object '%s'."), oid_to_hex(head));
+		return _error(_("Could not parse object '%s'."), oid_to_hex(head));
 
 	remote_tree = parse_tree_indirect(remote);
 	if (!remote_tree)
-		return error(_("Could not parse object '%s'."), oid_to_hex(remote));
+		return _error(_("Could not parse object '%s'."), oid_to_hex(remote));
 
 	repo_read_index_unmerged(the_repository);
 
@@ -2080,7 +2080,7 @@ static int clean_index(const struct object_id *head, const struct object_id *rem
 
 	index_tree = parse_tree_indirect(&index);
 	if (!index_tree)
-		return error(_("Could not parse object '%s'."), oid_to_hex(&index));
+		return _error(_("Could not parse object '%s'."), oid_to_hex(&index));
 
 	if (fast_forward_to(index_tree, remote_tree, 0))
 		return -1;
@@ -2269,7 +2269,7 @@ static int parse_opt_patchformat(const struct option *opt, const char *arg, int 
 	 * when you add new options
 	 */
 	else
-		return error(_("invalid value for '%s': '%s'"),
+		return _error(_("invalid value for '%s': '%s'"),
 			     "--patch-format", arg);
 	return 0;
 }
@@ -2291,7 +2291,7 @@ static int parse_opt_show_current_patch(const struct option *opt, const char *ar
 	 * when you add new options
 	 */
 	else
-		return error(_("invalid value for '%s': '%s'"),
+		return _error(_("invalid value for '%s': '%s'"),
 			     "--show-current-patch", arg);
 	return 0;
 }

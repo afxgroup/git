@@ -53,7 +53,7 @@ int cmd_verify_tag(int argc, const char **argv, const char *prefix)
 		const char *name = argv[i++];
 
 		if (repo_get_oid(the_repository, name, &oid)) {
-			had_error = !!error("tag '%s' not found.", name);
+			had_error = !!_error("tag '%s' not found.", name);
 			continue;
 		}
 

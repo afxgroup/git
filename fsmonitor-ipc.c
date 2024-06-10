@@ -119,13 +119,13 @@ try_again:
 		goto try_again;
 
 	case IPC_STATE__INVALID_PATH:
-		ret = error(_("fsmonitor_ipc__send_query: invalid path '%s'"),
+		ret = _error(_("fsmonitor_ipc__send_query: invalid path '%s'"),
 			    fsmonitor_ipc__get_path(the_repository));
 		goto done;
 
 	case IPC_STATE__OTHER_ERROR:
 	default:
-		ret = error(_("fsmonitor_ipc__send_query: unspecified error on '%s'"),
+		ret = _error(_("fsmonitor_ipc__send_query: unspecified error on '%s'"),
 			    fsmonitor_ipc__get_path(the_repository));
 		goto done;
 	}

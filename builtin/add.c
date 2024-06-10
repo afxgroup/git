@@ -58,7 +58,7 @@ static int chmod_pathspec(struct pathspec *pathspec, char flip, int show_only)
 			err = S_ISREG(ce->ce_mode) ? 0 : -1;
 
 		if (err < 0)
-			ret = error(_("cannot chmod %cx '%s'"), flip, ce->name);
+			ret = _error(_("cannot chmod %cx '%s'"), flip, ce->name);
 	}
 
 	return ret;

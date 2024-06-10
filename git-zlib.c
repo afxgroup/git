@@ -105,7 +105,7 @@ void git_inflate_end(git_zstream *strm)
 	zlib_post_call(strm);
 	if (status == Z_OK)
 		return;
-	error("inflateEnd: %s (%s)", zerr_to_string(status),
+	_error("inflateEnd: %s (%s)", zerr_to_string(status),
 	      strm->z.msg ? strm->z.msg : "no message");
 }
 
@@ -142,7 +142,7 @@ int git_inflate(git_zstream *strm, int flush)
 	default:
 		break;
 	}
-	error("inflate: %s (%s)", zerr_to_string(status),
+	_error("inflate: %s (%s)", zerr_to_string(status),
 	      strm->z.msg ? strm->z.msg : "no message");
 	return status;
 }
@@ -220,7 +220,7 @@ void git_deflate_end(git_zstream *strm)
 
 	if (status == Z_OK)
 		return;
-	error("deflateEnd: %s (%s)", zerr_to_string(status),
+	_error("deflateEnd: %s (%s)", zerr_to_string(status),
 	      strm->z.msg ? strm->z.msg : "no message");
 }
 
@@ -268,7 +268,7 @@ int git_deflate(git_zstream *strm, int flush)
 	default:
 		break;
 	}
-	error("deflate: %s (%s)", zerr_to_string(status),
+	_error("deflate: %s (%s)", zerr_to_string(status),
 	      strm->z.msg ? strm->z.msg : "no message");
 	return status;
 }

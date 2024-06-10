@@ -810,9 +810,9 @@ static int move_config_setting(const char *key, const char *value,
 			       const char *from_file, const char *to_file)
 {
 	if (git_config_set_in_file_gently(to_file, key, NULL, value))
-		return error(_("unable to set %s in '%s'"), key, to_file);
+		return _error(_("unable to set %s in '%s'"), key, to_file);
 	if (git_config_set_in_file_gently(from_file, key, NULL, NULL))
-		return error(_("unable to unset %s in '%s'"), key, from_file);
+		return _error(_("unable to unset %s in '%s'"), key, from_file);
 	return 0;
 }
 
@@ -832,7 +832,7 @@ int init_worktree_config(struct repository *r)
 	if (r->repository_format_worktree_config)
 		return 0;
 	if ((res = git_config_set_gently("extensions.worktreeConfig", "true")))
-		return error(_("failed to set extensions.worktreeConfig setting"));
+		return _error(_("failed to set extensions.worktreeConfig setting"));
 
 	common_config_file = xstrfmt("%s/config", r->commondir);
 	main_worktree_file = xstrfmt("%s/config.worktree", r->commondir);

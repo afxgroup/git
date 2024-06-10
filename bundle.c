@@ -47,7 +47,7 @@ static int parse_capability(struct bundle_header *header, const char *capability
 	if (skip_prefix(capability, "object-format=", &arg)) {
 		int algo = hash_algo_by_name(arg);
 		if (algo == GIT_HASH_UNKNOWN)
-			return error(_("unrecognized bundle hash algorithm: %s"), arg);
+			return _error(_("unrecognized bundle hash algorithm: %s"), arg);
 		header->hash_algo = &hash_algos[algo];
 		return 0;
 	}
@@ -55,7 +55,7 @@ static int parse_capability(struct bundle_header *header, const char *capability
 		parse_list_objects_filter(&header->filter, arg);
 		return 0;
 	}
-	return error(_("unknown capability '%s'"), capability);
+	return _error(_("unknown capability '%s'"), capability);
 }
 
 static int parse_bundle_signature(struct bundle_header *header, const char *line)
@@ -81,7 +81,7 @@ int read_bundle_header_fd(int fd, struct bundle_header *header,
 	if (strbuf_getwholeline_fd(&buf, fd, '\n') ||
 	    parse_bundle_signature(header, buf.buf)) {
 		if (report_path)
-			error(_("'%s' does not look like a v2 or v3 bundle file"),
+			_error(_("'%s' does not look like a v2 or v3 bundle file"),
 			      report_path);
 		status = -1;
 		goto abort;
@@ -120,7 +120,7 @@ int read_bundle_header_fd(int fd, struct bundle_header *header,
 		    (*p && !isspace(*p)) ||
 		    (!is_prereq && !*p)) {
 			if (report_path)
-				error(_("unrecognized header: %s%s (%d)"),
+				_error(_("unrecognized header: %s%s (%d)"),
 				      (is_prereq ? "-" : ""), buf.buf, (int)buf.len);
 			status = -1;
 			break;
@@ -147,7 +147,7 @@ int read_bundle_header(const char *path, struct bundle_header *header)
 	int fd = open(path, O_RDONLY);
 
 	if (fd < 0)
-		return error(_("could not open '%s'"), path);
+		return _error(_("could not open '%s'"), path);
 	return read_bundle_header_fd(fd, header, path);
 }
 
@@ -226,7 +226,7 @@ int verify_bundle(struct repository *r,
 	};
 
 	if (!r || !r->objects || !r->objects->odb)
-		return error(_("need a repository to verify a bundle"));
+		return _error(_("need a repository to verify a bundle"));
 
 	for (i = 0; i < p->nr; i++) {
 		struct string_list_item *e = p->items + i;
@@ -239,14 +239,14 @@ int verify_bundle(struct repository *r,
 		if (flags & VERIFY_BUNDLE_QUIET)
 			continue;
 		if (ret == 1)
-			error("%s", message);
-		error("%s %s", oid_to_hex(oid), name);
+			_error("%s", message);
+		_error("%s %s", oid_to_hex(oid), name);
 	}
 	if (ret)
 		goto cleanup;
 
 	if ((ret = check_connected(iterate_ref_map, &iter, &opts)))
-		error(_("some prerequisite commits exist in the object store, "
+		_error(_("some prerequisite commits exist in the object store, "
 			"but are not connected to the repository's history"));
 
 	/* TODO: preserve this verbose language. */
@@ -348,7 +348,7 @@ static int write_pack_data(int bundle_fd, struct rev_info *revs, struct strvec *
 	}
 
 	if (start_command(&pack_objects))
-		return error(_("Could not spawn pack-objects"));
+		return _error(_("Could not spawn pack-objects"));
 
 	for (i = 0; i < revs->pending.nr; i++) {
 		struct object *object = revs->pending.objects[i].item;
@@ -359,7 +359,7 @@ static int write_pack_data(int bundle_fd, struct rev_info *revs, struct strvec *
 	}
 	close(pack_objects.in);
 	if (finish_command(&pack_objects))
-		return error(_("pack-objects died"));
+		return _error(_("pack-objects died"));
 	return 0;
 }
 
@@ -525,7 +525,7 @@ int create_bundle(struct repository *r, const char *path,
 		min_version = 3;
 
 	if (argc > 1) {
-		error(_("unrecognized argument: %s"), argv[1]);
+		_error(_("unrecognized argument: %s"), argv[1]);
 		goto err;
 	}
 
@@ -634,6 +634,6 @@ int unbundle(struct repository *r, struct bundle_header *header,
 	ip.no_stdout = 1;
 	ip.git_cmd = 1;
 	if (run_command(&ip))
-		return error(_("index-pack died"));
+		return _error(_("index-pack died"));
 	return 0;
 }

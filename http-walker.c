@@ -120,7 +120,7 @@ static void process_object_response(void *callback_data)
 static void release_object_request(struct object_request *obj_req)
 {
 	if (obj_req->req !=NULL && obj_req->req->localfile != -1)
-		error("fd leakage in release: %d", obj_req->req->localfile);
+		_error("fd leakage in release: %d", obj_req->req->localfile);
 
 	list_del(&obj_req->node);
 	free(obj_req);
@@ -449,12 +449,12 @@ static int http_fetch_pack(struct walker *walker, struct alt_base *repo, unsigne
 	if (start_active_slot(preq->slot)) {
 		run_active_slot(preq->slot);
 		if (results.curl_result != CURLE_OK) {
-			error("Unable to get pack file %s\n%s", preq->url,
+			_error("Unable to get pack file %s\n%s", preq->url,
 			      curl_errorstr);
 			goto abort;
 		}
 	} else {
-		error("Unable to start request");
+		_error("Unable to start request");
 		goto abort;
 	}
 
@@ -489,7 +489,7 @@ static int fetch_object(struct walker *walker, unsigned char *hash)
 			break;
 	}
 	if (!obj_req)
-		return error("Couldn't find request for %s in the queue", hex);
+		return _error("Couldn't find request for %s in the queue", hex);
 
 	if (repo_has_object_file(the_repository, &obj_req->oid)) {
 		if (obj_req->req)
@@ -520,24 +520,24 @@ static int fetch_object(struct walker *walker, unsigned char *hash)
 			      req->errorstr, sizeof(req->errorstr));
 
 	if (obj_req->state == ABORTED) {
-		ret = error("Request for %s aborted", hex);
+		ret = _error("Request for %s aborted", hex);
 	} else if (req->curl_result != CURLE_OK &&
 		   req->http_code != 416) {
 		if (missing_target(req))
 			ret = -1; /* Be silent, it is probably in a pack. */
 		else
-			ret = error("%s (curl_result = %d, http_code = %ld, sha1 = %s)",
+			ret = _error("%s (curl_result = %d, http_code = %ld, sha1 = %s)",
 				    req->errorstr, req->curl_result,
 				    req->http_code, hex);
 	} else if (req->zret != Z_STREAM_END) {
 		walker->corrupt_object_found++;
-		ret = error("File %s (%s) corrupt", hex, req->url);
+		ret = _error("File %s (%s) corrupt", hex, req->url);
 	} else if (!oideq(&obj_req->oid, &req->real_oid)) {
-		ret = error("File %s has bad hash", hex);
+		ret = _error("File %s has bad hash", hex);
 	} else if (req->rename < 0) {
 		struct strbuf buf = STRBUF_INIT;
 		loose_object_path(the_repository, &buf, &req->oid);
-		ret = error("unable to write sha1 filename %s", buf.buf);
+		ret = _error("unable to write sha1 filename %s", buf.buf);
 		strbuf_release(&buf);
 	}
 
@@ -559,7 +559,7 @@ static int fetch(struct walker *walker, unsigned char *hash)
 		fetch_alternates(walker, data->alt->base);
 		altbase = altbase->next;
 	}
-	return error("Unable to find %s under %s", hash_to_hex(hash),
+	return _error("Unable to find %s under %s", hash_to_hex(hash),
 		     data->alt->base);
 }
 

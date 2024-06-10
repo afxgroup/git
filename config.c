@@ -158,7 +158,7 @@ static int handle_path_include(const struct key_value_info *kvi,
 
 	expanded = interpolate_path(path, 0);
 	if (!expanded)
-		return error(_("could not expand include path '%s'"), path);
+		return _error(_("could not expand include path '%s'"), path);
 	path = expanded;
 
 	/*
@@ -169,7 +169,7 @@ static int handle_path_include(const struct key_value_info *kvi,
 		char *slash;
 
 		if (!kvi || !kvi->path) {
-			ret = error(_("relative config includes must come from files"));
+			ret = _error(_("relative config includes must come from files"));
 			goto cleanup;
 		}
 
@@ -220,7 +220,7 @@ static int prepare_include_condition_pattern(const struct key_value_info *kvi,
 		const char *slash;
 
 		if (!kvi || !kvi->path)
-			return error(_("relative config include "
+			return _error(_("relative config include "
 				       "conditionals must come from files"));
 
 		strbuf_realpath(&path, kvi->path, 1);
@@ -551,12 +551,12 @@ int git_config_parse_key(const char *key, char **store_key, size_t *baselen_)
 	 */
 
 	if (last_dot == NULL || last_dot == key) {
-		error(_("key does not contain a section: %s"), key);
+		_error(_("key does not contain a section: %s"), key);
 		return -CONFIG_NO_SECTION_OR_NAME;
 	}
 
 	if (!last_dot[1]) {
-		error(_("key does not contain variable name: %s"), key);
+		_error(_("key does not contain variable name: %s"), key);
 		return -CONFIG_NO_SECTION_OR_NAME;
 	}
 
@@ -578,12 +578,12 @@ int git_config_parse_key(const char *key, char **store_key, size_t *baselen_)
 		if (!dot || i > baselen) {
 			if (!iskeychar(c) ||
 			    (i == baselen + 1 && !isalpha(c))) {
-				error(_("invalid key: %s"), key);
+				_error(_("invalid key: %s"), key);
 				goto out_free_ret_1;
 			}
 			c = tolower(c);
 		} else if (c == '\n') {
-			error(_("invalid key (newline): %s"), key);
+			_error(_("invalid key (newline): %s"), key);
 			goto out_free_ret_1;
 		}
 		(*store_key)[i] = c;
@@ -607,7 +607,7 @@ static int config_parse_pair(const char *key, const char *value,
 	};
 
 	if (!strlen(key))
-		return error(_("empty config key"));
+		return _error(_("empty config key"));
 	if (git_config_parse_key(key, &canonical_name, NULL))
 		return -1;
 
@@ -639,7 +639,7 @@ int git_config_parse_parameter(const char *text,
 
 	pair = strbuf_split_str(text, '=', 2);
 	if (!pair[0])
-		return error(_("bogus config parameter: %s"), text);
+		return _error(_("bogus config parameter: %s"), text);
 
 	if (pair[0]->len && pair[0]->buf[pair[0]->len - 1] == '=') {
 		strbuf_setlen(pair[0], pair[0]->len - 1);
@@ -651,7 +651,7 @@ int git_config_parse_parameter(const char *text,
 	strbuf_trim(pair[0]);
 	if (!pair[0]->len) {
 		strbuf_list_free(pair);
-		return error(_("bogus config parameter: %s"), text);
+		return _error(_("bogus config parameter: %s"), text);
 	}
 
 	ret = config_parse_pair(pair[0]->buf, value, &kvi, fn, data);
@@ -666,7 +666,7 @@ static int parse_config_env_list(char *env, struct key_value_info *kvi,
 	while (cur && *cur) {
 		const char *key = sq_dequote_step(cur, &cur);
 		if (!key)
-			return error(_("bogus format in %s"),
+			return _error(_("bogus format in %s"),
 				     CONFIG_DATA_ENVIRONMENT);
 
 		if (!cur || isspace(*cur)) {
@@ -683,14 +683,14 @@ static int parse_config_env_list(char *env, struct key_value_info *kvi,
 				/* quoted value */
 				value = sq_dequote_step(cur, &cur);
 				if (!value || (cur && !isspace(*cur))) {
-					return error(_("bogus format in %s"),
+					return _error(_("bogus format in %s"),
 						     CONFIG_DATA_ENVIRONMENT);
 				}
 			} else if (!*cur || isspace(*cur)) {
 				/* implicit bool: 'key'= */
 				value = NULL;
 			} else {
-				return error(_("bogus format in %s"),
+				return _error(_("bogus format in %s"),
 					     CONFIG_DATA_ENVIRONMENT);
 			}
 
@@ -699,7 +699,7 @@ static int parse_config_env_list(char *env, struct key_value_info *kvi,
 		}
 		else {
 			/* unknown format */
-			return error(_("bogus format in %s"),
+			return _error(_("bogus format in %s"),
 				     CONFIG_DATA_ENVIRONMENT);
 		}
 
@@ -729,11 +729,11 @@ int git_config_from_parameters(config_fn_t fn, void *data)
 
 		count = strtoul(env, &endp, 10);
 		if (*endp) {
-			ret = error(_("bogus count in %s"), CONFIG_COUNT_ENVIRONMENT);
+			ret = _error(_("bogus count in %s"), CONFIG_COUNT_ENVIRONMENT);
 			goto out;
 		}
 		if (count > INT_MAX) {
-			ret = error(_("too many entries in %s"), CONFIG_COUNT_ENVIRONMENT);
+			ret = _error(_("too many entries in %s"), CONFIG_COUNT_ENVIRONMENT);
 			goto out;
 		}
 
@@ -743,7 +743,7 @@ int git_config_from_parameters(config_fn_t fn, void *data)
 			strbuf_addf(&envvar, "GIT_CONFIG_KEY_%d", i);
 			key = getenv_safe(&to_free, envvar.buf);
 			if (!key) {
-				ret = error(_("missing config key %s"), envvar.buf);
+				ret = _error(_("missing config key %s"), envvar.buf);
 				goto out;
 			}
 			strbuf_reset(&envvar);
@@ -751,7 +751,7 @@ int git_config_from_parameters(config_fn_t fn, void *data)
 			strbuf_addf(&envvar, "GIT_CONFIG_VALUE_%d", i);
 			value = getenv_safe(&to_free, envvar.buf);
 			if (!value) {
-				ret = error(_("missing config value %s"), envvar.buf);
+				ret = _error(_("missing config value %s"), envvar.buf);
 				goto out;
 			}
 			strbuf_reset(&envvar);
@@ -1156,7 +1156,7 @@ static int git_parse_source(struct config_source *cs, config_fn_t fn,
 		die("%s", error_msg);
 		break;
 	case CONFIG_ERROR_ERROR:
-		error_return = error("%s", error_msg);
+		error_return = _error("%s", error_msg);
 		break;
 	case CONFIG_ERROR_SILENT:
 		error_return = -1;
@@ -1361,7 +1361,7 @@ int git_config_expiry_date(timestamp_t *timestamp, const char *var, const char *
 	if (!value)
 		return config_error_nonbool(var);
 	if (parse_expiry_date(value, timestamp))
-		return error(_("'%s' for '%s' is not a valid timestamp"),
+		return _error(_("'%s' for '%s' is not a valid timestamp"),
 			     value, var);
 	return 0;
 }
@@ -1395,7 +1395,7 @@ static int git_default_core_config(const char *var, const char *value,
 		else if (!strcasecmp(value, "minimal"))
 			check_stat = 0;
 		else
-			return error(_("invalid value for '%s': '%s'"),
+			return _error(_("invalid value for '%s': '%s'"),
 				     var, value);
 	}
 
@@ -1464,7 +1464,7 @@ static int git_default_core_config(const char *var, const char *value,
 		else {
 			int abbrev = git_config_int(var, value, ctx->kvi);
 			if (abbrev < minimum_abbrev || abbrev > the_hash_algo->hexsz)
-				return error(_("abbrev length out of range: %d"), abbrev);
+				return _error(_("abbrev length out of range: %d"), abbrev);
 			default_abbrev = abbrev;
 		}
 		return 0;
@@ -1582,11 +1582,11 @@ static int git_default_core_config(const char *var, const char *value,
 			auto_comment_line_char = 1;
 		else if (value[0]) {
 			if (strchr(value, '\n'))
-				return error(_("%s cannot contain newline"), var);
+				return _error(_("%s cannot contain newline"), var);
 			comment_line_str = xstrdup(value);
 			auto_comment_line_char = 0;
 		} else
-			return error(_("%s must have at least one character"), var);
+			return _error(_("%s must have at least one character"), var);
 		return 0;
 	}
 
@@ -1741,7 +1741,7 @@ static int git_default_branch_config(const char *var, const char *value)
 		else if (!strcmp(value, "always"))
 			autorebase = AUTOREBASE_ALWAYS;
 		else
-			return error(_("malformed value for %s"), var);
+			return _error(_("malformed value for %s"), var);
 		return 0;
 	}
 
@@ -1767,8 +1767,8 @@ static int git_default_push_config(const char *var, const char *value)
 		else if (!strcmp(value, "current"))
 			push_default = PUSH_DEFAULT_CURRENT;
 		else {
-			error(_("malformed value for %s: %s"), var, value);
-			return error(_("must be one of nothing, matching, simple, "
+			_error(_("malformed value for %s: %s"), var, value);
+			return _error(_("must be one of nothing, matching, simple, "
 				       "upstream or current"));
 		}
 		return 0;
@@ -1984,10 +1984,10 @@ int git_config_from_blob_oid(config_fn_t fn,
 
 	buf = repo_read_object_file(repo, oid, &type, &size);
 	if (!buf)
-		return error(_("unable to load config blob object '%s'"), name);
+		return _error(_("unable to load config blob object '%s'"), name);
 	if (type != OBJ_BLOB) {
 		free(buf);
-		return error(_("reference '%s' does not point to a blob"), name);
+		return _error(_("reference '%s' does not point to a blob"), name);
 	}
 
 	ret = git_config_from_mem(fn, CONFIG_ORIGIN_BLOB, name, buf, size,
@@ -2006,7 +2006,7 @@ static int git_config_from_blob_ref(config_fn_t fn,
 	struct object_id oid;
 
 	if (repo_get_oid(repo, name, &oid) < 0)
-		return error(_("unable to resolve config blob '%s'"), name);
+		return _error(_("unable to resolve config blob '%s'"), name);
 	return git_config_from_blob_oid(fn, name, repo, &oid, data, scope);
 }
 
@@ -2806,7 +2806,7 @@ int git_config_get_max_percent_split_change(void)
 		if (0 <= val && val <= 100)
 			return val;
 
-		return error(_("splitIndex.maxPercentChange value '%d' "
+		return _error(_("splitIndex.maxPercentChange value '%d' "
 			       "should be between 0 and 100"), val);
 	}
 
@@ -2927,7 +2927,7 @@ static int store_aux_event(enum config_event_t type, size_t begin, size_t end,
 		int (*cmpfn)(const char *, const char *, size_t);
 
 		if (cs->var.len < 2 || cs->var.buf[cs->var.len - 1] != '.')
-			return error(_("invalid section name '%s'"), cs->var.buf);
+			return _error(_("invalid section name '%s'"), cs->var.buf);
 
 		if (cs->subsection_case_sensitive)
 			cmpfn = strncasecmp;
@@ -2989,7 +2989,7 @@ static int store_aux(const char *key, const char *value,
 
 static int write_error(const char *filename)
 {
-	error(_("failed to write new configuration file %s"), filename);
+	_error(_("failed to write new configuration file %s"), filename);
 
 	/* Same error code as "failed to rename". */
 	return 4;
@@ -3361,7 +3361,7 @@ int git_config_set_multivar_in_file_gently(const char *config_filename,
 			store.value_pattern = (regex_t*)xmalloc(sizeof(regex_t));
 			if (regcomp(store.value_pattern, value_pattern,
 					REG_EXTENDED)) {
-				error(_("invalid pattern: %s"), value_pattern);
+				_error(_("invalid pattern: %s"), value_pattern);
 				FREE_AND_NULL(store.value_pattern);
 				ret = CONFIG_INVALID_PATTERN;
 				goto out_free;
@@ -3387,7 +3387,7 @@ int git_config_set_multivar_in_file_gently(const char *config_filename,
 						      config_filename,
 						      &store, CONFIG_SCOPE_UNKNOWN,
 						      &opts)) {
-			error(_("invalid config file %s"), config_filename);
+			_error(_("invalid config file %s"), config_filename);
 			ret = CONFIG_INVALID_FILE;
 			goto out_free;
 		}
@@ -3649,7 +3649,7 @@ static int git_config_copy_or_rename_section_in_file(const char *config_filename
 	memset(&store, 0, sizeof(store));
 
 	if (new_name && !section_name_is_ok(new_name)) {
-		ret = error(_("invalid section name: %s"), new_name);
+		ret = _error(_("invalid section name: %s"), new_name);
 		goto out_no_rollback;
 	}
 
@@ -3658,7 +3658,7 @@ static int git_config_copy_or_rename_section_in_file(const char *config_filename
 
 	out_fd = hold_lock_file_for_update(&lock, config_filename, 0);
 	if (out_fd < 0) {
-		ret = error(_("could not lock config file %s"), config_filename);
+		ret = _error(_("could not lock config file %s"), config_filename);
 		goto out;
 	}
 
@@ -3689,7 +3689,7 @@ static int git_config_copy_or_rename_section_in_file(const char *config_filename
 		line_nr++;
 
 		if (buf.len >= GIT_CONFIG_MAX_LINE_LEN) {
-			ret = error(_("refusing to work with overly long line "
+			ret = _error(_("refusing to work with overly long line "
 				      "in '%s' on line %"PRIuMAX),
 				    config_filename, (uintmax_t)line_nr);
 			goto out;
@@ -3828,7 +3828,7 @@ int git_config_copy_section(const char *old_name, const char *new_name)
 #undef config_error_nonbool
 int config_error_nonbool(const char *var)
 {
-	return error(_("missing value for '%s'"), var);
+	return _error(_("missing value for '%s'"), var);
 }
 
 int parse_config_key(const char *var,

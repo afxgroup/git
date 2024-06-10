@@ -265,9 +265,9 @@ static int mark_ce_flags(const char *path, int flag, int mark)
 static int remove_one_path(const char *path)
 {
 	if (!allow_remove)
-		return error("%s: does not exist and --remove not passed", path);
+		return _error("%s: does not exist and --remove not passed", path);
 	if (remove_file_from_index(the_repository->index, path))
-		return error("%s: cannot remove from the index", path);
+		return _error("%s: cannot remove from the index", path);
 	return 0;
 }
 
@@ -282,7 +282,7 @@ static int process_lstat_error(const char *path, int err)
 {
 	if (is_missing_file_error(err))
 		return remove_one_path(path);
-	return error("lstat(\"%s\"): %s", path, strerror(err));
+	return _error("lstat(\"%s\"): %s", path, strerror(err));
 }
 
 static int add_one_path(const struct cache_entry *old, const char *path, int len, struct stat *st)
@@ -310,7 +310,7 @@ static int add_one_path(const struct cache_entry *old, const char *path, int len
 	option |= allow_replace ? ADD_CACHE_OK_TO_REPLACE : 0;
 	if (add_index_entry(the_repository->index, ce, option)) {
 		discard_cache_entry(ce);
-		return error("%s: cannot add to the index - missing --add option?", path);
+		return _error("%s: cannot add to the index - missing --add option?", path);
 	}
 	return 0;
 }
@@ -372,7 +372,7 @@ static int process_directory(const char *path, int len, struct stat *st)
 			continue;
 
 		/* Subdirectory match - error out */
-		return error("%s: is a directory - add individual files instead", path);
+		return _error("%s: is a directory - add individual files instead", path);
 	}
 
 	/* No match - should we add it as a gitlink? */
@@ -380,7 +380,7 @@ static int process_directory(const char *path, int len, struct stat *st)
 		return add_one_path(NULL, path, len, st);
 
 	/* Error out. */
-	return error("%s: is a directory - add files inside instead", path);
+	return _error("%s: is a directory - add files inside instead", path);
 }
 
 static int process_path(const char *path, struct stat *st, int stat_errno)
@@ -390,7 +390,7 @@ static int process_path(const char *path, struct stat *st, int stat_errno)
 
 	len = strlen(path);
 	if (has_symlink_leading_path(path, len))
-		return error("'%s' is beyond a symbolic link", path);
+		return _error("'%s' is beyond a symbolic link", path);
 
 	pos = index_name_pos(the_repository->index, path, len);
 	ce = pos < 0 ? NULL : the_repository->index->cache[pos];
@@ -402,7 +402,7 @@ static int process_path(const char *path, struct stat *st, int stat_errno)
 		 */
 		if (!ignore_skip_worktree_entries && allow_remove &&
 		    remove_file_from_index(the_repository->index, path))
-			return error("%s: cannot remove from the index", path);
+			return _error("%s: cannot remove from the index", path);
 		return 0;
 	}
 
@@ -426,7 +426,7 @@ static int add_cacheinfo(unsigned int mode, const struct object_id *oid,
 	struct cache_entry *ce;
 
 	if (!verify_path(path, mode))
-		return error("Invalid path '%s'", path);
+		return _error("Invalid path '%s'", path);
 
 	len = strlen(path);
 	ce = make_empty_cache_entry(the_repository->index, len);
@@ -441,7 +441,7 @@ static int add_cacheinfo(unsigned int mode, const struct object_id *oid,
 	option = allow_add ? ADD_CACHE_OK_TO_ADD : 0;
 	option |= allow_replace ? ADD_CACHE_OK_TO_REPLACE : 0;
 	if (add_index_entry(the_repository->index, ce, option))
-		return error("%s: cannot add to the index - missing --add option?",
+		return _error("%s: cannot add to the index - missing --add option?",
 			     path);
 	report("add '%s'", path);
 	return 0;
@@ -620,12 +620,12 @@ static struct cache_entry *read_one_ent(const char *which,
 
 	if (get_tree_entry(the_repository, ent, path, &oid, &mode)) {
 		if (which)
-			error("%s: not in %s branch.", path, which);
+			_error("%s: not in %s branch.", path, which);
 		return NULL;
 	}
 	if (!the_repository->index->sparse_index && mode == S_IFDIR) {
 		if (which)
-			error("%s: not a blob in %s branch.", path, which);
+			_error("%s: not a blob in %s branch.", path, which);
 		return NULL;
 	}
 	ce = make_empty_cache_entry(the_repository->index, namelen);
@@ -778,7 +778,7 @@ static int chmod_callback(const struct option *opt,
 	char *flip = opt->value;
 	BUG_ON_OPT_NEG(unset);
 	if ((arg[0] != '-' && arg[0] != '+') || arg[1] != 'x' || arg[2])
-		return error("option 'chmod' expects \"+x\" or \"-x\"");
+		return _error("option 'chmod' expects \"+x\" or \"-x\"");
 	*flip = arg[0];
 	return 0;
 }
@@ -835,7 +835,7 @@ static enum parse_opt_result cacheinfo_callback(
 		return 0;
 	}
 	if (ctx->argc <= 3)
-		return error("option 'cacheinfo' expects <mode>,<sha1>,<path>");
+		return _error("option 'cacheinfo' expects <mode>,<sha1>,<path>");
 	if (strtoul_ui(*++ctx->argv, 8, &mode) ||
 	    get_oid_hex(*++ctx->argv, &oid) ||
 	    add_cacheinfo(mode, &oid, *++ctx->argv, 0))
@@ -854,7 +854,7 @@ static enum parse_opt_result stdin_cacheinfo_callback(
 	BUG_ON_OPT_ARG(arg);
 
 	if (ctx->argc != 1)
-		return error("option '%s' must be the last argument", opt->long_name);
+		return _error("option '%s' must be the last argument", opt->long_name);
 	allow_add = allow_replace = allow_remove = 1;
 	read_index_info(*nul_term_line);
 	return 0;
@@ -870,7 +870,7 @@ static enum parse_opt_result stdin_callback(
 	BUG_ON_OPT_ARG(arg);
 
 	if (ctx->argc != 1)
-		return error("option '%s' must be the last argument", opt->long_name);
+		return _error("option '%s' must be the last argument", opt->long_name);
 	*read_from_stdin = 1;
 	return 0;
 }
@@ -1101,9 +1101,9 @@ int cmd_update_index(int argc, const char **argv, const char *prefix)
 		}
 		case PARSE_OPT_UNKNOWN:
 			if (ctx.argv[0][1] == '-')
-				error("unknown option '%s'", ctx.argv[0] + 2);
+				_error("unknown option '%s'", ctx.argv[0] + 2);
 			else
-				error("unknown switch '%c'", *ctx.opt);
+				_error("unknown switch '%c'", *ctx.opt);
 			usage_with_options(update_index_usage, options);
 		}
 	}

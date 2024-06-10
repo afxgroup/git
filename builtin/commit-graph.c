@@ -132,7 +132,7 @@ static int graph_verify(int argc, const char **argv, const char *prefix)
 	free_commit_graph(graph);
 
 	if (incomplete_chain) {
-		error("one or more commit-graph chain files could not be loaded");
+		_error("one or more commit-graph chain files could not be loaded");
 		ret |= 1;
 	}
 
@@ -171,12 +171,12 @@ static int read_one_commit(struct oidset *commits, struct progress *progress,
 	const char *end;
 
 	if (parse_oid_hex(hash, &oid, &end))
-		return error(_("unexpected non-hex object ID: %s"), hash);
+		return _error(_("unexpected non-hex object ID: %s"), hash);
 
 	result = deref_tag(the_repository, parse_object(the_repository, &oid),
 			   NULL, 0);
 	if (!result)
-		return error(_("invalid object: %s"), hash);
+		return _error(_("invalid object: %s"), hash);
 	else if (object_as_type(result, OBJ_COMMIT, 1))
 		oidset_insert(commits, &result->oid);
 
@@ -196,7 +196,7 @@ static int write_option_max_new_filters(const struct option *opt,
 		const char *s;
 		*to = strtol(arg, (char **)&s, 10);
 		if (*s)
-			return error(_("option `%s' expects a numerical value"),
+			return _error(_("option `%s' expects a numerical value"),
 				     "max-new-filters");
 	}
 	return 0;

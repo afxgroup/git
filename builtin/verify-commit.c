@@ -39,13 +39,13 @@ static int verify_commit(const char *name, unsigned flags)
 	struct object *obj;
 
 	if (repo_get_oid(the_repository, name, &oid))
-		return error("commit '%s' not found.", name);
+		return _error("commit '%s' not found.", name);
 
 	obj = parse_object(the_repository, &oid);
 	if (!obj)
-		return error("%s: unable to read file.", name);
+		return _error("%s: unable to read file.", name);
 	if (obj->type != OBJ_COMMIT)
-		return error("%s: cannot verify a non-commit object of type %s.",
+		return _error("%s: cannot verify a non-commit object of type %s.",
 				name, type_name(obj->type));
 
 	return run_gpg_verify((struct commit *)obj, flags);

@@ -107,7 +107,7 @@ static int notes_rewrite_config(const char *k, const char *v,
 			return config_error_nonbool(k);
 		c->combine = parse_combine_notes_fn(v);
 		if (!c->combine) {
-			error(_("Bad notes.rewriteMode value: '%s'"), v);
+			_error(_("Bad notes.rewriteMode value: '%s'"), v);
 			return 1;
 		}
 		return 0;
@@ -149,7 +149,7 @@ struct notes_rewrite_cfg *init_copy_notes_for_rewrite(const char *cmd)
 			 * the environment variable, the second %s is
 			 * its value.
 			 */
-			error(_("Bad %s value: '%s'"), GIT_NOTES_REWRITE_MODE_ENVIRONMENT,
+			_error(_("Bad %s value: '%s'"), GIT_NOTES_REWRITE_MODE_ENVIRONMENT,
 					rewrite_mode_env);
 	}
 	if (rewrite_refs_env) {

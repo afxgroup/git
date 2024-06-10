@@ -116,7 +116,7 @@ int packet_flush_gently(int fd)
 {
 	packet_trace("0000", 4, 1);
 	if (write_in_full(fd, "0000", 4) < 0)
-		return error(_("flush packet write failed"));
+		return _error(_("flush packet write failed"));
 	return 0;
 }
 
@@ -174,7 +174,7 @@ static int packet_write_fmt_1(int fd, int gently, const char *prefix,
 			check_pipe(errno);
 			die_errno(_("packet write with format failed"));
 		}
-		return error(_("packet write with format failed"));
+		return _error(_("packet write with format failed"));
 	}
 
 	return 0;
@@ -235,7 +235,7 @@ static int packet_write_gently(const int fd_out, const char *buf, size_t size)
 {
 	struct strbuf err = STRBUF_INIT;
 	if (do_packet_write(fd_out, buf, size, &err)) {
-		error("%s", err.buf);
+		_error("%s", err.buf);
 		strbuf_release(&err);
 		return -1;
 	}
@@ -366,7 +366,7 @@ static int get_packet_data(int fd, char **src_buf, size_t *src_size,
 			return -1;
 
 		if (options & PACKET_READ_GENTLE_ON_READ_ERROR)
-			return error(_("the remote end hung up unexpectedly"));
+			return _error(_("the remote end hung up unexpectedly"));
 		die(_("the remote end hung up unexpectedly"));
 	}
 
@@ -427,7 +427,7 @@ enum packet_read_status packet_read_with_status(int fd, char **src_buffer,
 
 	if (len < 0) {
 		if (options & PACKET_READ_GENTLE_ON_READ_ERROR)
-			return error(_("protocol error: bad line length "
+			return _error(_("protocol error: bad line length "
 				       "character: %.4s"), linelen);
 		die(_("protocol error: bad line length character: %.4s"), linelen);
 	} else if (!len) {
@@ -444,7 +444,7 @@ enum packet_read_status packet_read_with_status(int fd, char **src_buffer,
 		return PACKET_READ_RESPONSE_END;
 	} else if (len < 4) {
 		if (options & PACKET_READ_GENTLE_ON_READ_ERROR)
-			return error(_("protocol error: bad line length %d"),
+			return _error(_("protocol error: bad line length %d"),
 				     len);
 		die(_("protocol error: bad line length %d"), len);
 	}
@@ -452,7 +452,7 @@ enum packet_read_status packet_read_with_status(int fd, char **src_buffer,
 	len -= 4;
 	if ((unsigned)len >= size) {
 		if (options & PACKET_READ_GENTLE_ON_READ_ERROR)
-			return error(_("protocol error: bad line length %d"),
+			return _error(_("protocol error: bad line length %d"),
 				     len);
 		die(_("protocol error: bad line length %d"), len);
 	}

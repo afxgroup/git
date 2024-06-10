@@ -401,7 +401,7 @@ static int mingw_getchar(void)
 		return EOF;
 
 	if (!read) {
-		error("Unexpected 0 read");
+		_error("Unexpected 0 read");
 		return EOF;
 	}
 

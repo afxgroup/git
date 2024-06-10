@@ -1557,10 +1557,10 @@ int transport_get_remote_bundle_uri(struct transport *transport)
 		transport->bundles->baseURI = xstrdup(transport->url);
 
 	if (!vtable->get_bundle_uri)
-		return error(_("bundle-uri operation not supported by protocol"));
+		return _error(_("bundle-uri operation not supported by protocol"));
 
 	if (vtable->get_bundle_uri(transport) < 0)
-		return error(_("could not retrieve server-advertised bundle-uri list"));
+		return _error(_("could not retrieve server-advertised bundle-uri list"));
 	return 0;
 }
 

@@ -718,7 +718,7 @@ static int show_tag_object(const struct object_id *oid, struct rev_info *rev)
 	int offset = 0;
 
 	if (!buf)
-		return error(_("could not read object %s"), oid_to_hex(oid));
+		return _error(_("could not read object %s"), oid_to_hex(oid));
 
 	assert(type == OBJ_TAG);
 	while (offset < size && buf[offset] != '\n') {
@@ -820,7 +820,7 @@ int cmd_show(int argc, const char **argv, const char *prefix)
 				break;
 			o = parse_object(the_repository, oid);
 			if (!o)
-				ret = error(_("could not read object %s"),
+				ret = _error(_("could not read object %s"),
 					    oid_to_hex(oid));
 			rev.pending.objects[i].item = o;
 			i--;
@@ -858,7 +858,7 @@ int cmd_show(int argc, const char **argv, const char *prefix)
 			break;
 		}
 		default:
-			ret = error(_("unknown type: %d"), o->type);
+			ret = _error(_("unknown type: %d"), o->type);
 		}
 	}
 

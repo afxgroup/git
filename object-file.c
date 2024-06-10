@@ -463,7 +463,7 @@ static int alt_odb_usable(struct raw_object_store *o,
 
 	/* Detect cases where alternate disappeared */
 	if (!is_directory(path->buf)) {
-		error(_("object directory %s does not exist; "
+		_error(_("object directory %s does not exist; "
 			"check .git/objects/info/alternates"),
 		      path->buf);
 		return 0;
@@ -523,7 +523,7 @@ static int link_alt_odb_entry(struct repository *r, const struct strbuf *entry,
 	strbuf_addbuf(&pathbuf, entry);
 
 	if (!strbuf_realpath(&tmp, pathbuf.buf, 0)) {
-		error(_("unable to normalize alternate object path: %s"),
+		_error(_("unable to normalize alternate object path: %s"),
 		      pathbuf.buf);
 		goto error;
 	}
@@ -598,7 +598,7 @@ static void link_alt_odb_entries(struct repository *r, const char *alt,
 		return;
 
 	if (depth > 5) {
-		error(_("%s: ignoring alternate object stores, nesting too deep"),
+		_error(_("%s: ignoring alternate object stores, nesting too deep"),
 				relative_base);
 		return;
 	}
@@ -1235,7 +1235,7 @@ static void *map_fd(int fd, const char *path, unsigned long *size)
 		*size = xsize_t(st.st_size);
 		if (!*size) {
 			/* mmap() is forbidden on empty files */
-			error(_("object file %s is empty"), path);
+			_error(_("object file %s is empty"), path);
 			close(fd);
 			return NULL;
 		}
@@ -1358,9 +1358,9 @@ static void *unpack_loose_rest(git_zstream *stream,
 	}
 
 	if (status < 0)
-		error(_("corrupt loose object '%s'"), oid_to_hex(oid));
+		_error(_("corrupt loose object '%s'"), oid_to_hex(oid));
 	else if (stream->avail_in)
-		error(_("garbage at end of loose object '%s'"),
+		_error(_("garbage at end of loose object '%s'"),
 		      oid_to_hex(oid));
 	free(buf);
 	return NULL;
@@ -1489,7 +1489,7 @@ static int loose_object_info(struct repository *r,
 				    allow_unknown ? &hdrbuf : NULL)) {
 	case ULHR_OK:
 		if (parse_loose_header(hdrbuf.len ? hdrbuf.buf : hdr, oi) < 0)
-			status = error(_("unable to parse %s header"), oid_to_hex(oid));
+			status = _error(_("unable to parse %s header"), oid_to_hex(oid));
 		else if (!allow_unknown && *oi->typep < 0)
 			die(_("invalid object type"));
 
@@ -1502,11 +1502,11 @@ static int loose_object_info(struct repository *r,
 		status = -1;
 		break;
 	case ULHR_BAD:
-		status = error(_("unable to unpack %s header"),
+		status = _error(_("unable to unpack %s header"),
 			       oid_to_hex(oid));
 		break;
 	case ULHR_TOO_LONG:
-		status = error(_("header for %s too long, exceeds %d bytes"),
+		status = _error(_("header for %s too long, exceeds %d bytes"),
 			       oid_to_hex(oid), MAX_HEADER_LEN);
 		break;
 	}
@@ -1939,7 +1939,7 @@ int finalize_object_file(const char *tmpfile, const char *filename)
 
 out:
 	if (adjust_shared_perm(filename))
-		return error(_("unable to set permission to '%s'"), filename);
+		return _error(_("unable to set permission to '%s'"), filename);
 	return 0;
 }
 
@@ -2052,7 +2052,7 @@ static int start_loose_object_common(struct strbuf *tmp_file,
 		if (flags & HASH_SILENT)
 			return -1;
 		else if (errno == EACCES)
-			return error(_("insufficient permission for adding "
+			return _error(_("insufficient permission for adding "
 				       "an object to repository database %s"),
 				     get_object_directory());
 		else
@@ -2423,10 +2423,10 @@ int force_object_loose(const struct object_id *oid, time_t mtime)
 	oi.sizep = &len;
 	oi.contentp = &buf;
 	if (oid_object_info_extended(the_repository, oid, &oi, 0))
-		return error(_("cannot read object for %s"), oid_to_hex(oid));
+		return _error(_("cannot read object for %s"), oid_to_hex(oid));
 	if (compat) {
 		if (repo_oid_to_algop(repo, oid, compat, &compat_oid))
-			return error(_("cannot map object %s to %s"),
+			return _error(_("cannot map object %s to %s"),
 				     oid_to_hex(oid), compat->name);
 	}
 	hdrlen = format_object_header(hdr, sizeof(hdr), type, len);
@@ -2477,7 +2477,7 @@ static int hash_format_check_report(struct fsck_options *opts UNUSED,
 				     enum fsck_msg_id msg_id UNUSED,
 				     const char *message)
 {
-	error(_("object fails fsck: %s"), message);
+	_error(_("object fails fsck: %s"), message);
 	return 1;
 }
 
@@ -2582,7 +2582,7 @@ static int index_core(struct index_state *istate,
 			ret = error_errno(_("read error while indexing %s"),
 					  path ? path : "<unknown>");
 		else if (read_result != size)
-			ret = error(_("short read while indexing %s"),
+			ret = _error(_("short read while indexing %s"),
 				    path ? path : "<unknown>");
 		else
 			ret = index_mem(istate, oid, buf, size, type, path, flags);
@@ -2655,7 +2655,7 @@ int index_path(struct index_state *istate, struct object_id *oid,
 		if (fd < 0)
 			return error_errno("open(\"%s\")", path);
 		if (index_fd(istate, oid, fd, st, OBJ_BLOB, path, flags) < 0)
-			return error(_("%s: failed to insert into database"),
+			return _error(_("%s: failed to insert into database"),
 				     path);
 		break;
 	case S_IFLNK:
@@ -2665,13 +2665,13 @@ int index_path(struct index_state *istate, struct object_id *oid,
 			hash_object_file(the_hash_algo, sb.buf, sb.len,
 					 OBJ_BLOB, oid);
 		else if (write_object_file(sb.buf, sb.len, OBJ_BLOB, oid))
-			rc = error(_("%s: failed to insert into database"), path);
+			rc = _error(_("%s: failed to insert into database"), path);
 		strbuf_release(&sb);
 		break;
 	case S_IFDIR:
 		return repo_resolve_gitlink_ref(the_repository, path, "HEAD", oid);
 	default:
-		return error(_("%s: unsupported file type"), path);
+		return _error(_("%s: unsupported file type"), path);
 	}
 	return rc;
 }
@@ -2909,18 +2909,18 @@ static int check_stream_oid(git_zstream *stream,
 	git_inflate_end(stream);
 
 	if (status != Z_STREAM_END) {
-		error(_("corrupt loose object '%s'"), oid_to_hex(expected_oid));
+		_error(_("corrupt loose object '%s'"), oid_to_hex(expected_oid));
 		return -1;
 	}
 	if (stream->avail_in) {
-		error(_("garbage at end of loose object '%s'"),
+		_error(_("garbage at end of loose object '%s'"),
 		      oid_to_hex(expected_oid));
 		return -1;
 	}
 
 	the_hash_algo->final_oid_fn(&real_oid, &c);
 	if (!oideq(expected_oid, &real_oid)) {
-		error(_("hash mismatch for %s (expected %s)"), path,
+		_error(_("hash mismatch for %s (expected %s)"), path,
 		      oid_to_hex(expected_oid));
 		return -1;
 	}
@@ -2952,12 +2952,12 @@ int read_loose_object(const char *path,
 
 	if (unpack_loose_header(&stream, map, mapsize, hdr, sizeof(hdr),
 				NULL) != ULHR_OK) {
-		error(_("unable to unpack header of %s"), path);
+		_error(_("unable to unpack header of %s"), path);
 		goto out;
 	}
 
 	if (parse_loose_header(hdr, oi) < 0) {
-		error(_("unable to parse header of %s"), path);
+		_error(_("unable to parse header of %s"), path);
 		git_inflate_end(&stream);
 		goto out;
 	}
@@ -2968,7 +2968,7 @@ int read_loose_object(const char *path,
 	} else {
 		*contents = unpack_loose_rest(&stream, hdr, *size, expected_oid);
 		if (!*contents) {
-			error(_("unable to unpack contents of %s"), path);
+			_error(_("unable to unpack contents of %s"), path);
 			git_inflate_end(&stream);
 			goto out;
 		}

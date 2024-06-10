@@ -18,14 +18,14 @@ static int check_remote_protocol(wchar_t *wpath)
 			FILE_FLAG_BACKUP_SEMANTICS, NULL);
 
 	if (h == INVALID_HANDLE_VALUE) {
-		error(_("[GLE %ld] unable to open for read '%ls'"),
+		_error(_("[GLE %ld] unable to open for read '%ls'"),
 		      GetLastError(), wpath);
 		return -1;
 	}
 
 	if (!GetFileInformationByHandleEx(h, FileRemoteProtocolInfo,
 		&proto_info, sizeof(proto_info))) {
-		error(_("[GLE %ld] unable to get protocol information for '%ls'"),
+		_error(_("[GLE %ld] unable to get protocol information for '%ls'"),
 		      GetLastError(), wpath);
 		CloseHandle(h);
 		return -1;

@@ -166,7 +166,7 @@ int read_mmfile(mmfile_t *ptr, const char *filename)
 	ptr->ptr = xmalloc(sz ? sz : 1);
 	if (sz && fread(ptr->ptr, sz, 1, f) != 1) {
 		fclose(f);
-		return error("Could not read %s", filename);
+		return _error("Could not read %s", filename);
 	}
 	fclose(f);
 	ptr->size = sz;
@@ -331,7 +331,7 @@ int git_xmerge_config(const char *var, const char *value,
 			return config_error_nonbool(var);
 		git_xmerge_style = parse_conflict_style_name(value);
 		if (git_xmerge_style == -1)
-			return error(_("unknown style '%s' given for '%s'"),
+			return _error(_("unknown style '%s' given for '%s'"),
 				     value, var);
 		return 0;
 	}

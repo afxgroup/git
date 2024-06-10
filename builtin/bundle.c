@@ -141,7 +141,7 @@ static int cmd_bundle_verify(int argc, const char **argv, const char *prefix) {
 	/* bundle internals use argv[1] as further parameters */
 
 	if (!startup_info->have_repository) {
-		ret = error(_("need a repository to verify a bundle"));
+		ret = _error(_("need a repository to verify a bundle"));
 		goto cleanup;
 	}
 

@@ -325,7 +325,7 @@ static int write_zip_entry(struct archiver_args *args,
 	}
 
 	if (pathlen > 0xffff) {
-		return error(_("path too long (%d chars, SHA1: %s): %s"),
+		return _error(_("path too long (%d chars, SHA1: %s): %s"),
 				(int)pathlen, oid_to_hex(oid), path);
 	}
 
@@ -348,7 +348,7 @@ static int write_zip_entry(struct archiver_args *args,
 			stream = open_istream(args->repo, oid, &type, &size,
 					      NULL);
 			if (!stream)
-				return error(_("cannot stream blob %s"),
+				return _error(_("cannot stream blob %s"),
 					     oid_to_hex(oid));
 			flags |= ZIP_STREAM;
 			out = NULL;
@@ -361,7 +361,7 @@ static int write_zip_entry(struct archiver_args *args,
 		}
 		compressed_size = (method == ZIP_METHOD_STORE) ? size : 0;
 	} else {
-		return error(_("unsupported file mode: 0%o (SHA1: %s)"), mode,
+		return _error(_("unsupported file mode: 0%o (SHA1: %s)"), mode,
 				oid_to_hex(oid));
 	}
 

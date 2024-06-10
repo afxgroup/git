@@ -44,7 +44,7 @@ int option_parse_diagnose(const struct option *opt, const char *arg, int unset)
 		}
 	}
 
-	return error(_("invalid --%s value '%s'"), opt->long_name, arg);
+	return _error(_("invalid --%s value '%s'"), opt->long_name, arg);
 }
 
 static void dir_file_stats_objects(const char *full_path,
@@ -257,7 +257,7 @@ int create_diagnostics_archive(struct strbuf *zip_path, enum diagnose_mode mode)
 	res = write_archive(archiver_args.nr, (const char **)argv_copy, NULL,
 			    the_repository, NULL, 0);
 	if (res) {
-		error(_("failed to write archive"));
+		_error(_("failed to write archive"));
 		goto diagnose_cleanup;
 	}
 

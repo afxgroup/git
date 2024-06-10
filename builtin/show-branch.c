@@ -555,7 +555,7 @@ static void append_one_rev(const char *av)
 				  append_matching_ref, NULL);
 		if (saved_matches == ref_name_cnt &&
 		    ref_name_cnt < MAX_REVS)
-			error(_("no matching refs with %s"), av);
+			_error(_("no matching refs with %s"), av);
 		sort_ref_range(saved_matches, ref_name_cnt);
 		return;
 	}
@@ -624,7 +624,7 @@ static int parse_reflog_param(const struct option *opt, const char *arg,
 	if (*ep == ',')
 		*base = ep + 1;
 	else if (*ep)
-		return error("unrecognized reflog param '%s'", arg);
+		return _error("unrecognized reflog param '%s'", arg);
 	else
 		*base = NULL;
 	if (reflog <= 0)

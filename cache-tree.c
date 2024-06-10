@@ -395,7 +395,7 @@ static int update_one(struct cache_tree *it,
 			strbuf_release(&buffer);
 			if (expected_missing)
 				return -1;
-			return error("invalid object %06o %s for '%.*s'",
+			return _error("invalid object %06o %s for '%.*s'",
 				mode, oid_to_hex(oid), entlen+baselen, path);
 		}
 
