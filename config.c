@@ -39,6 +39,11 @@
 #include "ws.h"
 #include "write-or-die.h"
 
+#ifdef __amigaos4__
+#undef ETC_GITCONFIG
+#define ETC_GITCONFIG "Git:.gitconfig"
+#endif
+
 struct config_source {
 	struct config_source *prev;
 	union {
@@ -3505,6 +3510,9 @@ int git_config_set_multivar_in_file_gently(const char *config_filename,
 		contents = NULL;
 	}
 
+#ifdef __amigaos4__
+	remove(config_filename);
+#endif
 	if (commit_lock_file(&lock) < 0) {
 		error_errno(_("could not write config file %s"), config_filename);
 		ret = CONFIG_NO_WRITE;

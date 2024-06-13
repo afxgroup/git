@@ -606,21 +606,21 @@ GIT-VERSION-FILE: FORCE
 #   perllibdir
 # This can help installing the suite in a relocatable way.
 
-prefix = $(HOME)
-bindir = $(prefix)/bin
-mandir = $(prefix)/share/man
-infodir = $(prefix)/share/info
+prefix = GIT:
+bindir = $(prefix)
+mandir = $(prefix)share/man
+infodir = $(prefix)share/info
 gitexecdir = libexec/git-core
 mergetoolsdir = $(gitexecdir)/mergetools
-sharedir = $(prefix)/share
+sharedir = GIT:share
 gitwebdir = $(sharedir)/gitweb
 gitwebstaticdir = $(gitwebdir)/static
 perllibdir = $(sharedir)/perl5
 localedir = $(sharedir)/locale
 template_dir = share/git-core/templates
-htmldir = $(prefix)/share/doc/git-doc
-ETC_GITCONFIG = $(sysconfdir)/gitconfig
-ETC_GITATTRIBUTES = $(sysconfdir)/gitattributes
+htmldir = $(prefix)share/doc/git-doc
+ETC_GITCONFIG = GIT:.gitconfig
+ETC_GITATTRIBUTES = GIT:.gitattributes
 lib = lib
 # DESTDIR =
 pathsep = :
@@ -2779,7 +2779,7 @@ exec-cmd.sp exec-cmd.s exec-cmd.o: EXTRA_CPPFLAGS = \
 
 setup.sp setup.s setup.o: GIT-PREFIX
 setup.sp setup.s setup.o: EXTRA_CPPFLAGS = \
-	-DDEFAULT_GIT_TEMPLATE_DIR='"$(template_dir_SQ)"'
+	-DDEFAULT_GIT_TEMPLATE_DIR='"GIT:templates"'
 
 config.sp config.s config.o: GIT-PREFIX
 config.sp config.s config.o: EXTRA_CPPFLAGS = \
