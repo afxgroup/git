@@ -55,8 +55,10 @@ ifeq ($(uname_S),AmigaOS4)
 	HAVE_CLOCK_GETTIME = YesPlease
 	HAVE_CLOCK_MONOTONIC = YesPlease
 	HAVE_GETDELIM = YesPlease
-	NO_REGEX=NeedsStartEnd
+	NO_REGEX = NeedsStartEnd
 	NO_POSIX_GOODIES = UnfortunatelyYes
+	CSPRNG_METHOD = arc4random
+	NO_IPV6 = YesPlease
 endif
 ifeq ($(uname_S),Linux)
 	HAVE_ALLOCA_H = YesPlease

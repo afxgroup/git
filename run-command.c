@@ -16,6 +16,10 @@
 #include "packfile.h"
 #include "compat/nonblock.h"
 
+#ifdef __amigaos4__
+int amiga_spawnvpe(const char *file, const char **argv, char **deltaenv, const char *dir, int fhin, int fhout, int fherr);
+#endif
+
 void child_process_init(struct child_process *child)
 {
 	struct child_process blank = CHILD_PROCESS_INIT;
@@ -38,7 +42,6 @@ static int installed_child_cleanup_handler;
 
 static void cleanup_children(int sig, int in_signal)
 {
-#ifndef __amigaos4__
 	struct child_to_clean *children_to_wait_for = NULL;
 
 	while (children_to_clean) {
@@ -77,7 +80,6 @@ static void cleanup_children(int sig, int in_signal)
 		if (!in_signal)
 			free(p);
 	}
-#endif
 }
 
 static void cleanup_children_on_signal(int sig)
@@ -546,7 +548,6 @@ static inline void set_cloexec(int fd)
 
 static int wait_or_whine(pid_t pid, const char *argv0, int in_signal)
 {
-#ifndef __amigaos4__
 	int status, code = -1;
 	pid_t waiting;
 	int failed_errno = 0;
@@ -583,9 +584,6 @@ static int wait_or_whine(pid_t pid, const char *argv0, int in_signal)
 
 	errno = failed_errno;
 	return code;
-#else
-	return -1;
-#endif
 }
 
 static void trace_add_env(struct strbuf *dst, const char *const *deltaenv)
@@ -759,12 +757,8 @@ fail_pipe:
 		notify_pipe[0] = notify_pipe[1] = -1;
 
 	if (cmd->no_stdin || cmd->no_stdout || cmd->no_stderr) {
-#ifndef __amigaos4__
 		null_fd = xopen("/dev/null", O_RDWR | O_CLOEXEC);
 		set_cloexec(null_fd);
-#else
-		null_fd = xopen("NIL:", O_RDWR);
-#endif
 	}
 
 	childenv = prep_childenv(cmd->env.v);
@@ -891,78 +885,37 @@ fail_pipe:
 	free(childenv);
 }
 end_of_spawn:
-#elif defined(__amigaos4__)
-	{
-		int fhin = 0, fhout = 1, fherr = 2;
-		const char **sargv = cmd->args.v;
-		struct strvec nargv = STRVEC_INIT;
-
-		if (cmd->no_stdin)
-			fhin = open("NIL:", O_RDWR);
-		else if (need_in)
-			fhin = dup(fdin[0]);
-		else if (cmd->in)
-			fhin = dup(cmd->in);
-
-		if (cmd->no_stderr)
-			fherr = open("NIL:", O_RDWR);
-		else if (need_err)
-			fherr = dup(fderr[1]);
-		else if (cmd->err > 2)
-			fherr = dup(cmd->err);
-
-		if (cmd->no_stdout)
-			fhout = open("NIL:", O_RDWR);
-		else if (cmd->stdout_to_stderr)
-			fhout = dup(fherr);
-		else if (need_out)
-			fhout = dup(fdout[1]);
-		else if (cmd->out > 1)
-			fhout = dup(cmd->out);
-
-		if (cmd->git_cmd)
-			cmd->args.v = prepare_git_cmd(&nargv, sargv);
-		else if (cmd->use_shell)
-			cmd->args.v = prepare_shell_cmd(&nargv, sargv);
-
-		cmd->pid = spawnvp(P_WAIT, cmd->args.v[0], cmd->args.v);
-		failed_errno = errno;
-		if (cmd->pid < 0)
-			error_errno("cannot spawn %s", cmd->args.v[0]);
-		if (cmd->clean_on_exit && cmd->pid >= 0)
-			mark_child_for_cleanup(cmd->pid, cmd);
-
-		strvec_clear(&nargv);
-		cmd->args.v = sargv;
-		if (fhin != 0)
-			close(fhin);
-		if (fhout != 1)
-			close(fhout);
-		if (fherr != 2)
-			close(fherr);
-	}
 #else
 {
+#ifdef __amigaos4__
+#define mingw_spawnvpe amiga_spawnvpe
+#define DEV_NULL "NIL:"
+#else
+#define DEV_NULL "/dev/null"
+#endif
 	int fhin = 0, fhout = 1, fherr = 2;
 	const char **sargv = cmd->args.v;
 	struct strvec nargv = STRVEC_INIT;
 
-	if (cmd->no_stdin)
-		fhin = open("/dev/null", O_RDWR);
-	else if (need_in)
+	if (cmd->no_stdin) {
+		fhin = open(DEV_NULL, O_RDWR);
+	}
+	else if (need_in) {
 		fhin = dup(fdin[0]);
-	else if (cmd->in)
+	}
+	else if (cmd->in) {
 		fhin = dup(cmd->in);
+	}
 
 	if (cmd->no_stderr)
-		fherr = open("/dev/null", O_RDWR);
+		fherr = open(DEV_NULL, O_RDWR);
 	else if (need_err)
 		fherr = dup(fderr[1]);
 	else if (cmd->err > 2)
 		fherr = dup(cmd->err);
 
 	if (cmd->no_stdout)
-		fhout = open("/dev/null", O_RDWR);
+		fhout = open(DEV_NULL, O_RDWR);
 	else if (cmd->stdout_to_stderr)
 		fhout = dup(fherr);
 	else if (need_out)
@@ -986,12 +939,14 @@ end_of_spawn:
 
 	strvec_clear(&nargv);
 	cmd->args.v = sargv;
+#ifndef __amigaos4
 	if (fhin != 0)
 		close(fhin);
 	if (fhout != 1)
 		close(fhout);
 	if (fherr != 2)
 		close(fherr);
+#endif
 }
 #endif
 
@@ -1933,7 +1888,6 @@ enum start_bg_result start_bg_command(struct child_process *cmd,
 
 	time(&time_limit);
 	time_limit += timeout_sec;
-#ifndef __amigaos4__
 wait:
 	pid_seen = waitpid(cmd->pid, &wait_status, WNOHANG);
 
@@ -2013,7 +1967,6 @@ wait:
 
 	trace2_child_exit(cmd, -1);
 	sbgr = SBGR_ERROR;
-#endif
 done:
 	child_process_clear(cmd);
 	invalidate_lstat_cache();

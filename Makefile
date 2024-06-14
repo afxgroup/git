@@ -956,6 +956,7 @@ LIB_OBJS += add-patch.o
 LIB_OBJS += advice.o
 LIB_OBJS += alias.o
 LIB_OBJS += alloc.o
+LIB_OBJS += amiga.o
 LIB_OBJS += apply.o
 LIB_OBJS += archive-tar.o
 LIB_OBJS += archive-zip.o
@@ -1358,7 +1359,7 @@ endif
 # tweaked by config.* below as well as the command-line, both of
 # which'll override these defaults.
 # Older versions of GCC may require adding "-std=gnu99" at the end.
-CFLAGS = -mcrt=clib4 -g -O2 -Wall
+CFLAGS = -mcrt=clib4 -gstabs -O2 -Wall
 LDFLAGS = -mcrt=clib4
 #CC_LD_DYNPATH = -Wl,-rpath,
 BASIC_CFLAGS = -I.
