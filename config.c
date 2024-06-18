@@ -2050,8 +2050,13 @@ void git_global_config_paths(char **user_out, char **xdg_out)
 	char *xdg_config = NULL;
 
 	if (!user_config) {
+#ifndef __amigaos4__
 		user_config = interpolate_path("~/.gitconfig", 0);
 		xdg_config = xdg_config_home("config");
+#else
+		user_config = xstrdup("Git:.gitconfig");
+		xdg_config = xdg_config_home("config");
+#endif
 	}
 
 	*user_out = user_config;

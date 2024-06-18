@@ -576,7 +576,7 @@ ssize_t read_packetized_to_strbuf(int fd_in, struct strbuf *sb_out, int options)
 
 int recv_sideband(const char *me, int in_stream, int out)
 {
-	char buf[LARGE_PACKET_MAX + 1];
+	char buf[LARGE_PACKET_MAX + 1] = {0};
 	int len;
 	struct strbuf scratch = STRBUF_INIT;
 	enum sideband_type sideband_type;

@@ -7,6 +7,11 @@
 #include "strbuf.h"
 #include "trace2.h"
 
+#ifdef __amigaos4__
+__attribute__ ((used)) static const char *version = "$VER: git for AmigaOS4 (2024-06-18)";
+__attribute__ ((used)) static const char *sc = "$STACK: 3512000";
+#endif
+
 /*
  * Many parts of Git have subprograms communicate via pipe, expect the
  * upstream of a pipe to die with SIGPIPE when the downstream of a

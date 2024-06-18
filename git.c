@@ -470,27 +470,40 @@ static int run_builtin(struct cmd_struct *p, int argc, const char **argv)
 	trace_argv_printf(argv, "trace: built-in: git");
 	trace2_cmd_name(p->cmd);
 
+	printf("run_builtin1\n");
 	validate_cache_entries(the_repository->index);
+	printf("run_builtin1.1 %s\n", argv[0]);
 	status = p->fn(argc, argv, prefix);
+	printf("run_builtin1.2 %d\n", status);
 	validate_cache_entries(the_repository->index);
+	printf("run_builtin2\n");
 
 	if (status)
 		return status;
+	printf("run_builtin3\n");
 
 	/* Somebody closed stdout? */
-	if (fstat(fileno(stdout), &st))
+	if (fstat(fileno(stdout), &st)) {
+		printf("stdout closed\n");
 		return 0;
+	}
+	printf("run_builtin4\n");
+
 	/* Ignore write errors for pipes and sockets.. */
 	if (S_ISFIFO(st.st_mode) || S_ISSOCK(st.st_mode))
 		return 0;
+	printf("run_builtin5\n");
 
 	/* Check for ENOSPC and EIO errors.. */
 	if (fflush(stdout))
 		die_errno(_("write failure on standard output"));
+	printf("run_builtin6\n");
 	if (ferror(stdout))
 		die(_("unknown write failure on standard output"));
+	printf("run_builtin7\n");
 	if (fclose(stdout))
 		die_errno(_("close failed on standard output"));
+	printf("run_builtin8\n");
 	return 0;
 }
 

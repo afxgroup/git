@@ -184,7 +184,7 @@ amiga_spawnvpe(const char *file, const char **argv, char **deltaenv, const char 
 	char *arg_string = NULL;
 	size_t arg_string_len = 0;
 	size_t parameter_string_len = 0;
-
+	IDOS->Printf("amiga_spawnvpe = fhin = %ld - fhout = %ld - fherr = %ld\n", fhin, fhout, fherr);
 	errno = 0;
 
 	parameter_string_len = get_arg_string_length((char *const *) argv);
@@ -223,7 +223,7 @@ amiga_spawnvpe(const char *file, const char **argv, char **deltaenv, const char 
 		err_err = __get_default_file(fherr, &err);
 	}
 
-	IDOS->Printf("finalpath = %s - in_err = %ld - out_err = %ld - err_err = %ld\n", finalpath, in_err, out_err, err_err);
+	//IDOS->Printf("finalpath = %s - in_err = %ld - out_err = %ld - err_err = %ld\n", finalpath, in_err, out_err, err_err);
 	ret = IDOS->SystemTags(finalpath,
 			 SYS_Input, in_err == 0 ? in : 0,
 			 SYS_Output, out_err == 0 ? out : 0,

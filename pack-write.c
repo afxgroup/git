@@ -452,7 +452,7 @@ void fixup_pack_header_footer(int pack_fd,
 
 char *index_pack_lockfile(int ip_out, int *is_well_formed)
 {
-	char packname[GIT_MAX_HEXSZ + 6];
+	char packname[GIT_MAX_HEXSZ + 6] = {0};
 	const int len = the_hash_algo->hexsz + 6;
 
 	/*
@@ -468,9 +468,13 @@ char *index_pack_lockfile(int ip_out, int *is_well_formed)
 		if (is_well_formed)
 			*is_well_formed = 1;
 		packname[len-1] = 0;
-		if (skip_prefix(packname, "keep\t", &name))
+		if (skip_prefix(packname, "keep\t", &name)) {
+			printf("index_pack_lockfile2 %s %s\n", name,
+			       xstrfmt("%s/pack/pack-%s.keep",
+				       get_object_directory(), name));
 			return xstrfmt("%s/pack/pack-%s.keep",
 				       get_object_directory(), name);
+		}
 		return NULL;
 	}
 	if (is_well_formed)

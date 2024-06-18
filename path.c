@@ -1480,6 +1480,7 @@ int looks_like_command_line_option(const char *str)
 
 char *xdg_config_home_for(const char *subdir, const char *filename)
 {
+#ifndef __amigaos4__
 	const char *home, *config_home;
 
 	assert(subdir);
@@ -1493,6 +1494,9 @@ char *xdg_config_home_for(const char *subdir, const char *filename)
 		return mkpathdup("%s/.config/%s/%s", home, subdir, filename);
 
 	return NULL;
+#else
+	return mkpathdup("Git:.config/%s/%s", subdir, filename);
+#endif
 }
 
 char *xdg_config_home(const char *filename)

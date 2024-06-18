@@ -969,7 +969,7 @@ end_of_spawn:
 		errno = failed_errno;
 		return -1;
 	}
-
+#ifndef __amigaos4
 	if (need_in)
 		close(fdin[0]);
 	else if (cmd->in)
@@ -984,7 +984,7 @@ end_of_spawn:
 		close(fderr[1]);
 	else if (cmd->err)
 		close(cmd->err);
-
+#endif
 	return 0;
 }
 

@@ -2375,30 +2375,39 @@ static void break_delta_chains(struct object_entry *entry)
 		cur->dfs_state = DFS_DONE;
 	}
 }
-
+#include <proto/dos.h>
 static void get_object_details(void)
 {
 	uint32_t i;
 	struct object_entry **sorted_by_offset;
-
+IDOS->Printf("a\n");
 	if (progress)
 		progress_state = start_progress(_("Counting objects"),
 						to_pack.nr_objects);
+	IDOS->Printf("b\n");
 
 	CALLOC_ARRAY(sorted_by_offset, to_pack.nr_objects);
+	IDOS->Printf("c\n");
 	for (i = 0; i < to_pack.nr_objects; i++)
 		sorted_by_offset[i] = to_pack.objects + i;
+	IDOS->Printf("d\n");
 	QSORT(sorted_by_offset, to_pack.nr_objects, pack_offset_sort);
+	IDOS->Printf("e\n");
 
 	for (i = 0; i < to_pack.nr_objects; i++) {
+		IDOS->Printf("e1\n");
 		struct object_entry *entry = sorted_by_offset[i];
 		check_object(entry, i);
+		IDOS->Printf("e2\n");
 		if (entry->type_valid &&
 		    oe_size_greater_than(&to_pack, entry, big_file_threshold))
 			entry->no_try_delta = 1;
 		display_progress(progress_state, i + 1);
+		IDOS->Printf("e3\n");
 	}
+	IDOS->Printf("f\n");
 	stop_progress(&progress_state);
+	IDOS->Printf("g\n");
 
 	/*
 	 * This must happen in a second pass, since we rely on the delta
@@ -2406,6 +2415,7 @@ static void get_object_details(void)
 	 */
 	for (i = 0; i < to_pack.nr_objects; i++)
 		break_delta_chains(&to_pack.objects[i]);
+	IDOS->Printf("h\n");
 
 	free(sorted_by_offset);
 }
