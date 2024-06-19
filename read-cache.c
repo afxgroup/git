@@ -2485,33 +2485,25 @@ void discard_index(struct index_state *istate)
 void validate_cache_entries(const struct index_state *istate)
 {
 	int i;
-printf("validate_cache_entries1\n");
 	if (!should_validate_cache_entries() ||!istate || !istate->initialized)
 		return;
-	printf("validate_cache_entries2\n");
 
 	for (i = 0; i < istate->cache_nr; i++) {
-		printf("validate_cache_entries3 %d\n", i);
 		if (!istate) {
 			BUG("cache entry is not allocated from expected memory pool");
 		} else if (!istate->ce_mem_pool ||
 			!mem_pool_contains(istate->ce_mem_pool, istate->cache[i])) {
-			printf("validate_cache_entries3.1\n");
 			if (!istate->split_index ||
 				!istate->split_index->base ||
 				!istate->split_index->base->ce_mem_pool ||
 				!mem_pool_contains(istate->split_index->base->ce_mem_pool, istate->cache[i])) {
 				BUG("cache entry is not allocated from expected memory pool");
 			}
-			printf("validate_cache_entries3.2\n");
 		}
 	}
-	printf("validate_cache_entries4\n");
 
 	if (istate->split_index)
 		validate_cache_entries(istate->split_index->base);
-	printf("validate_cache_entries5\n");
-
 }
 
 int unmerged_index(const struct index_state *istate)
@@ -3153,10 +3145,12 @@ static int do_write_locked_index(struct index_state *istate,
 
 	if (ret)
 		return ret;
-	if (flags & COMMIT_LOCK)
+	if (flags & COMMIT_LOCK) {
 		ret = commit_locked_index(lock);
-	else
+	}
+	else {
 		ret = close_lock_file_gently(lock);
+	}
 
 	run_hooks_l("post-index-change",
 			istate->updated_workdir ? "1" : "0",
@@ -3344,7 +3338,6 @@ int write_locked_index(struct index_state *istate, struct lock_file *lock,
 		istate->cache_changed |= SPLIT_INDEX_ORDERED;
 
 	new_shared_index = istate->cache_changed & SPLIT_INDEX_ORDERED;
-
 	if (new_shared_index) {
 		struct tempfile *temp;
 		int saved_errno;

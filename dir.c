@@ -2496,7 +2496,11 @@ static int open_cached_dir(struct cached_dir *cdir,
 	cdir->untracked = untracked;
 	if (valid_cached_dir(dir, untracked, istate, path, check_only))
 		return 0;
+#ifndef __amigaos4__
 	c_path = path->len ? path->buf : ".";
+#else
+	c_path = path->len ? path->buf : "";
+#endif
 	cdir->fdir = opendir(c_path);
 	if (!cdir->fdir)
 		warning_errno(_("could not open directory '%s'"), c_path);

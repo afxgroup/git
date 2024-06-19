@@ -290,7 +290,7 @@ static const char **prepare_shell_cmd(struct strvec *out, const char **argv)
 #endif
 		strvec_push(out, "-c");
 #else
-		strvec_push(out, "run");
+		//strvec_push(out, "run");
 #endif
 		/*
 		 * If we have no extra arguments, we do not even need to
@@ -939,7 +939,7 @@ end_of_spawn:
 
 	strvec_clear(&nargv);
 	cmd->args.v = sargv;
-#ifndef __amigaos4
+#ifndef __amigaos4__
 	if (fhin != 0)
 		close(fhin);
 	if (fhout != 1)
@@ -969,7 +969,7 @@ end_of_spawn:
 		errno = failed_errno;
 		return -1;
 	}
-#ifndef __amigaos4
+#ifndef __amigaos4__
 	if (need_in)
 		close(fdin[0]);
 	else if (cmd->in)
