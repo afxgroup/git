@@ -33,7 +33,10 @@ const char *git_editor(void)
 		editor = getenv("VISUAL");
 	if (!editor)
 		editor = getenv("EDITOR");
-
+#ifdef __amigaos4__
+	if (!editor)
+		editor = "ED";
+#endif
 	if (!editor && terminal_is_dumb)
 		return NULL;
 

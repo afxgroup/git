@@ -17,6 +17,7 @@
 #include "compat/nonblock.h"
 
 #ifdef __amigaos4__
+#include <proto/dos.h>
 int amiga_spawnvpe(const char *file, const char **argv, char **deltaenv, const char *dir, int fhin, int fhout, int fherr);
 #endif
 
@@ -73,9 +74,10 @@ static void cleanup_children(int sig, int in_signal)
 	while (children_to_wait_for) {
 		struct child_to_clean *p = children_to_wait_for;
 		children_to_wait_for = p->next;
-
+		trace_printf("Cleanup_children waitpid %d\n", p->pid);
 		while (waitpid(p->pid, NULL, 0) < 0 && errno == EINTR)
 			; /* spin waiting for process exit or error */
+		trace_printf("Cleanup_children waitpid done %d\n", p->pid);
 
 		if (!in_signal)
 			free(p);
@@ -552,18 +554,21 @@ static int wait_or_whine(pid_t pid, const char *argv0, int in_signal)
 	pid_t waiting;
 	int failed_errno = 0;
 
+	trace_printf("[wait_or_whine] waitpid %d\n", pid);
 	while ((waiting = waitpid(pid, &status, 0)) < 0 && errno == EINTR)
 		;	/* nothing */
+	trace_printf("[wait_or_whine] waitpid done: pid = %d -  waiting = %d - status %d\n", pid, waiting, status);
 
 	if (waiting < 0) {
 		failed_errno = errno;
 		if (!in_signal)
-			error_errno("waitpid for %s failed", argv0);
+			error_errno("waitpid1 for %s failed", argv0);
 	} else if (waiting != pid) {
 		if (!in_signal)
 			_error("waitpid is confused (%s)", argv0);
 	} else if (WIFSIGNALED(status)) {
 		code = WTERMSIG(status);
+		trace_printf("[wait_or_whine] code1 %d\n", code);
 		if (!in_signal && code != SIGINT && code != SIGQUIT && code != SIGPIPE)
 			_error("%s died of signal %d", argv0, code);
 		/*
@@ -574,6 +579,7 @@ static int wait_or_whine(pid_t pid, const char *argv0, int in_signal)
 		code += 128;
 	} else if (WIFEXITED(status)) {
 		code = WEXITSTATUS(status);
+		trace_printf("[wait_or_whine]  code2 %d\n", code);
 	} else {
 		if (!in_signal)
 			_error("waitpid is confused (%s)", argv0);
@@ -934,8 +940,11 @@ end_of_spawn:
 	failed_errno = errno;
 	if (cmd->pid < 0 && (!cmd->silent_exec_failure || errno != ENOENT))
 		error_errno("cannot spawn %s", cmd->args.v[0]);
-	if (cmd->clean_on_exit && cmd->pid >= 0)
+	trace_printf("[start_command] PID %d spawned\n", cmd->pid);
+	if (cmd->clean_on_exit && cmd->pid >= 0) {
+		trace_printf("[start_command] PID %d marked for cleanup\n", cmd->pid);
 		mark_child_for_cleanup(cmd->pid, cmd);
+	}
 
 	strvec_clear(&nargv);
 	cmd->args.v = sargv;
@@ -969,6 +978,7 @@ end_of_spawn:
 		errno = failed_errno;
 		return -1;
 	}
+	trace_printf("[start_command] started\n");
 #ifndef __amigaos4__
 	if (need_in)
 		close(fdin[0]);
@@ -990,6 +1000,7 @@ end_of_spawn:
 
 int finish_command(struct child_process *cmd)
 {
+	trace_printf("[finish_command] PID=%d\n", cmd->pid);
 	int ret = wait_or_whine(cmd->pid, cmd->args.v[0], 0);
 	trace2_child_exit(cmd, ret);
 	child_process_clear(cmd);
@@ -999,6 +1010,7 @@ int finish_command(struct child_process *cmd)
 
 int finish_command_in_signal(struct child_process *cmd)
 {
+	trace_printf("[finish_command_in_signal] PID=%d\n", cmd->pid);
 	int ret = wait_or_whine(cmd->pid, cmd->args.v[0], 1);
 	if (ret != -1)
 		trace2_child_exit(cmd, ret);
@@ -1014,6 +1026,7 @@ int run_command(struct child_process *cmd)
 		BUG("run_command with a pipe can cause deadlock");
 
 	code = start_command(cmd);
+	trace_printf("[run_command] code = %d\n", code);
 	if (code)
 		return code;
 	return finish_command(cmd);
@@ -1265,6 +1278,7 @@ error:
 int finish_async(struct async *async)
 {
 #ifdef NO_PTHREADS
+	trace_printf("[finish_async] PID=%d\n", async->pid);
 	int ret = wait_or_whine(async->pid, "child process", 0);
 
 	invalidate_lstat_cache();
@@ -1463,10 +1477,12 @@ int pipe_command(struct child_process *cmd,
 	}
 
 	if (pump_io(io, nr) < 0) {
+		trace_printf("[pipe_command] calling finish_command and return -1\n");
 		finish_command(cmd); /* throw away exit code */
 		return -1;
 	}
 
+	trace_printf("[pipe_command] calling finish_command\n");
 	return finish_command(cmd);
 }
 
@@ -1703,6 +1719,7 @@ static int pp_collect_finished(struct parallel_processes *pp,
 			break;
 
 		code = finish_command(&pp->children[i].process);
+		trace_printf("[pp_collect_finished] code = %d\n", code);
 
 		if (opts->task_finished)
 			code = opts->task_finished(code, opts->ungroup ? NULL :
@@ -1890,6 +1907,7 @@ enum start_bg_result start_bg_command(struct child_process *cmd,
 	time_limit += timeout_sec;
 wait:
 	pid_seen = waitpid(cmd->pid, &wait_status, WNOHANG);
+	trace_printf("[start_bg_command] pid_seen %d %d\n", pid_seen, cmd->pid);
 
 	if (!pid_seen) {
 		/*
