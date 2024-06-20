@@ -562,7 +562,7 @@ static int wait_or_whine(pid_t pid, const char *argv0, int in_signal)
 	if (waiting < 0) {
 		failed_errno = errno;
 		if (!in_signal)
-			error_errno("waitpid1 for %s failed", argv0);
+			error_errno("waitpid for %s failed", argv0);
 	} else if (waiting != pid) {
 		if (!in_signal)
 			_error("waitpid is confused (%s)", argv0);
