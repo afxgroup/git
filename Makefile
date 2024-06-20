@@ -1130,7 +1130,7 @@ LIB_OBJS += rerere.o
 LIB_OBJS += reset.o
 LIB_OBJS += resolve-undo.o
 LIB_OBJS += revision.o
-LIB_OBJS += run-command.o
+LIB_OBJS += run-command-amiga.o
 LIB_OBJS += send-pack.o
 LIB_OBJS += sequencer.o
 LIB_OBJS += serve.o
@@ -1358,7 +1358,7 @@ endif
 # tweaked by config.* below as well as the command-line, both of
 # which'll override these defaults.
 # Older versions of GCC may require adding "-std=gnu99" at the end.
-CFLAGS = -mcrt=clib4 -gstabs -O2 -Wall
+CFLAGS = -mcrt=clib4 -gstabs -O2 -Wall -DG_DATE=\"$(shell date +%Y.%m.%d)\" -DG_VERSION=\"$(GIT_VERSION)\"
 LDFLAGS = -mcrt=clib4
 #CC_LD_DYNPATH = -Wl,-rpath,
 BASIC_CFLAGS = -I.

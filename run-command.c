@@ -18,7 +18,7 @@
 
 #ifdef __amigaos4__
 #include <proto/dos.h>
-int amiga_spawnvpe(const char *file, const char **argv, char **deltaenv, const char *dir, int fhin, int fhout, int fherr);
+#include <unistd.h>
 #endif
 
 void child_process_init(struct child_process *child)
@@ -568,7 +568,7 @@ static int wait_or_whine(pid_t pid, const char *argv0, int in_signal)
 			_error("waitpid is confused (%s)", argv0);
 	} else if (WIFSIGNALED(status)) {
 		code = WTERMSIG(status);
-		trace_printf("[wait_or_whine] code1 %d\n", code);
+		trace_printf("[wait_or_whine WIFSIGNALED] code %d\n", code);
 		if (!in_signal && code != SIGINT && code != SIGQUIT && code != SIGPIPE)
 			_error("%s died of signal %d", argv0, code);
 		/*
@@ -579,7 +579,7 @@ static int wait_or_whine(pid_t pid, const char *argv0, int in_signal)
 		code += 128;
 	} else if (WIFEXITED(status)) {
 		code = WEXITSTATUS(status);
-		trace_printf("[wait_or_whine]  code2 %d\n", code);
+		trace_printf("[wait_or_whine WIFEXITED] code %d\n", code);
 	} else {
 		if (!in_signal)
 			_error("waitpid is confused (%s)", argv0);
@@ -894,7 +894,6 @@ end_of_spawn:
 #else
 {
 #ifdef __amigaos4__
-#define mingw_spawnvpe spawnvpe
 #define DEV_NULL "NIL:"
 #else
 #define DEV_NULL "/dev/null"
@@ -934,7 +933,11 @@ end_of_spawn:
 	else if (cmd->use_shell)
 		cmd->args.v = prepare_shell_cmd(&nargv, sargv);
 
+#ifndef __amigaos4__
 	cmd->pid = mingw_spawnvpe(cmd->args.v[0], cmd->args.v,
+#else
+	cmd->pid = spawnvpe(cmd->args.v[0], cmd->args.v,
+#endif
 				  (char**) cmd->env.v,
 				  cmd->dir, fhin, fhout, fherr);
 	failed_errno = errno;

@@ -14,6 +14,7 @@
 #include "symlinks.h"
 #include "thread-utils.h"
 #include "trace2.h"
+#include "trace.h"
 
 struct pc_worker {
 	struct child_process cp;
@@ -319,6 +320,7 @@ static int write_pc_item_to_fd(struct parallel_checkout_item *pc_item, int fd,
 static int close_and_clear(int *fd)
 {
 	int ret = 0;
+	trace_printf("[close_and_clear] fd: %d\n", *fd);
 
 	if (*fd >= 0) {
 		ret = close(*fd);
@@ -511,15 +513,20 @@ static void finish_workers(struct pc_worker *workers, int num_workers)
 	 * Close pipes before calling finish_command() to let the workers
 	 * exit asynchronously and avoid spending extra time on wait().
 	 */
+	trace_printf("[finish_workers] workers: %d\n", num_workers);
 	for (i = 0; i < num_workers; i++) {
+		trace_printf("[finish_workers] finish worker: %d\n", i);
 		struct child_process *cp = &workers[i].cp;
+#ifndef __amigaos4__
 		if (cp->in >= 0)
 			close(cp->in);
 		if (cp->out >= 0)
 			close(cp->out);
+#endif
 	}
 
 	for (i = 0; i < num_workers; i++) {
+		trace_printf("[finish_workers] finish_command: %d\n", i);
 		int rc = finish_command(&workers[i].cp);
 		if (rc > 128) {
 			/*

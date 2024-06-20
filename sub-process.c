@@ -5,6 +5,7 @@
 #include "sub-process.h"
 #include "sigchain.h"
 #include "pkt-line.h"
+#include "trace.h"
 
 int cmd2process_cmp(const void *cmp_data UNUSED,
 		    const struct hashmap_entry *eptr,
@@ -66,10 +67,13 @@ void subprocess_stop(struct hashmap *hashmap, struct subprocess_entry *entry)
 
 static void subprocess_exit_handler(struct child_process *process)
 {
+	trace_printf("[subprocess_exit_handler] process->in: %d - process->out %d\n", process->in, process->out);
 	sigchain_push(SIGPIPE, SIG_IGN);
 	/* Closing the pipe signals the subprocess to initiate a shutdown. */
+#ifndef __amigaos4__
 	close(process->in);
 	close(process->out);
+#endif
 	sigchain_pop(SIGPIPE);
 	/* Finish command will wait until the shutdown is complete. */
 	finish_command(process);
@@ -93,6 +97,7 @@ int subprocess_start(struct hashmap *hashmap, struct subprocess_entry *entry, co
 	process->clean_on_exit_handler = subprocess_exit_handler;
 	process->trace2_child_class = "subprocess";
 
+	trace_printf("[subprocess_start] %s\n", cmd);
 	err = start_command(process);
 	if (err) {
 		_error("cannot fork to run subprocess '%s'", cmd);

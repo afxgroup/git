@@ -39,6 +39,7 @@
 #include "promisor-remote.h"
 #include "pack-mtimes.h"
 #include "parse-options.h"
+#include "trace.h"
 
 /*
  * Objects we are going to pack are collected in the `to_pack` structure.
@@ -4610,9 +4611,11 @@ int cmd_pack_objects(int argc, const char **argv, const char *prefix)
 	if (include_tag && nr_result)
 		refs_for_each_tag_ref(get_main_ref_store(the_repository),
 				      add_ref_tag, NULL);
+	trace_printf("[cmd_pack_objects] stop_progress\n");
 	stop_progress(&progress_state);
 	trace2_region_leave("pack-objects", "enumerate-objects",
 			    the_repository);
+	trace_printf("[cmd_pack_objects] done\n");
 
 	if (non_empty && !nr_result)
 		goto cleanup;
@@ -4625,7 +4628,9 @@ int cmd_pack_objects(int argc, const char **argv, const char *prefix)
 	}
 
 	trace2_region_enter("pack-objects", "write-pack-file", the_repository);
+	trace_printf("[cmd_pack_objects] write_excluded_by_configs\n");
 	write_excluded_by_configs();
+	trace_printf("[cmd_pack_objects] write_pack_file\n");
 	write_pack_file();
 	trace2_region_leave("pack-objects", "write-pack-file", the_repository);
 

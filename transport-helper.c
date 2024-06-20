@@ -18,6 +18,7 @@
 #include "transport-internal.h"
 #include "protocol.h"
 #include "packfile.h"
+#include "trace.h"
 
 static int debug;
 
@@ -124,6 +125,7 @@ static struct child_process *get_helper(struct transport *transport)
 	struct child_process *helper;
 	int duped;
 	int code;
+	trace_printf("[get_helper]\n");
 
 	if (data->helper)
 		return data->helper;
@@ -235,6 +237,7 @@ static int disconnect_helper(struct transport *transport)
 {
 	struct helper_data *data = transport->data;
 	int res = 0;
+	trace_printf("[disconnect_helper]\n");
 
 	if (data->helper) {
 		if (debug)
@@ -250,8 +253,11 @@ static int disconnect_helper(struct transport *transport)
 			xwrite(data->helper->in, "\n", 1);
 			sigchain_pop(SIGPIPE);
 		}
+		trace_printf("[disconnect_helper] close in and out\n");
+#ifndef __amigaos4__
 		close(data->helper->in);
 		close(data->helper->out);
+#endif
 		fclose(data->out);
 		res = finish_command(data->helper);
 		FREE_AND_NULL(data->name);

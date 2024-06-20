@@ -386,7 +386,9 @@ static int handle_alias(int *argcp, const char ***argv)
 			trace2_cmd_alias(alias_command, child.args.v);
 			trace2_cmd_name("_run_shell_alias_");
 
+			trace_printf("[handle_alias] run_command\n");
 			ret = run_command(&child);
+			trace_printf("[handle_alias] run_command exit %d\n", ret);
 			if (ret >= 0)   /* normal exit */
 				exit(ret);
 
@@ -762,7 +764,9 @@ static void execv_dashed_external(const char **argv)
 	 * or our usual generic code if we were not even able to exec
 	 * the program.
 	 */
+	trace_printf("[execv_dashed_external] run_command\n");
 	status = run_command(&cmd);
+	trace_printf("[execv_dashed_external] run_command exit status = %d\n", status);
 
 	/*
 	 * If the child process ran and we are now going to exit, emit a
@@ -773,6 +777,7 @@ static void execv_dashed_external(const char **argv)
 		exit(status);
 	else if (errno != ENOENT)
 		exit(128);
+	trace_printf("[execv_dashed_external] exit with status %d\n", status);
 }
 
 static int run_argv(int *argcp, const char ***argv)
@@ -822,17 +827,22 @@ static int run_argv(int *argcp, const char ***argv)
 			cmd.clean_on_exit = 1;
 			cmd.wait_after_clean = 1;
 			cmd.trace2_child_class = "git_alias";
+			trace_printf("[run_argv] run_command\n");
 			i = run_command(&cmd);
+			trace_printf("[run_argv] run_command i=%d errno=%d\n", i , errno);
 			if (i >= 0 || errno != ENOENT)
 				exit(i);
 			die("could not execute builtin %s", **argv);
 		}
 
+		trace_printf("[run_argv] execv_dashed_external\n");
 		/* .. then try the external ones */
 		execv_dashed_external(*argv);
 
 		seen = unsorted_string_list_lookup(&cmd_list, *argv[0]);
+		trace_printf("[run_argv] unsorted_string_list_lookup before seen\n");
 		if (seen) {
+			trace_printf("[run_argv] unsorted_string_list_lookup seen\n");
 			int i;
 			struct strbuf sb = STRBUF_INIT;
 			for (i = 0; i < cmd_list.nr; i++) {
@@ -849,6 +859,7 @@ static int run_argv(int *argcp, const char ***argv)
 		}
 
 		string_list_append(&cmd_list, *argv[0]);
+		trace_printf("[run_argv] handle_alias\n");
 
 		/*
 		 * It could be an alias -- this works around the insanity
@@ -859,6 +870,7 @@ static int run_argv(int *argcp, const char ***argv)
 			break;
 		done_alias = 1;
 	}
+	trace_printf("[run_argv] done_alias=%d\n", done_alias);
 
 	string_list_clear(&cmd_list, 0);
 
@@ -878,6 +890,7 @@ int cmd_main(int argc, const char **argv)
 		if (slash)
 			cmd = slash + 1;
 	}
+	trace_printf("[cmd_main] cmd=%s\n", cmd);
 
 	trace_command_performance(argv);
 
@@ -934,6 +947,7 @@ int cmd_main(int argc, const char **argv)
 			fprintf(stderr, _("expansion of alias '%s' failed; "
 					  "'%s' is not a git command\n"),
 				cmd, argv[0]);
+			trace_printf("[cmd_main] was_alias exit\n");
 			exit(1);
 		}
 		if (!done_help) {
@@ -945,6 +959,7 @@ int cmd_main(int argc, const char **argv)
 
 	fprintf(stderr, _("failed to run command '%s': %s\n"),
 		cmd, strerror(errno));
+	trace_printf("[cmd_main] exit\n");
 
 	return 1;
 }
