@@ -894,7 +894,7 @@ end_of_spawn:
 #else
 {
 #ifdef __amigaos4__
-#define mingw_spawnvpe amiga_spawnvpe
+#define mingw_spawnvpe spawnvpe
 #define DEV_NULL "NIL:"
 #else
 #define DEV_NULL "/dev/null"
