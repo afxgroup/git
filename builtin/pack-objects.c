@@ -2381,34 +2381,34 @@ static void get_object_details(void)
 {
 	uint32_t i;
 	struct object_entry **sorted_by_offset;
-IDOS->Printf("a\n");
+	trace_printf("a\n");
 	if (progress)
 		progress_state = start_progress(_("Counting objects"),
 						to_pack.nr_objects);
-	IDOS->Printf("b\n");
+	trace_printf("b\n");
 
 	CALLOC_ARRAY(sorted_by_offset, to_pack.nr_objects);
-	IDOS->Printf("c\n");
+	trace_printf("c\n");
 	for (i = 0; i < to_pack.nr_objects; i++)
 		sorted_by_offset[i] = to_pack.objects + i;
-	IDOS->Printf("d\n");
+	trace_printf("d\n");
 	QSORT(sorted_by_offset, to_pack.nr_objects, pack_offset_sort);
-	IDOS->Printf("e\n");
+	trace_printf("e\n");
 
 	for (i = 0; i < to_pack.nr_objects; i++) {
-		IDOS->Printf("e1\n");
+		trace_printf("e1\n");
 		struct object_entry *entry = sorted_by_offset[i];
 		check_object(entry, i);
-		IDOS->Printf("e2\n");
+		trace_printf("e2\n");
 		if (entry->type_valid &&
 		    oe_size_greater_than(&to_pack, entry, big_file_threshold))
 			entry->no_try_delta = 1;
 		display_progress(progress_state, i + 1);
-		IDOS->Printf("e3\n");
+		trace_printf("e3\n");
 	}
-	IDOS->Printf("f\n");
+	trace_printf("f\n");
 	stop_progress(&progress_state);
-	IDOS->Printf("g\n");
+	trace_printf("g\n");
 
 	/*
 	 * This must happen in a second pass, since we rely on the delta
@@ -2416,7 +2416,7 @@ IDOS->Printf("a\n");
 	 */
 	for (i = 0; i < to_pack.nr_objects; i++)
 		break_delta_chains(&to_pack.objects[i]);
-	IDOS->Printf("h\n");
+	trace_printf("h\n");
 
 	free(sorted_by_offset);
 }
@@ -3157,7 +3157,9 @@ static void prepare_pack(int window, int depth)
 	if (use_delta_islands)
 		resolve_tree_islands(the_repository, progress, &to_pack);
 
+	trace_printf("[prepare_pack] Call get_object_details\n");
 	get_object_details();
+	trace_printf("[prepare_pack] Done\n");
 
 	/*
 	 * If we're locally repacking then we need to be doubly careful

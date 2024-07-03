@@ -35,8 +35,8 @@ struct child_to_clean {
 	struct child_process *process;
 	struct child_to_clean *next;
 };
-static struct child_to_clean *children_to_clean;
-static int installed_child_cleanup_handler;
+struct child_to_clean *children_to_clean;
+int installed_child_cleanup_handler;
 
 static void cleanup_children(int sig, int in_signal)
 {
@@ -44,7 +44,7 @@ static void cleanup_children(int sig, int in_signal)
 	struct child_to_clean *children_to_wait_for = NULL;
 
 	while (children_to_clean) {
-		trace_printf("[cleanup_children] children_to_clean\n");
+		trace_printf("[cleanup_children] children_to_clean: process found\n");
 		struct child_to_clean *p = children_to_clean;
 		children_to_clean = p->next;
 
@@ -73,11 +73,11 @@ static void cleanup_children(int sig, int in_signal)
 	trace_printf("[cleanup_children] before children_to_wait_for\n");
 
 	while (children_to_wait_for) {
-		trace_printf("[cleanup_children] children_to_wait_for\n");
+		trace_printf("[cleanup_children] children_to_wait_for: Process found\n");
 		struct child_to_clean *p = children_to_wait_for;
 		children_to_wait_for = p->next;
 		trace_printf("[cleanup_children] waitpid %d\n", p->pid);
-		while (waitpid(p->pid, NULL, 0) < 0 && errno == EINTR)
+		while (waitpid(p->pid, NULL, 0) < 0)
 			; /* spin waiting for process exit or error */
 		trace_printf("[cleanup_children] waitpid done %d\n", p->pid);
 
@@ -110,8 +110,10 @@ static void mark_child_for_cleanup(pid_t pid, struct child_process *process)
 	p->process = process;
 	p->next = children_to_clean;
 	children_to_clean = p;
+	trace_printf("[mark_child_for_cleanup] children_to_clean %p\n", children_to_clean);
 
 	if (!installed_child_cleanup_handler) {
+		trace_printf("[mark_child_for_cleanup] Installing cleanup handler on pid %ld\n", pid);
 		atexit(cleanup_children_on_exit);
 		sigchain_push_common(cleanup_children_on_signal);
 		installed_child_cleanup_handler = 1;
@@ -295,8 +297,8 @@ static int wait_or_whine(pid_t pid, const char *argv0, int in_signal)
 	int failed_errno = 0;
 
 	trace_printf("[wait_or_whine] waitpid %d\n", pid);
-	while ((waiting = waitpid(pid, &status, 0)) < 0 && errno == EINTR)
-		;	/* nothing */
+	waiting = waitpid(pid, &status, 0);
+
 	trace_printf("[wait_or_whine] waitpid done: pid = %d -  waiting = %d - status %d\n", pid, waiting, status);
 
 	if (waiting < 0) {
@@ -527,7 +529,7 @@ int start_command(struct child_process *cmd)
 	trace_printf("[start_command] PID %d spawned\n", cmd->pid);
 	if (cmd->clean_on_exit && cmd->pid >= 0) {
 		trace_printf("[start_command] PID %d marked for cleanup\n", cmd->pid);
-		//mark_child_for_cleanup(cmd->pid, cmd);
+		mark_child_for_cleanup(cmd->pid, cmd);
 	}
 
 	strvec_clear(&nargv);
@@ -628,14 +630,19 @@ static NORETURN void die_async(const char *err, va_list params)
 	die_message_fn(err, params);
 
 	if (in_async()) {
+		trace_printf("in_async() - close proc_in\n");
 		struct async *async = pthread_getspecific(async_key);
 		if (async->proc_in >= 0)
 			close(async->proc_in);
+		trace_printf("in_async() - close proc_out\n");
 		if (async->proc_out >= 0)
 			close(async->proc_out);
+		trace_printf("in_async() - pthread_exit in\n");
 		pthread_exit((void *)128);
+		trace_printf("in_async() - pthread_exit out\n");
 	}
 
+	trace_printf("in_async() - call exit(128)\n");
 	exit(128);
 }
 
@@ -655,16 +662,21 @@ int in_async(void)
 
 static void NORETURN async_exit(int code)
 {
+	trace_printf("[async_exit] called()\n");
 	pthread_exit((void *)(intptr_t)code);
 }
 
 void check_pipe(int err)
 {
+	trace_printf("[check_pipe] enter\n");
 	if (err == EPIPE) {
+		trace_printf("[check_pipe] err = EPIPE()\n");
 		if (in_async())
 			async_exit(141);
 
+		trace_printf("[check_pipe] signal SIGPIPE\n");
 		signal(SIGPIPE, SIG_DFL);
+		trace_printf("[check_pipe] raise SIGPIPE\n");
 		raise(SIGPIPE);
 		/* Should never happen, but just in case... */
 		exit(141);
@@ -733,11 +745,13 @@ int start_async(struct async *async)
 	async->proc_in = proc_in;
 	async->proc_out = proc_out;
 	{
+		trace_printf("[start_async] pthread_create\n");
 		int err = pthread_create(&async->tid, NULL, run_thread, async);
 		if (err) {
 			_error(_("cannot create async thread: %s"), strerror(err));
 			goto error;
 		}
+		trace_printf("[start_async] pthread_create done\n");
 	}
 	return 0;
 

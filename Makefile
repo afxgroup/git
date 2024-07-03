@@ -657,7 +657,7 @@ SPATCH = spatch
 export TCL_PATH TCLTK_PATH
 
 # Set our default LIBS variables
-PTHREAD_LIBS = -lpthread
+PTHREAD_LIBS = -lpthread #-ldebug
 
 # Guard against environment variables
 BUILTIN_OBJS =

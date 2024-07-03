@@ -292,7 +292,7 @@ static const char **prepare_shell_cmd(struct strvec *out, const char **argv)
 #endif
 		strvec_push(out, "-c");
 #else
-		//strvec_push(out, "run");
+		strvec_push(out, "run >NIL:");
 #endif
 		/*
 		 * If we have no extra arguments, we do not even need to
