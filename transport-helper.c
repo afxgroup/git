@@ -125,7 +125,6 @@ static struct child_process *get_helper(struct transport *transport)
 	struct child_process *helper;
 	int duped;
 	int code;
-	trace_printf("[get_helper]\n");
 
 	if (data->helper)
 		return data->helper;
