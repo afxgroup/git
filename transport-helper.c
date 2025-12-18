@@ -236,9 +236,10 @@ static int disconnect_helper(struct transport *transport)
 {
 	struct helper_data *data = transport->data;
 	int res = 0;
-	trace_printf("[disconnect_helper]\n");
+	trace_printf("[disconnect_helper] called\n");
 
 	if (data->helper) {
+		trace_printf("[disconnect_helper] data->helper exists, PID=%d\n", data->helper->pid);
 		if (debug)
 			fprintf(stderr, "Debug: Disconnecting.\n");
 		if (!data->no_disconnect_req) {
@@ -248,20 +249,24 @@ static int disconnect_helper(struct transport *transport)
 			 * most likely error is EPIPE due to the helper dying
 			 * to report an error itself.
 			 */
+			trace_printf("[disconnect_helper] writing newline to helper->in=%d\n", data->helper->in);
 			sigchain_push(SIGPIPE, SIG_IGN);
 			xwrite(data->helper->in, "\n", 1);
 			sigchain_pop(SIGPIPE);
 		}
-		trace_printf("[disconnect_helper] close in and out\n");
-#ifndef __amigaos4__
+		trace_printf("[disconnect_helper] close in=%d and out=%d\n", data->helper->in, data->helper->out);
 		close(data->helper->in);
 		close(data->helper->out);
-#endif
 		fclose(data->out);
+		trace_printf("[disconnect_helper] calling finish_command\n");
 		res = finish_command(data->helper);
+		trace_printf("[disconnect_helper] finish_command returned %d\n", res);
 		FREE_AND_NULL(data->name);
 		FREE_AND_NULL(data->helper);
+	} else {
+		trace_printf("[disconnect_helper] data->helper is NULL\n");
 	}
+	trace_printf("[disconnect_helper] completed with res=%d\n", res);
 	return res;
 }
 

@@ -81,14 +81,21 @@ static int add_mailname_host(struct strbuf *buf)
 {
 	FILE *mailname;
 	struct strbuf mailnamebuf = STRBUF_INIT;
-
+#ifndef GIT_AMIGAOS4_NATIVE
 	mailname = fopen_or_warn("/etc/mailname", "r");
+#else
+	mailname = fopen_or_warn("Git:mailname", "r");
+#endif	
 	if (!mailname)
 		return -1;
 
 	if (strbuf_getline(&mailnamebuf, mailname) == EOF) {
 		if (ferror(mailname))
+#ifndef GIT_AMIGAOS4_NATIVE
 			warning_errno("cannot read /etc/mailname");
+#else
+			warning_errno("cannot read Git:mailname");
+#endif
 		strbuf_release(&mailnamebuf);
 		fclose(mailname);
 		return -1;

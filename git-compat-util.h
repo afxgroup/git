@@ -218,6 +218,10 @@ struct strbuf;
 #define GIT_WINDOWS_NATIVE
 #endif
 
+#ifdef __amigaos4__
+#define GIT_AMIGAOS4_NATIVE
+#endif
+
 #if defined(NO_UNIX_SOCKETS) || !defined(GIT_WINDOWS_NATIVE)
 static inline int _have_unix_sockets(void)
 {
@@ -1440,7 +1444,11 @@ void bug_fl(const char *file, int line, const char *fmt, ...);
 #endif
 
 #ifndef SHELL_PATH
+#ifndef __amigaos4__
 # define SHELL_PATH "/bin/sh"
+#else
+# define SHELL_PATH "run"
+#endif
 #endif
 
 #ifndef _POSIX_THREAD_SAFE_FUNCTIONS

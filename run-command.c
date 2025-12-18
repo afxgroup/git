@@ -16,11 +16,6 @@
 #include "packfile.h"
 #include "compat/nonblock.h"
 
-#ifdef __amigaos4__
-#include <proto/dos.h>
-#include <unistd.h>
-#endif
-
 void child_process_init(struct child_process *child)
 {
 	struct child_process blank = CHILD_PROCESS_INIT;
@@ -284,16 +279,12 @@ static const char **prepare_shell_cmd(struct strvec *out, const char **argv)
 		BUG("shell command is empty");
 
 	if (strcspn(argv[0], "|&;<>()$`\\\"' \t\n*?[#~=%") != strlen(argv[0])) {
-#ifndef __amigaos4__
 #ifndef GIT_WINDOWS_NATIVE
 		strvec_push(out, SHELL_PATH);
 #else
 		strvec_push(out, "sh");
 #endif
 		strvec_push(out, "-c");
-#else
-		strvec_push(out, "run >NIL:");
-#endif
 		/*
 		 * If we have no extra arguments, we do not even need to
 		 * bother with the "$@" magic.
@@ -308,7 +299,7 @@ static const char **prepare_shell_cmd(struct strvec *out, const char **argv)
 	return out->v;
 }
 
-#if !defined(GIT_WINDOWS_NATIVE) && !defined(__amigaos4__)
+#if !defined(GIT_WINDOWS_NATIVE)
 static int child_notifier = -1;
 
 enum child_errcode {
@@ -566,6 +557,27 @@ static int wait_or_whine(pid_t pid, const char *argv0, int in_signal)
 	} else if (waiting != pid) {
 		if (!in_signal)
 			_error("waitpid is confused (%s)", argv0);
+#ifdef GIT_AMIGAOS4_NATIVE
+	/*
+	 * On AmigaOS4, WIFEXITED and WIFSIGNALED can both be true for the same
+	 * status value (e.g., exit code 1 is interpreted as both exited and signaled).
+	 * We must check WIFEXITED first since exit codes are the primary use case.
+	 */
+	} else if (WIFEXITED(status)) {
+		code = WEXITSTATUS(status);
+		trace_printf("[wait_or_whine WIFEXITED] code %d\n", code);
+	} else if (WIFSIGNALED(status)) {
+		code = WTERMSIG(status);
+		trace_printf("[wait_or_whine WIFSIGNALED] code %d\n", code);
+		if (!in_signal && code != SIGINT && code != SIGQUIT && code != SIGPIPE)
+			_error("%s died of signal %d", argv0, code);
+		/*
+		 * This return value is chosen so that code & 0xff
+		 * mimics the exit code that a POSIX shell would report for
+		 * a program that died from this signal.
+		 */
+		code += 128;
+#else
 	} else if (WIFSIGNALED(status)) {
 		code = WTERMSIG(status);
 		trace_printf("[wait_or_whine WIFSIGNALED] code %d\n", code);
@@ -580,6 +592,7 @@ static int wait_or_whine(pid_t pid, const char *argv0, int in_signal)
 	} else if (WIFEXITED(status)) {
 		code = WEXITSTATUS(status);
 		trace_printf("[wait_or_whine WIFEXITED] code %d\n", code);
+#endif
 	} else {
 		if (!in_signal)
 			_error("waitpid is confused (%s)", argv0);
@@ -693,6 +706,7 @@ int start_command(struct child_process *cmd)
 			goto fail_pipe;
 		}
 		cmd->in = fdin[1];
+		trace_printf("[start_command] created stdin pipe: read=%d write=%d\n", fdin[0], fdin[1]);
 	}
 
 	need_out = !cmd->no_stdout
@@ -709,6 +723,7 @@ int start_command(struct child_process *cmd)
 			goto fail_pipe;
 		}
 		cmd->out = fdout[0];
+		trace_printf("[start_command] created stdout pipe: read=%d write=%d\n", fdout[0], fdout[1]);
 	}
 
 	need_err = !cmd->no_stderr && cmd->err < 0;
@@ -732,6 +747,7 @@ fail_pipe:
 			return -1;
 		}
 		cmd->err = fderr[0];
+		trace_printf("[start_command] created stderr pipe: read=%d write=%d\n", fderr[0], fderr[1]);
 	}
 
 	trace2_child_start(cmd);
@@ -742,7 +758,7 @@ fail_pipe:
 	if (cmd->close_object_store)
 		close_object_store(the_repository->objects);
 
-#if !defined(GIT_WINDOWS_NATIVE) && !defined(__amigaos4__)
+#if !defined(GIT_WINDOWS_NATIVE) && !defined(GIT_AMIGAOS4_NATIVE)
 {
 	int notify_pipe[2];
 	int null_fd = -1;
@@ -891,13 +907,105 @@ fail_pipe:
 	free(childenv);
 }
 end_of_spawn:
+#elif defined(GIT_AMIGAOS4_NATIVE)
+{
+	/* AmigaOS4 implementation using spawnvpe from clib4 */
+#define DEV_NULL "NIL:"
+	int fhin = 0, fhout = 1, fherr = 2;
+	const char **sargv = cmd->args.v;
+	struct strvec nargv = STRVEC_INIT;
+
+	/*
+	 * We duplicate the file descriptors before passing to spawnvpe.
+	 * This allows us to close the parent's pipe ends while the child
+	 * still has access to its own copies.
+	 */
+	if (cmd->no_stdin) {
+		fhin = open(DEV_NULL, O_RDWR);
+		trace_printf("[start_command] fhin set to DEV_NULL\n");
+	}
+	else if (need_in) {
+		fhin = dup(fdin[0]);
+		trace_printf("[start_command] fhin dup'd from fdin[0], now=%d\n", fhin);
+	}
+	else if (cmd->in) {
+		fhin = dup(cmd->in);
+		trace_printf("[start_command] fhin dup'd from cmd->in, now=%d\n", fhin);
+	}
+
+	if (cmd->no_stderr) {
+		fherr = open(DEV_NULL, O_RDWR);
+		trace_printf("[start_command] fherr set to DEV_NULL\n");
+	}
+	else if (need_err) {
+		fherr = dup(fderr[1]);
+		trace_printf("[start_command] fherr dup'd from fderr[1], now=%d\n", fherr);
+	}
+	else if (cmd->err > 2) {
+		fherr = dup(cmd->err);
+		trace_printf("[start_command] fherr dup'd from cmd->err, now=%d\n", fherr);
+	}
+
+	if (cmd->no_stdout) {
+		fhout = open(DEV_NULL, O_RDWR);
+		trace_printf("[start_command] fhout set to DEV_NULL\n");
+	}
+	else if (cmd->stdout_to_stderr) {
+		fhout = dup(fherr);
+		trace_printf("[start_command] fhout dup'd from fherr, now=%d\n", fhout);
+	}
+	else if (need_out) {
+		fhout = dup(fdout[1]);
+		trace_printf("[start_command] fhout dup'd from fdout[1], now=%d\n", fhout);
+	}
+	else if (cmd->out > 1) {
+		fhout = dup(cmd->out);
+		trace_printf("[start_command] fhout dup'd from cmd->out, now=%d\n", fhout);
+	}
+
+	if (cmd->git_cmd)
+		cmd->args.v = prepare_git_cmd(&nargv, sargv);
+	else if (cmd->use_shell)
+		cmd->args.v = prepare_shell_cmd(&nargv, sargv);
+
+	trace_printf("[start_command] calling spawnvpe: cmd=%s dir=%s fhin=%d fhout=%d fherr=%d\n",
+		     cmd->args.v[0], cmd->dir ? cmd->dir : "(null)", fhin, fhout, fherr);
+	trace_printf("[start_command] command args: ");
+	for (int i = 0; cmd->args.v[i]; i++)
+		trace_printf("%s ", cmd->args.v[i]);
+	trace_printf("\n");
+	cmd->pid = spawnvpe(cmd->args.v[0], cmd->args.v,
+			    (char**) cmd->env.v,
+			    cmd->dir, fhin, fhout, fherr);
+	failed_errno = errno;
+	if (cmd->pid < 0) {
+		trace_printf("[start_command] spawnvpe FAILED: errno=%d (%s)\n", 
+			     failed_errno, strerror(failed_errno));
+		if (!cmd->silent_exec_failure || errno != ENOENT)
+			error_errno("cannot spawn %s", cmd->args.v[0]);
+	} else {
+		trace_printf("[start_command] PID %d spawned successfully\n", cmd->pid);
+	}
+	if (cmd->clean_on_exit && cmd->pid >= 0) {
+		trace_printf("[start_command] PID %d marked for cleanup\n", cmd->pid);
+		mark_child_for_cleanup(cmd->pid, cmd);
+	}
+
+	strvec_clear(&nargv);
+	cmd->args.v = sargv;
+	
+	/* Close the duplicated handles after spawnvpe */
+	if (fhin != 0)
+		close(fhin);
+	if (fhout != 1)
+		close(fhout);
+	if (fherr != 2)
+		close(fherr);
+}
 #else
 {
-#ifdef __amigaos4__
-#define DEV_NULL "NIL:"
-#else
+	/* Windows implementation using mingw_spawnvpe */
 #define DEV_NULL "/dev/null"
-#endif
 	int fhin = 0, fhout = 1, fherr = 2;
 	const char **sargv = cmd->args.v;
 	struct strvec nargv = STRVEC_INIT;
@@ -933,11 +1041,7 @@ end_of_spawn:
 	else if (cmd->use_shell)
 		cmd->args.v = prepare_shell_cmd(&nargv, sargv);
 
-#ifndef __amigaos4__
 	cmd->pid = mingw_spawnvpe(cmd->args.v[0], cmd->args.v,
-#else
-	cmd->pid = spawnvpe(cmd->args.v[0], cmd->args.v,
-#endif
 				  (char**) cmd->env.v,
 				  cmd->dir, fhin, fhout, fherr);
 	failed_errno = errno;
@@ -951,14 +1055,12 @@ end_of_spawn:
 
 	strvec_clear(&nargv);
 	cmd->args.v = sargv;
-#ifndef __amigaos4__
 	if (fhin != 0)
 		close(fhin);
 	if (fhout != 1)
 		close(fhout);
 	if (fherr != 2)
 		close(fherr);
-#endif
 }
 #endif
 
@@ -982,32 +1084,43 @@ end_of_spawn:
 		return -1;
 	}
 	trace_printf("[start_command] started\n");
-#ifndef __amigaos4__
-	if (need_in)
+
+	if (need_in) {
+		trace_printf("[start_command] closing parent stdin read end: fd=%d\n", fdin[0]);
 		close(fdin[0]);
-	else if (cmd->in)
+	} else if (cmd->in) {
+		trace_printf("[start_command] closing provided stdin: fd=%d\n", cmd->in);
 		close(cmd->in);
+	}
 
-	if (need_out)
+	if (need_out) {
+		trace_printf("[start_command] closing parent stdout write end: fd=%d\n", fdout[1]);
 		close(fdout[1]);
-	else if (cmd->out)
+	} else if (cmd->out) {
+		trace_printf("[start_command] closing provided stdout: fd=%d\n", cmd->out);
 		close(cmd->out);
+	}
 
-	if (need_err)
+	if (need_err) {
+		trace_printf("[start_command] closing parent stderr write end: fd=%d\n", fderr[1]);
 		close(fderr[1]);
-	else if (cmd->err)
+	} else if (cmd->err) {
+		trace_printf("[start_command] closing provided stderr: fd=%d\n", cmd->err);
 		close(cmd->err);
-#endif
+	}
+	trace_printf("[start_command] completed successfully, PID=%d\n", cmd->pid);
 	return 0;
 }
 
 int finish_command(struct child_process *cmd)
 {
-	trace_printf("[finish_command] PID=%d\n", cmd->pid);
+	trace_printf("[finish_command] PID=%d args[0]=%s\n", cmd->pid, cmd->args.v ? cmd->args.v[0] : "(null)");
 	int ret = wait_or_whine(cmd->pid, cmd->args.v[0], 0);
+	trace_printf("[finish_command] wait_or_whine returned %d\n", ret);
 	trace2_child_exit(cmd, ret);
 	child_process_clear(cmd);
 	invalidate_lstat_cache();
+	trace_printf("[finish_command] completed with code %d\n", ret);
 	return ret;
 }
 

@@ -657,7 +657,7 @@ SPATCH = spatch
 export TCL_PATH TCLTK_PATH
 
 # Set our default LIBS variables
-PTHREAD_LIBS = -lpthread -ldebug
+PTHREAD_LIBS = -lrtmp -lcrypto -latomic -lpthread -ldebug
 
 # Guard against environment variables
 BUILTIN_OBJS =
@@ -670,7 +670,7 @@ EXTRA_CPPFLAGS =
 FUZZ_OBJS =
 FUZZ_PROGRAMS =
 GIT_OBJS =
-LIB_OBJS =
+LIB_OBJS = 
 SCALAR_OBJS =
 OBJECTS =
 OTHER_PROGRAMS =
@@ -688,6 +688,7 @@ THIRD_PARTY_SOURCES =
 UNIT_TEST_PROGRAMS =
 UNIT_TEST_DIR = t/unit-tests
 UNIT_TEST_BIN = $(UNIT_TEST_DIR)/bin
+NO_SETITIMER = YesPlease
 
 # Having this variable in your environment would break pipelines because
 # you cause "cd" to echo its destination to stdout.  It can also take
@@ -1358,7 +1359,7 @@ endif
 # tweaked by config.* below as well as the command-line, both of
 # which'll override these defaults.
 # Older versions of GCC may require adding "-std=gnu99" at the end.
-CFLAGS = -mcrt=clib4 -gstabs -O2 -Wall -DG_DATE=\"$(shell date +%Y.%m.%d)\" -DG_VERSION=\"$(GIT_VERSION)\"
+CFLAGS = -mcrt=clib4 -mstrict-align -gstabs -O0 -Wall -DG_DATE=\"$(shell date +%Y.%m.%d)\" -DG_VERSION=\"$(GIT_VERSION)\"
 LDFLAGS = -mcrt=clib4
 #CC_LD_DYNPATH = -Wl,-rpath,
 BASIC_CFLAGS = -I.

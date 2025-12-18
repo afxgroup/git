@@ -15,8 +15,12 @@
 #include "config.h"
 #include "packfile.h"
 #include "compat/nonblock.h"
+#include "setup.h"
 
 #include <unistd.h>
+
+/* External declarations */
+extern const char *get_git_dir(void);
 
 void child_process_init(struct child_process *child)
 {
@@ -113,7 +117,7 @@ static void mark_child_for_cleanup(pid_t pid, struct child_process *process)
 	trace_printf("[mark_child_for_cleanup] children_to_clean %p\n", children_to_clean);
 
 	if (!installed_child_cleanup_handler) {
-		trace_printf("[mark_child_for_cleanup] Installing cleanup handler on pid %ld\n", pid);
+		trace_printf("[mark_child_for_cleanup] Installing cleanup handler on pid %d\n", pid);
 		atexit(cleanup_children_on_exit);
 		sigchain_push_common(cleanup_children_on_signal);
 		installed_child_cleanup_handler = 1;
@@ -258,16 +262,7 @@ static const char **prepare_shell_cmd(struct strvec *out, const char **argv)
 		BUG("shell command is empty");
 
 	if (strcspn(argv[0], "|&;<>()$`\\\"' \t\n*?[#~=%") != strlen(argv[0])) {
-#ifndef __amigaos4__
-#ifndef GIT_WINDOWS_NATIVE
-		strvec_push(out, SHELL_PATH);
-#else
-		strvec_push(out, "sh");
-#endif
-		strvec_push(out, "-c");
-#else
-		//strvec_push(out, "run");
-#endif
+		strvec_push(out, "");
 		/*
 		 * If we have no extra arguments, we do not even need to
 		 * bother with the "$@" magic.
@@ -299,7 +294,7 @@ static int wait_or_whine(pid_t pid, const char *argv0, int in_signal)
 	trace_printf("[wait_or_whine] waitpid %d\n", pid);
 	waiting = waitpid(pid, &status, 0);
 
-	trace_printf("[wait_or_whine] waitpid done: pid = %d -  waiting = %d - status %d\n", pid, waiting, status);
+	trace_printf("[wait_or_whine] waitpid done: pid = %d -  waiting = %d - in_signal = %d - status %x (%d)\n", pid, waiting, in_signal, status, WIFEXITED(status));
 
 	if (waiting < 0) {
 		failed_errno = errno;
@@ -308,6 +303,7 @@ static int wait_or_whine(pid_t pid, const char *argv0, int in_signal)
 	} else if (waiting != pid) {
 		if (!in_signal)
 			_error("waitpid is confused (%s)", argv0);
+#if 0
 	} else if (WIFSIGNALED(status)) {
 		code = WTERMSIG(status);
 		trace_printf("[wait_or_whine WIFSIGNALED] code %d\n", code);
@@ -319,10 +315,12 @@ static int wait_or_whine(pid_t pid, const char *argv0, int in_signal)
 		 * a program that died from this signal.
 		 */
 		code += 128;
+#endif
 	} else if (WIFEXITED(status)) {
 		code = WEXITSTATUS(status);
 		trace_printf("[wait_or_whine WIFEXITED] code %d\n", code);
 	} else {
+
 		if (!in_signal)
 			_error("waitpid is confused (%s)", argv0);
 	}
@@ -474,6 +472,7 @@ int start_command(struct child_process *cmd)
 			errno = failed_errno;
 			return -1;
 		}
+
 		cmd->err = fderr[0];
 	}
 
@@ -484,6 +483,16 @@ int start_command(struct child_process *cmd)
 
 	if (cmd->close_object_store)
 		close_object_store(the_repository->objects);
+
+	/* On AmigaOS4, spawnvpe doesn't inherit the current directory like fork() does.
+	 * If cmd->dir is NULL, we need to explicitly pass the current directory.
+	 */
+	char cwd_buf[PATH_MAX];
+	const char *dir_to_use = cmd->dir;
+	if (!dir_to_use) {
+		if (getcwd(cwd_buf, sizeof(cwd_buf)))
+			dir_to_use = cwd_buf;
+	}
 
 	int fhin = 0, fhout = 1, fherr = 2;
 	const char **sargv = cmd->args.v;
@@ -520,10 +529,48 @@ int start_command(struct child_process *cmd)
 	else if (cmd->use_shell)
 		cmd->args.v = prepare_shell_cmd(&nargv, sargv);
 
+	trace_printf("[start_command] final command: ");
+	for (int i = 0; cmd->args.v && cmd->args.v[i]; i++)
+		trace_printf("%s ", cmd->args.v[i]);
+	trace_printf("\n");
+
+	trace_printf("[start_command] calling spawnvpe: cmd=%s dir=%s fhin=%d fhout=%d fherr=%d\n",
+		     cmd->args.v[0], dir_to_use ? dir_to_use : "(null)", fhin, fhout, fherr);
+	
+	/* If cmd->env.v is NULL or empty, we need to explicitly pass environ.
+	 * Additionally, if this is a git command and we're in a repository,
+	 * we need to ensure GIT_DIR is set in the environment. */
+	extern char **environ;
+	char **env_to_use;
+	
+	if (cmd->env.v && cmd->env.v[0]) {
+		/* cmd->env has actual entries, use it */
+		env_to_use = (char**) cmd->env.v;
+		trace_printf("[start_command] using cmd->env.v (%d entries)\n", 
+			     cmd->env.nr);
+	} else {
+		/* cmd->env is NULL or empty, use environ */
+		/* But if this is a git command in a repository, add GIT_DIR */
+		if (cmd->git_cmd && startup_info->have_repository) {
+			/* WORKAROUND: spawnvpe in clib4 doesn't pass custom environment correctly.
+			 * As a temporary fix, set GIT_DIR in the process environment with setenv.
+			 * This will affect the current process too, but it's better than not working. */
+			const char *git_dir = get_git_dir();
+			setenv(GIT_DIR_ENVIRONMENT, git_dir, 1);
+			env_to_use = environ;
+			trace_printf("[start_command] git_cmd in repo: setenv GIT_DIR=%s (clib4 workaround)\n",
+				     git_dir);
+		} else {
+			env_to_use = environ;
+			trace_printf("[start_command] using plain environ\n");
+		}
+	}
+	
 	cmd->pid = spawnvpe(cmd->args.v[0], cmd->args.v,
-				  (char**) cmd->env.v,
-				  cmd->dir, fhin, fhout, fherr);
+				  env_to_use,
+				  dir_to_use, fhin, fhout, fherr);
 	failed_errno = errno;
+	
 	if (cmd->pid < 0 && (!cmd->silent_exec_failure || errno != ENOENT))
 		error_errno("cannot spawn %s", cmd->args.v[0]);
 	trace_printf("[start_command] PID %d spawned\n", cmd->pid);
@@ -534,6 +581,12 @@ int start_command(struct child_process *cmd)
 
 	strvec_clear(&nargv);
 	cmd->args.v = sargv;
+	if (fhin != 0)
+		close(fhin);
+	if (fhout != 1)
+		close(fhout);
+	if (fherr != 2)
+		close(fherr);
 
 	if (cmd->pid < 0) {
 		trace2_child_exit(cmd, -1);
@@ -555,6 +608,21 @@ int start_command(struct child_process *cmd)
 		return -1;
 	}
 	trace_printf("[start_command] started\n");
+
+	if (need_in)
+		close(fdin[0]);
+	else if (cmd->in)
+		close(cmd->in);
+
+	if (need_out)
+		close(fdout[1]);
+	else if (cmd->out)
+		close(cmd->out);
+
+	if (need_err)
+		close(fderr[1]);
+	else if (cmd->err)
+		close(cmd->err);
 
 	return 0;
 }

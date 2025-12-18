@@ -1860,7 +1860,7 @@ int cmd_index_pack(int argc, const char **argv, const char *prefix)
 		usage(index_pack_usage);
 	if (fix_thin_pack && !from_stdin)
 		die(_("the option '%s' requires '%s'"), "--fix-thin", "--stdin");
-	if (from_stdin && !startup_info->have_repository)
+	if (from_stdin && !startup_info->have_repository && !getenv(GIT_DIR_ENVIRONMENT))
 		die(_("--stdin requires a git repository"));
 	if (from_stdin && hash_algo)
 		die(_("options '%s' and '%s' cannot be used together"), "--object-format", "--stdin");
@@ -1904,6 +1904,11 @@ int cmd_index_pack(int argc, const char **argv, const char *prefix)
 		else
 			nr_threads = 20; /* hard cap */
 	}
+
+	/* When reading from stdin, progress output can corrupt the pack stream
+	 * on stdout. Disable verbose mode to prevent progress sequences. */
+	if (from_stdin && verbose && !isatty(1))
+		verbose = 0;
 
 	curr_pack = open_pack_file(pack_name);
 	parse_pack_header();
