@@ -87,6 +87,10 @@
 #define GIT_WINDOWS_NATIVE
 #endif
 
+#ifdef __amigaos4__
+#define GIT_AMIGAOS4_NATIVE
+#endif
+
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/stat.h>
@@ -483,6 +487,9 @@ int git_qsort_s(void *base, size_t nmemb, size_t size,
 #ifdef USE_ST_TIMESPEC
 #define ST_CTIME_NSEC(st) ((unsigned int)((st).st_ctimespec.tv_nsec))
 #define ST_MTIME_NSEC(st) ((unsigned int)((st).st_mtimespec.tv_nsec))
+#elif defined(__amigaos4__)
+#define ST_CTIME_NSEC(st) ((unsigned int)((st).st_ctime))
+#define ST_MTIME_NSEC(st) ((unsigned int)((st).st_mtime))
 #else
 #define ST_CTIME_NSEC(st) ((unsigned int)((st).st_ctim.tv_nsec))
 #define ST_MTIME_NSEC(st) ((unsigned int)((st).st_mtim.tv_nsec))

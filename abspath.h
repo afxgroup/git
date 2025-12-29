@@ -27,7 +27,11 @@ char *prefix_filename_except_for_dash(const char *prefix, const char *path);
 
 static inline int is_absolute_path(const char *path)
 {
+#ifndef __amigaos4__
 	return is_dir_sep(path[0]) || has_dos_drive_prefix(path);
+#else
+	return strchr(path, ':') != NULL;
+#endif
 }
 
 /**

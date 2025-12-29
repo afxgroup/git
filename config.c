@@ -37,6 +37,11 @@
 #include "wildmatch.h"
 #include "write-or-die.h"
 
+#ifdef __amigaos4__
+#undef ETC_GITCONFIG
+#define ETC_GITCONFIG "Git:.gitconfig"
+#endif
+
 struct config_source {
 	struct config_source *prev;
 	union {
@@ -1499,8 +1504,13 @@ void git_global_config_paths(char **user_out, char **xdg_out)
 	char *xdg_config = NULL;
 
 	if (!user_config) {
+#ifndef __amigaos4__
 		user_config = interpolate_path("~/.gitconfig", 0);
 		xdg_config = xdg_config_home("config");
+#else
+		user_config = xstrdup(ETC_GITCONFIG);
+		xdg_config = xdg_config_home("config");
+#endif
 	}
 
 	*user_out = user_config;
@@ -3181,6 +3191,9 @@ int repo_config_set_multivar_in_file_gently(struct repository *r,
 		contents = NULL;
 	}
 
+#ifdef __amigaos4__
+	remove(config_filename);
+#endif	
 	if (commit_lock_file(&lock) < 0) {
 		error_errno(_("could not write config file %s"), config_filename);
 		ret = CONFIG_NO_WRITE;

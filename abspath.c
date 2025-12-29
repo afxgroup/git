@@ -96,7 +96,11 @@ static char *strbuf_realpath_1(struct strbuf *resolved, const char *path,
 	strbuf_addstr(&remaining, path);
 	get_root_part(resolved, &remaining);
 
+#ifndef __amigaos4__
 	if (!resolved->len) {
+#else
+	if (!resolved->len && !strchr(path, ':')) { // TODO - check if we can do this in a different way
+#endif
 		/* relative path; can use CWD as the initial resolved path */
 		if (strbuf_getcwd(resolved)) {
 			if (flags & REALPATH_DIE_ON_ERROR)
@@ -121,7 +125,11 @@ static char *strbuf_realpath_1(struct strbuf *resolved, const char *path,
 		}
 
 		/* append the next component and resolve resultant path */
+#ifndef __amigaos4__
 		if (!is_dir_sep(resolved->buf[resolved->len - 1]))
+#else
+		if (!is_dir_sep(resolved->buf[resolved->len - 1]) && strchr(resolved->buf, ':') && resolved->buf[resolved->len - 1] != ':')
+#endif
 			strbuf_addch(resolved, '/');
 		strbuf_addbuf(resolved, &next);
 

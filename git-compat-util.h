@@ -239,7 +239,11 @@ static inline const char *precompose_string_if_needed(const char *in)
 #include <paths.h>
 #endif
 #ifndef _PATH_DEFPATH
+#ifndef __amigaos4__
 #define _PATH_DEFPATH "/usr/local/bin:/usr/bin:/bin"
+#else
+#define _PATH_DEFPATH "C:;SDK:C"
+#endif
 #endif
 
 #ifndef platform_core_config
@@ -1016,7 +1020,11 @@ void bug_fl(const char *file, int line, const char *fmt, ...);
 #endif
 
 #ifndef SHELL_PATH
+#ifndef __amigaos4__
 # define SHELL_PATH "/bin/sh"
+#else
+# define SHELL_PATH "run"
+#endif
 #endif
 
 /*
@@ -1086,6 +1094,11 @@ static inline void *container_of_or_null_offset(void *ptr, size_t offset)
 #define OFFSETOF_VAR(ptr, member) \
 	((uintptr_t)&(ptr)->member - (uintptr_t)(ptr))
 #endif /* !__GNUC__ */
+
+#ifdef __amigaos4__
+static inline pid_t getpgid(pid_t pid)
+{ return pid == 0 ? getpid() : pid; }
+#endif
 
 /*
  * Prevent an overly clever compiler from optimizing an expression

@@ -47,6 +47,9 @@
 #include "hook.h"
 #include "bundle.h"
 #include "bundle-uri.h"
+#ifdef __amigaos4__
+#include <proto/dos.h>
+#endif
 
 /*
  * Overall FIXMEs:
@@ -148,10 +151,17 @@ static char *get_repo_path(const char *repo, int *is_bundle)
 	const char *raw;
 	char *canon;
 
+#ifdef __amigaos4__
+	APTR old_window_pointer = IDOS->SetProcWindow((CONST_APTR) -1);
+#endif	
 	strbuf_addstr(&path, repo);
 	raw = get_repo_path_1(&path, is_bundle);
 	canon = raw ? absolute_pathdup(raw) : NULL;
 	strbuf_release(&path);
+#ifdef __amigaos4__
+	IDOS->SetProcWindow(old_window_pointer);
+#endif
+
 	return canon;
 }
 
