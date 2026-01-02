@@ -121,10 +121,21 @@ static int pack_objects(int fd, struct ref *refs, struct oid_array *advertised,
 
 	if (args->stateless_rpc) {
 		char *buf = xmalloc(LARGE_PACKET_MAX);
+		int pack_found = 0;
 		while (1) {
 			ssize_t n = xread(po.out, buf, LARGE_PACKET_MAX);
 			if (n <= 0)
 				break;
+			
+			/* Skip ANSI escape sequences before the actual PACK data.
+			 * pack-objects may write cursor control codes if it detects a terminal. */
+			if (!pack_found && n >= 4 && memcmp(buf, "PACK", 4) == 0) {
+				pack_found = 1;
+			} else if (!pack_found) {
+				/* Skip this data, it's not the PACK stream */
+				continue;
+			}
+			
 			send_sideband(fd, -1, buf, n, LARGE_PACKET_MAX);
 		}
 		free(buf);
@@ -151,12 +162,36 @@ static int pack_objects(int fd, struct ref *refs, struct oid_array *advertised,
 
 static int receive_unpack_status(struct packet_reader *reader)
 {
-	if (packet_reader_read(reader) != PACKET_READ_NORMAL)
-		return _error(_("unexpected flush packet while reading remote unpack status"));
-	if (!skip_prefix(reader->line, "unpack ", &reader->line))
-		return _error(_("unable to parse remote unpack status: %s"), reader->line);
-	if (strcmp(reader->line, "ok"))
-		return _error(_("remote unpack failed: %s"), reader->line);
+	const char *line;
+	
+	/* Loop to skip sideband messages and find the actual unpack status */
+	while (1) {
+		if (packet_reader_read(reader) != PACKET_READ_NORMAL)
+			return _error(_("unexpected flush packet while reading remote unpack status"));
+		line = reader->line;
+		
+		/* Skip sideband progress/error messages (they start with \1, \2, or \3) */
+		if (line[0] == 1 || line[0] == 2 || line[0] == 3) {
+			if (line[0] == 2)
+				/* Progress message on stderr */
+				fprintf(stderr, "%s", line + 1);
+			else if (line[0] == 1) {
+				/* Channel 1 is actual data - this might be the unpack status!
+				 * The data is a pktline, so skip the channel byte AND the 4-byte length prefix */
+				line = line + 5; /* Skip channel byte (1) + pktline length (4) = 5 bytes */
+				break;
+			}
+			continue;
+		}
+		
+		/* This should be the actual unpack status */
+		break;
+	}
+	
+	if (!skip_prefix(line, "unpack ", &line))
+		return _error(_("unable to parse remote unpack status: %s"), line);
+	if (strcmp(line, "ok"))
+		return _error(_("remote unpack failed: %s"), line);
 	return 0;
 }
 
@@ -178,6 +213,23 @@ static int receive_status(struct packet_reader *reader, struct ref *refs)
 		if (packet_reader_read(reader) != PACKET_READ_NORMAL)
 			break;
 		head = reader->line;
+
+		/* Skip sideband messages */
+		if (head[0] == 1 || head[0] == 2 || head[0] == 3) {
+			if (head[0] == 2)
+				/* Progress message on stderr */
+				fprintf(stderr, "%s", head + 1);
+			else if (head[0] == 1) {
+				/* Channel 1 data contains pktline-wrapped status.
+				 * Skip channel byte (1) + pktline length (4) = 5 bytes */
+				head = head + 5;
+			} else {
+				continue;
+			}
+			if (head[0] == 0 || strlen(head) == 0)
+				continue; /* Empty after unwrapping */
+		}
+
 		p = strchr(head, ' ');
 		if (!p) {
 			_error("invalid status line from remote: %s", reader->line);
@@ -269,13 +321,24 @@ static int receive_status(struct packet_reader *reader, struct ref *refs)
 	return ret;
 }
 
-static int sideband_demux(int in UNUSED, int out, void *data)
+static int sideband_demux(int in, int out, void *data)
 {
 	int *fd = data, ret;
+	
+	fprintf(stderr, "DEBUG [sideband_demux] ENTRY: in=%d out=%d fd=%p fd[0]=%d fd[1]=%d\n",
+	        in, out, (void*)fd, fd[0], fd[1]);
+	fflush(stderr);
+	
 	if (async_with_fork())
 		close(fd[1]);
-	ret = recv_sideband("send-pack", fd[0], out);
+	/*
+	 * AMIGA: Use 'in' parameter instead of fd[0].
+	 * In pthread mode, fd[0] may be modified by caller after start_async,
+	 * but 'in' is the correct pipe/socket descriptor passed by start_async.
+	 */
+	ret = recv_sideband("send-pack", in, out);
 	close(out);
+	free(fd);  /* AMIGA: Free the heap-allocated fd array */
 	return ret;
 }
 
@@ -674,11 +737,27 @@ int send_pack(struct send_pack_args *args,
 	strbuf_release(&req_buf);
 	strbuf_release(&cap_buf);
 
-	if (use_sideband && cmds_sent) {
+	if (use_sideband && cmds_sent && !args->stateless_rpc) {
+		/*
+		 * AMIGA: Allocate a copy of fd[] for the sideband demux thread.
+		 * The caller may modify or close fd[] after send_pack() returns,
+		 * but the thread needs stable values. We allocate on heap so the
+		 * values remain valid for the thread's lifetime.
+		 * Memory is freed by the thread in sideband_demux().
+		 */
+		int *demux_fd = xmalloc(2 * sizeof(int));
+		demux_fd[0] = fd[0];
+		demux_fd[1] = fd[1];
+		
+		fprintf(stderr, "DEBUG [send_pack] in=%d fd[0]=%d fd[1]=%d demux_fd=%p\n", 
+		        in, fd[0], fd[1], (void*)demux_fd);
+		fflush(stderr);
+		
 		memset(&demux, 0, sizeof(demux));
 		demux.proc = sideband_demux;
-		demux.data = fd;
-		demux.out = -1;
+		demux.data = demux_fd;  /* Pass heap-allocated copy instead of fd */
+		demux.in = in;  /* AMIGA: Set BEFORE start_async to avoid pipe creation */
+		demux.out = -1; /* Set to -1 so start_async creates output pipe */
 		demux.isolate_sigpipe = 1;
 		if (start_async(&demux))
 			die("send-pack: unable to fork off sideband demultiplexer");
@@ -726,7 +805,7 @@ int send_pack(struct send_pack_args *args,
 	if (args->stateless_rpc)
 		packet_flush(out);
 
-	if (use_sideband && cmds_sent) {
+	if (use_sideband && cmds_sent && !args->stateless_rpc) {
 		close(demux.out);
 		if (finish_async(&demux)) {
 			_error("error in sideband demultiplexer");

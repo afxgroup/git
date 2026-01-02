@@ -59,6 +59,7 @@ ifeq ($(uname_S),AmigaOS4)
 	NO_POSIX_GOODIES = UnfortunatelyYes
 	CSPRNG_METHOD = arc4random
 	NO_IPV6 = YesPlease
+	NO_NSEC = YesPlease
 endif
 ifeq ($(uname_S),Linux)
 	HAVE_ALLOCA_H = YesPlease

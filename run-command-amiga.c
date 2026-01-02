@@ -16,7 +16,6 @@
 #include "packfile.h"
 #include "compat/nonblock.h"
 #include "setup.h"
-
 #include <unistd.h>
 
 /* External declarations */
@@ -449,7 +448,10 @@ int start_command(struct child_process *cmd)
 			str = "standard output";
 			goto fail_pipe;
 		}
+		trace_printf("[start_command] created pipe: fdout[0]=%d (read), fdout[1]=%d (write)\n", 
+		             fdout[0], fdout[1]);
 		cmd->out = fdout[0];
+		trace_printf("[start_command] set cmd->out=%d\n", cmd->out);
 	}
 
 	need_err = !cmd->no_stderr && cmd->err < 0;
@@ -502,27 +504,27 @@ int start_command(struct child_process *cmd)
 		fhin = open("NIL:", O_RDWR);
 	}
 	else if (need_in) {
-		fhin = dup(fdin[0]);
+		fhin = fdin[0];  // Don't dup - pass directly
 	}
 	else if (cmd->in) {
-		fhin = dup(cmd->in);
+		fhin = cmd->in;  // Don't dup - pass directly
 	}
 
 	if (cmd->no_stderr)
 		fherr = open("NIL:", O_RDWR);
 	else if (need_err)
-		fherr = dup(fderr[1]);
+		fherr = fderr[1];  // Don't dup - pass directly
 	else if (cmd->err > 2)
-		fherr = dup(cmd->err);
+		fherr = cmd->err;  // Don't dup - pass directly
 
 	if (cmd->no_stdout)
 		fhout = open("NIL:", O_RDWR);
 	else if (cmd->stdout_to_stderr)
-		fhout = dup(fherr);
+		fhout = dup(fherr);  // Still need dup here
 	else if (need_out)
-		fhout = dup(fdout[1]);
+		fhout = fdout[1];  // Don't dup - pass directly
 	else if (cmd->out > 1)
-		fhout = dup(cmd->out);
+		fhout = cmd->out;  // Don't dup - pass directly
 
 	if (cmd->git_cmd)
 		cmd->args.v = prepare_git_cmd(&nargv, sargv);
@@ -581,12 +583,20 @@ int start_command(struct child_process *cmd)
 
 	strvec_clear(&nargv);
 	cmd->args.v = sargv;
-	if (fhin != 0)
-		close(fhin);
-	if (fhout != 1)
-		close(fhout);
-	if (fherr != 2)
-		close(fherr);
+
+	/* AmigaOS4: Only close FDs that we allocated (NIL: or dup'd).
+	 * Don't close pipe FDs that we passed directly - they'll be closed later. */
+	if (cmd->no_stdin && fhin != 0)
+		close(fhin);  // Close NIL:
+
+	/* For stdout/stderr, only close if it's NIL: or a dup (stdout_to_stderr case) */
+	if (cmd->no_stdout && fhout != 1)
+		close(fhout);  // Close NIL:
+	else if (cmd->stdout_to_stderr && fhout != 1)
+		close(fhout);  // Close dup(fherr)
+
+	if (cmd->no_stderr && fherr != 2)
+		close(fherr);  // Close NIL:
 
 	if (cmd->pid < 0) {
 		trace2_child_exit(cmd, -1);
@@ -610,17 +620,17 @@ int start_command(struct child_process *cmd)
 	trace_printf("[start_command] started\n");
 
 	if (need_in)
-		close(fdin[0]);
+		close(fdin[0]);  // Close read end - parent doesn't need it
 	else if (cmd->in)
 		close(cmd->in);
 
 	if (need_out)
-		close(fdout[1]);
+		close(fdout[1]);  // Close write end - parent only reads
 	else if (cmd->out)
 		close(cmd->out);
 
 	if (need_err)
-		close(fderr[1]);
+		close(fderr[1]);  // Close write end - parent only reads
 	else if (cmd->err)
 		close(cmd->err);
 
@@ -676,6 +686,8 @@ static void *run_thread(void *data)
 	struct async *async = data;
 	intptr_t ret;
 
+	trace_printf("[run_thread] START\n");
+
 	if (async->isolate_sigpipe) {
 		sigset_t mask;
 		sigemptyset(&mask);
@@ -687,7 +699,9 @@ static void *run_thread(void *data)
 	}
 
 	pthread_setspecific(async_key, async);
+	trace_printf("[run_thread] calling async->proc\n");
 	ret = async->proc(async->proc_in, async->proc_out, async->data);
+	trace_printf("[run_thread] EXIT: ret=%d\n", (int)ret);
 	return (void *)ret;
 }
 
@@ -777,21 +791,28 @@ int start_async(struct async *async)
 			return error_errno("cannot create pipe");
 		}
 		async->out = fdout[0];
+		/* Save write-end to close later in finish_async */
+		async->_amiga_proc_out_write = fdout[1];
+		trace_printf("[start_async] created pipe for out: fdout[0]=%d (read), fdout[1]=%d (write)\n", 
+		             fdout[0], fdout[1]);
 	}
 
 	if (need_in)
 		proc_in = fdin[0];
-	else if (async->in)
+	else if (async->in >= 0)  /* AMIGA: Handle fd 0 (stdin) correctly */
 		proc_in = async->in;
 	else
 		proc_in = -1;
 
 	if (need_out)
 		proc_out = fdout[1];
-	else if (async->out)
+	else if (async->out >= 0)  /* AMIGA: Handle fd 0 correctly */
 		proc_out = async->out;
 	else
 		proc_out = -1;
+	
+	trace_printf("[start_async] async->in=%d async->out=%d proc_in=%d proc_out=%d\n",
+	             async->in, async->out, proc_in, proc_out);
 
 	if (!main_thread_set) {
 		/*
@@ -843,6 +864,23 @@ int finish_async(struct async *async)
 
 	if (pthread_join(async->tid, &ret))
 		_error("pthread_join failed");
+	
+	trace_printf("[finish_async] after pthread_join, ret=%d\n", (int)(intptr_t)ret);
+	
+#ifdef __amigaos4__
+	/* AMIGA: Give thread time to fully clean up before closing FDs */
+	usleep(50000); /* 50ms */
+	trace_printf("[finish_async] after sleep\n");
+#endif
+	
+	/* Close write-end of pipe AFTER thread completes */
+	if (async->_amiga_proc_out_write >= 0) {
+		trace_printf("[finish_async] closing _amiga_proc_out_write=%d\n", async->_amiga_proc_out_write);
+		close(async->_amiga_proc_out_write);
+		async->_amiga_proc_out_write = -1;
+	}
+	
+	trace_printf("[finish_async] EXIT\n");
 	invalidate_lstat_cache();
 	return (int)(intptr_t)ret;
 }

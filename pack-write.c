@@ -463,24 +463,7 @@ char *index_pack_lockfile(int ip_out, int *is_well_formed)
 	 * case, we need it to remove the corresponding .keep file
 	 * later on.  If we don't get that then tough luck with it.
 	 */
-	trace_printf("[index_pack_lockfile] About to read %d bytes from fd=%d\n", len, ip_out);
 	int bytes_read = read_in_full(ip_out, packname, len);
-	trace_printf("[index_pack_lockfile] Read %d bytes: ", bytes_read);
-	if (bytes_read > 0) {
-		for (int i = 0; i < bytes_read && i < len; i++) {
-			if (packname[i] == '\t')
-				trace_printf("<TAB>");
-			else if (packname[i] == '\n')
-				trace_printf("<LF>");
-			else if (packname[i] >= 32 && packname[i] < 127)
-				trace_printf("%c", packname[i]);
-			else
-				trace_printf("[%02x]", (unsigned char)packname[i]);
-		}
-		trace_printf("\n");
-	}
-	trace_printf("[index_pack_lockfile] Expected %d bytes, got %d, last byte is %02x (expecting newline=0x0a)\n", 
-	             len, bytes_read, bytes_read == len ? (unsigned char)packname[len-1] : 0);
 	
 	if (bytes_read == len && packname[len-1] == '\n') {
 		const char *name;
@@ -488,13 +471,9 @@ char *index_pack_lockfile(int ip_out, int *is_well_formed)
 		if (is_well_formed)
 			*is_well_formed = 1;
 		packname[len-1] = 0;
-		if (skip_prefix(packname, "keep\t", &name)) {
-			trace_printf("index_pack_lockfile2 %s %s\n", name,
-			       xstrfmt("%s/pack/pack-%s.keep",
-				       get_object_directory(), name));
+		if (skip_prefix(packname, "keep\t", &name))
 			return xstrfmt("%s/pack/pack-%s.keep",
 				       get_object_directory(), name);
-		}
 		return NULL;
 	}
 	if (is_well_formed)

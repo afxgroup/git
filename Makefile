@@ -608,17 +608,17 @@ GIT-VERSION-FILE: FORCE
 
 prefix = GIT:
 bindir = $(prefix)
-mandir = $(prefix)share/man
-infodir = $(prefix)share/info
-gitexecdir = libexec/git-core
+mandir = GIT:man
+infodir = GIT:info
+gitexecdir = GIT:
 mergetoolsdir = $(gitexecdir)/mergetools
 sharedir = GIT:share
 gitwebdir = $(sharedir)/gitweb
 gitwebstaticdir = $(gitwebdir)/static
 perllibdir = $(sharedir)/perl5
-localedir = $(sharedir)/locale
+localedir = GIT:locale
 template_dir = share/git-core/templates
-htmldir = $(prefix)share/doc/git-doc
+htmldir = GIT:doc/git-doc
 ETC_GITCONFIG = GIT:.gitconfig
 ETC_GITATTRIBUTES = GIT:.gitattributes
 lib = lib
@@ -689,6 +689,7 @@ UNIT_TEST_PROGRAMS =
 UNIT_TEST_DIR = t/unit-tests
 UNIT_TEST_BIN = $(UNIT_TEST_DIR)/bin
 NO_SETITIMER = YesPlease
+
 
 # Having this variable in your environment would break pipelines because
 # you cause "cd" to echo its destination to stdout.  It can also take
@@ -1359,7 +1360,7 @@ endif
 # tweaked by config.* below as well as the command-line, both of
 # which'll override these defaults.
 # Older versions of GCC may require adding "-std=gnu99" at the end.
-CFLAGS = -mcrt=clib4 -mstrict-align -gstabs -O0 -Wall -DG_DATE=\"$(shell date +%Y.%m.%d)\" -DG_VERSION=\"$(GIT_VERSION)\"
+CFLAGS = -mcrt=clib4 -mstrict-align -gstabs -O3 -Wall -DG_DATE=\"$(shell date +%Y.%m.%d)\" -DG_VERSION=\"$(GIT_VERSION)\"
 LDFLAGS = -mcrt=clib4
 #CC_LD_DYNPATH = -Wl,-rpath,
 BASIC_CFLAGS = -I.

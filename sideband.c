@@ -264,10 +264,11 @@ void send_sideband(int fd, int band, const char *data, ssize_t sz, int packet_ma
 	while (sz) {
 		unsigned n;
 		char hdr[5];
+		int hdr_len = (0 <= band) ? 5 : 4;  /* AMIGA: header is 4 bytes when band < 0 */
 
 		n = sz;
-		if (packet_max - 5 < n)
-			n = packet_max - 5;
+		if (packet_max - hdr_len < n)
+			n = packet_max - hdr_len;
 		if (0 <= band) {
 			xsnprintf(hdr, sizeof(hdr), "%04x", n + 5);
 			hdr[4] = band;
