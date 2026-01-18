@@ -1,0 +1,29 @@
+Git for AmigaOS 4 – current limitations and tips
+================================================
+
+Known issues
+------------
+- Thin packs: the client always requests --thin-pack at the moment. You may see warnings from servers that do not expect it.
+- Performance: overall speed is not comparable to modern platforms; expect slower fetch, checkout, and status operations.
+- UTF-8 filenames: non-ASCII names can misbehave; encoding mismatches may prevent files from being found or added.
+- Case-insensitive filesystems: AmigaOS filesystems are currently case-insensitive. Repositories with paths that differ only by case can cause collisions or missing files.
+- Stability: crashes may still occur. Please report them on Amigans.net or as issues at https://github.com/afxgroup/git.
+
+Common Git environment variables
+--------------------------------
+- GIT_TRACE=1                    (general trace)
+- GIT_TRACE_PACKET=1             (packet-level trace)
+- GIT_TRACE_PERFORMANCE=1        (performance trace)
+- GIT_SSL_NO_VERIFY=1            (disable SSL verification; use only if necessary)
+- GIT_TERMINAL_PROMPT=0          (disable interactive prompts in non-interactive contexts)
+- GIT_EDITOR=<path to editor>    (set the editor for commits/rebases)
+- GIT_PAGER=<path to pager>      (set the pager; or "cat" to disable paging)
+
+Locale note
+-----------
+AmigaOS does not provide a Linux-like LANG by default. To select a locale for Git messages, set one of these before running Git:
+- LANG=<locale>, e.g. LANG=en_US
+- or LC_ALL=<locale>, e.g. LC_ALL=en_US
+- or LC_MESSAGES=<locale>, e.g. LC_MESSAGES=en_US
+
+If no locale is set, Git may fall back to English and may not load translations.

@@ -2496,7 +2496,7 @@ static int open_cached_dir(struct cached_dir *cdir,
 	cdir->untracked = untracked;
 	if (valid_cached_dir(dir, untracked, istate, path, check_only))
 		return 0;
-#ifndef __amigaos4__
+#ifndef GIT_AMIGAOS4_NATIVE
 	c_path = path->len ? path->buf : ".";
 #else
 	c_path = path->len ? path->buf : "";

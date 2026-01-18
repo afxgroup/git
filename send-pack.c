@@ -18,6 +18,7 @@
 #include "shallow.h"
 #include "parse-options.h"
 #include "trace2.h"
+#include "trace.h"
 #include "write-or-die.h"
 
 int option_parse_push_signed(const struct option *opt,
@@ -177,8 +178,9 @@ static int receive_unpack_status(struct packet_reader *reader)
 				fprintf(stderr, "%s", line + 1);
 			else if (line[0] == 1) {
 				/* Channel 1 is actual data - this might be the unpack status!
-				 * The data is a pktline, so skip the channel byte AND the 4-byte length prefix */
-				line = line + 5; /* Skip channel byte (1) + pktline length (4) = 5 bytes */
+				 * AMIGA: In stateless-rpc mode, nested pktline headers are preserved.
+				 * Skip channel byte (1) + nested pktline header (4) = 5 bytes */
+				line = line + 5;
 				break;
 			}
 			continue;
@@ -188,10 +190,51 @@ static int receive_unpack_status(struct packet_reader *reader)
 		break;
 	}
 	
-	if (!skip_prefix(line, "unpack ", &line))
+	/* Some servers (like GitLab) might send ref status directly without "unpack" line.
+	 * If the line starts with "ok" or "ng", assume unpack succeeded and let receive_status handle it. */
+	if (!skip_prefix(line, "unpack ", &line)) {
+		if (starts_with(line, "ok ") || starts_with(line, "ng ")) {
+			/* This is a ref status line, not an unpack status. 
+			 * Keep the current line in the reader for receive_status to process. */
+			return 0;
+		}
 		return _error(_("unable to parse remote unpack status: %s"), line);
-	if (strcmp(line, "ok"))
+	}
+	
+	/* In stateless-rpc mode, multiple pktlines may be concatenated.
+	 * Compare only up to newline or end of string. */
+	if (strncmp(line, "ok", 2) != 0 || (line[2] != '\0' && line[2] != '\n'))
 		return _error(_("remote unpack failed: %s"), line);
+	
+	/* AMIGA: In stateless-rpc mode, ref statuses may be concatenated after "unpack ok\n".
+	 * If there's more data after the newline, it's likely ref statuses. 
+	 * We need to keep them available for receive_status to parse.
+	 * Advance past "ok\n" to see if there's more. */
+	if (line[2] == '\n' && line[3] != '\0') {
+		/* There's more data after "unpack ok\n". 
+		 * Modify reader->line to point to the remaining data so receive_status can parse it.
+		 * This is a hack but necessary for stateless-rpc mode where everything is concatenated. */
+		const char *remaining = line + 3; /* Skip "ok\n" */
+		
+		/* The remaining data should start with a pktline header (4 bytes like "0017")
+		 * followed by the actual status line. Check if it looks like a ref status (starts with 00xx). */
+		if (strlen(remaining) > 4 && remaining[0] == '0' && remaining[1] == '0') {
+			/* Skip the 4-byte pktline header to get to the actual status */
+			remaining += 4;
+			
+			/* Manually set up reader to have this data available for next read. */
+			reader->line = remaining;
+			reader->pktlen = strlen(remaining);
+			reader->status = PACKET_READ_NORMAL;
+		} else {
+			/* No valid ref status concatenated, mark reader as having no data to reuse */
+			reader->status = PACKET_READ_FLUSH;
+		}
+	} else {
+		/* No data after "unpack ok", mark reader as having no data to reuse */
+		reader->status = PACKET_READ_FLUSH;
+	}
+	
 	return 0;
 }
 
@@ -205,26 +248,64 @@ static int receive_status(struct packet_reader *reader, struct ref *refs)
 
 	hint = NULL;
 	ret = receive_unpack_status(reader);
+	trace_printf("DEBUG [receive_status] receive_unpack_status returned %d, reader->status=%d\n", ret, reader->status);
+	
+	int first_read = 1; /* Flag to use concatenated data from receive_unpack_status only once */
+	
 	while (1) {
 		struct object_id old_oid, new_oid;
 		const char *head;
 		const char *refname;
 		char *p;
-		if (packet_reader_read(reader) != PACKET_READ_NORMAL)
-			break;
+		
+		/* If receive_unpack_status left valid data in the reader (GitLab concatenates everything),
+		 * use it ONCE. Otherwise read the next packet (GitHub sends separate packets). */
+		if (first_read && reader->status == PACKET_READ_NORMAL && reader->line != NULL && reader->line[0] != '\0') {
+			trace_printf("DEBUG [receive_status] reusing existing line from reader\n");
+			first_read = 0; /* Mark as consumed - never reuse again */
+		} else {
+			first_read = 0; /* After first iteration, always read new packets */
+			if (packet_reader_read(reader) != PACKET_READ_NORMAL) {
+				trace_printf("DEBUG [receive_status] got flush packet, breaking\n");
+				break;
+			}
+		}
+		
 		head = reader->line;
+		
+		trace_printf("DEBUG [receive_status] head[0]=%d (%02x) len=%zu: '%s'\n", 
+		        (unsigned char)head[0], (unsigned char)head[0], strlen(head), head);
+		
+		/* In stateless-rpc mode, lines may have newlines and flush packets concatenated.
+		 * Terminate at the first newline to parse just this status line. */
+		char *newline = strchr(head, '\n');
+		if (newline) {
+			*newline = '\0'; /* Terminate the string at the newline */
+			trace_printf("DEBUG [receive_status] truncated at newline: '%s'\n", head);
+			
+			/* Check if what follows is "0000" (flush packet) - if so, we're done after this */
+			if (newline[1] == '0' && newline[2] == '0' && newline[3] == '0' && newline[4] == '0') {
+				trace_printf("DEBUG [receive_status] found flush packet after newline, will break after this line\n");
+			}
+		}
 
 		/* Skip sideband messages */
 		if (head[0] == 1 || head[0] == 2 || head[0] == 3) {
-			if (head[0] == 2)
+			trace_printf("DEBUG [receive_status] sideband message detected\n");
+			if (head[0] == 2) {
 				/* Progress message on stderr */
 				fprintf(stderr, "%s", head + 1);
+				continue; /* Go to next packet */
+			}
 			else if (head[0] == 1) {
 				/* Channel 1 data contains pktline-wrapped status.
-				 * Skip channel byte (1) + pktline length (4) = 5 bytes */
+				 * AMIGA: In stateless-rpc mode, nested pktline headers are preserved.
+				 * Skip channel byte (1) + nested pktline header (4) = 5 bytes */
 				head = head + 5;
+				trace_printf("DEBUG [receive_status] after skip: '%s'\n", head);
+				/* Don't continue - process this as a status line below */
 			} else {
-				continue;
+				continue; /* Other sideband channels - skip */
 			}
 			if (head[0] == 0 || strlen(head) == 0)
 				continue; /* Empty after unwrapping */
@@ -232,7 +313,7 @@ static int receive_status(struct packet_reader *reader, struct ref *refs)
 
 		p = strchr(head, ' ');
 		if (!p) {
-			_error("invalid status line from remote: %s", reader->line);
+			_error("invalid status line from remote: %s", head);
 			ret = -1;
 			break;
 		}
@@ -317,6 +398,12 @@ static int receive_status(struct packet_reader *reader, struct ref *refs)
 			hint->remote_status = xstrdup_or_null(p);
 			new_report = 1;
 		}
+		
+		/* If we found a flush packet after this line, we're done */
+		if (newline && newline[1] == '0' && newline[2] == '0' && newline[3] == '0' && newline[4] == '0') {
+			trace_printf("DEBUG [receive_status] breaking after flush packet\n");
+			break;
+		}
 	}
 	return ret;
 }
@@ -324,10 +411,6 @@ static int receive_status(struct packet_reader *reader, struct ref *refs)
 static int sideband_demux(int in, int out, void *data)
 {
 	int *fd = data, ret;
-	
-	fprintf(stderr, "DEBUG [sideband_demux] ENTRY: in=%d out=%d fd=%p fd[0]=%d fd[1]=%d\n",
-	        in, out, (void*)fd, fd[0], fd[1]);
-	fflush(stderr);
 	
 	if (async_with_fork())
 		close(fd[1]);

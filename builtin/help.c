@@ -33,7 +33,10 @@ enum help_format {
 	HELP_FORMAT_NONE,
 	HELP_FORMAT_MAN,
 	HELP_FORMAT_INFO,
-	HELP_FORMAT_WEB
+	HELP_FORMAT_WEB,
+#ifdef GIT_AMIGAOS4_NATIVE
+	HELP_FORMAT_REXX,
+#endif	
 };
 
 enum show_config_type {
@@ -54,7 +57,11 @@ static enum help_action {
 
 static const char *html_path;
 static int verbose = 1;
+#ifndef GIT_AMIGAOS4_NATIVE
 static enum help_format help_format = HELP_FORMAT_NONE;
+#else
+static enum help_format help_format = HELP_FORMAT_REXX;
+#endif
 static int exclude_guides;
 static int show_external_commands = -1;
 static int show_aliases = -1;
@@ -207,7 +214,11 @@ static enum help_format parse_help_format(const char *format)
 		return HELP_FORMAT_INFO;
 	if (!strcmp(format, "web") || !strcmp(format, "html"))
 		return HELP_FORMAT_WEB;
-	/*
+#ifdef GIT_AMIGAOS4_NATIVE
+	if (!strcmp(format, "rexx"))
+		return HELP_FORMAT_REXX;
+#endif
+		/*
 	 * Please update _git_config() in git-completion.bash when you
 	 * add new help formats.
 	 */
@@ -319,6 +330,16 @@ static void exec_man_cmd(const char *cmd, const char *page)
 	warning(_("failed to exec '%s'"), cmd);
 	strbuf_release(&shell_cmd);
 }
+
+#ifdef GIT_AMIGAOS4_NATIVE
+static void exec_os4_cmd(const char *cmd, const char *page)
+{
+	struct strbuf shell_cmd = STRBUF_INIT;
+	strbuf_addf(&shell_cmd, "run >NIL: %s %s", cmd, page);
+	system(shell_cmd.buf);
+	strbuf_release(&shell_cmd);
+}
+#endif
 
 static void add_man_viewer(const char *name)
 {
@@ -481,6 +502,10 @@ static void exec_viewer(const char *name, const char *page)
 		exec_woman_emacs(info, page);
 	else if (!strcasecmp(name, "konqueror"))
 		exec_man_konqueror(info, page);
+#ifdef GIT_AMIGAOS4_NATIVE
+	else if (!strcasecmp(name, "rexx"))
+		exec_os4_cmd("rexx", page);
+#endif
 	else if (info)
 		exec_man_cmd(info, page);
 	else
@@ -490,8 +515,11 @@ static void exec_viewer(const char *name, const char *page)
 static void show_man_page(const char *page)
 {
 	struct man_viewer_list *viewer;
+#ifndef GIT_AMIGAOS4_NATIVE
 	const char *fallback = getenv("GIT_MAN_VIEWER");
-
+#else
+	const char *fallback = "rexx";
+#endif
 	setup_man_path();
 	for (viewer = man_viewer_list; viewer; viewer = viewer->next)
 	{
@@ -720,6 +748,11 @@ int cmd_help(int argc, const char **argv, const char *prefix)
 	case HELP_FORMAT_WEB:
 		show_html_page(page);
 		break;
+#ifdef GIT_AMIGAOS4_NATIVE
+	case HELP_FORMAT_REXX:
+		exec_os4_cmd("rx GIT:OpenGuide.rexx", page);
+		break;
+#endif		
 	}
 
 	return 0;

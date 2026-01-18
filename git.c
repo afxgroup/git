@@ -6,10 +6,12 @@
 #include "help.h"
 #include "object-file.h"
 #include "pager.h"
+#include "packfile.h"
 #include "read-cache-ll.h"
 #include "run-command.h"
 #include "alias.h"
 #include "replace-object.h"
+#include "repository.h"
 #include "setup.h"
 #include "attr.h"
 #include "shallow.h"
@@ -702,11 +704,28 @@ static void strip_extension(const char **argv)
 #define strip_extension(cmd)
 #endif
 
+static void cleanup_git_resources(void)
+{
+	/* AmigaOS4: Free global resources before exit to avoid memory leaks */
+	/* Only clear if repository was actually initialized (has a gitdir) */
+	if (the_repository && the_repository->gitdir) {
+		/* Only discard index to avoid freeing ref stores that may not be initialized */
+		if (the_repository->index) {
+			discard_index(the_repository->index);
+			FREE_AND_NULL(the_repository->index);
+		}
+		/* Close pack files */
+		if (the_repository->objects)
+			close_object_store(the_repository->objects);
+	}
+}
+
 static void handle_builtin(int argc, const char **argv)
 {
 	struct strvec args = STRVEC_INIT;
 	const char *cmd;
 	struct cmd_struct *builtin;
+	int exit_code;
 
 	strip_extension(argv);
 	cmd = argv[0];
@@ -729,8 +748,11 @@ static void handle_builtin(int argc, const char **argv)
 	}
 
 	builtin = get_builtin(cmd);
-	if (builtin)
-		exit(run_builtin(builtin, argc, argv));
+	if (builtin) {
+		exit_code = run_builtin(builtin, argc, argv);
+		cleanup_git_resources();
+		exit(exit_code);
+	}
 	strvec_clear(&args);
 }
 
@@ -773,10 +795,13 @@ static void execv_dashed_external(const char **argv)
 	 * generic string as our trace2 command verb to indicate that we
 	 * launched a dashed command.
 	 */
-	if (status >= 0)
+	if (status >= 0) {
+		cleanup_git_resources();
 		exit(status);
-	else if (errno != ENOENT)
+	} else if (errno != ENOENT) {
+		cleanup_git_resources();
 		exit(128);
+	}
 	trace_printf("[execv_dashed_external] exit with status %d\n", status);
 }
 
@@ -921,6 +946,7 @@ int cmd_main(int argc, const char **argv)
 		printf(_("usage: %s\n\n"), git_usage_string);
 		list_common_cmds_help();
 		printf("\n%s\n", _(git_more_info_string));
+		cleanup_git_resources();
 		exit(1);
 	}
 
@@ -948,6 +974,7 @@ int cmd_main(int argc, const char **argv)
 					  "'%s' is not a git command\n"),
 				cmd, argv[0]);
 			trace_printf("[cmd_main] was_alias exit\n");
+			cleanup_git_resources();
 			exit(1);
 		}
 		if (!done_help) {

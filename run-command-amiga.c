@@ -497,6 +497,8 @@ int start_command(struct child_process *cmd)
 	}
 
 	int fhin = 0, fhout = 1, fherr = 2;
+	int saved_stdin = -1; /* restore parent's stdin after spawn */
+
 	const char **sargv = cmd->args.v;
 	struct strvec nargv = STRVEC_INIT;
 
@@ -538,7 +540,25 @@ int start_command(struct child_process *cmd)
 
 	trace_printf("[start_command] calling spawnvpe: cmd=%s dir=%s fhin=%d fhout=%d fherr=%d\n",
 		     cmd->args.v[0], dir_to_use ? dir_to_use : "(null)", fhin, fhout, fherr);
-	
+
+	/* AmigaOS4: spawnvpe() inherits only fds 0/1/2. If stdin pipe is on a
+	 * higher fd (pipe_command case), temporarily map it to fd 0 and restore
+	 * afterwards. */
+	if (need_in && fhin > 2) {
+		saved_stdin = dup(0);
+		if (saved_stdin < 0) {
+			failed_errno = errno;
+			error_errno("cannot save stdin before spawn");
+			goto fail_spawn;
+		}
+		if (dup2(fhin, 0) < 0) {
+			failed_errno = errno;
+			error_errno("cannot dup pipe to stdin for spawn");
+			goto fail_spawn_restore;
+		}
+		fhin = 0;
+	}
+
 	/* If cmd->env.v is NULL or empty, we need to explicitly pass environ.
 	 * Additionally, if this is a git command and we're in a repository,
 	 * we need to ensure GIT_DIR is set in the environment. */
@@ -551,27 +571,45 @@ int start_command(struct child_process *cmd)
 		trace_printf("[start_command] using cmd->env.v (%d entries)\n", 
 			     cmd->env.nr);
 	} else {
-		/* cmd->env is NULL or empty, use environ */
-		/* But if this is a git command in a repository, add GIT_DIR */
-		if (cmd->git_cmd && startup_info->have_repository) {
-			/* WORKAROUND: spawnvpe in clib4 doesn't pass custom environment correctly.
-			 * As a temporary fix, set GIT_DIR in the process environment with setenv.
-			 * This will affect the current process too, but it's better than not working. */
-			const char *git_dir = get_git_dir();
-			setenv(GIT_DIR_ENVIRONMENT, git_dir, 1);
-			env_to_use = environ;
-			trace_printf("[start_command] git_cmd in repo: setenv GIT_DIR=%s (clib4 workaround)\n",
-				     git_dir);
-		} else {
-			env_to_use = environ;
-			trace_printf("[start_command] using plain environ\n");
-		}
+		env_to_use = environ;
+		trace_printf("[start_command] using plain environ\n");
 	}
 	
 	cmd->pid = spawnvpe(cmd->args.v[0], cmd->args.v,
 				  env_to_use,
 				  dir_to_use, fhin, fhout, fherr);
 	failed_errno = errno;
+
+	if (saved_stdin >= 0) {
+		dup2(saved_stdin, 0);
+		close(saved_stdin);
+	}
+	/* Skip the failure cleanup labels in the success path. */
+	goto after_amiga_fail;
+
+fail_spawn_restore:
+	if (saved_stdin >= 0) {
+		dup2(saved_stdin, 0);
+		close(saved_stdin);
+	}
+fail_spawn:
+	if (need_in)
+		close_pair(fdin);
+	else if (cmd->in)
+		close(cmd->in);
+	if (need_out)
+		close_pair(fdout);
+	else if (cmd->out)
+		close(cmd->out);
+	if (need_err)
+		close_pair(fderr);
+	else if (cmd->err)
+		close(cmd->err);
+	child_process_clear(cmd);
+	errno = failed_errno;
+	return -1;
+
+after_amiga_fail:
 	
 	if (cmd->pid < 0 && (!cmd->silent_exec_failure || errno != ENOENT))
 		error_errno("cannot spawn %s", cmd->args.v[0]);
@@ -681,12 +719,22 @@ static int main_thread_set;
 static pthread_key_t async_key;
 static pthread_key_t async_die_counter;
 
+/* Cleanup function to destroy pthread keys on exit */
+static void cleanup_async_keys(void)
+{
+	if (main_thread_set) {
+		pthread_key_delete(async_key);
+		pthread_key_delete(async_die_counter);
+	}
+}
+
 static void *run_thread(void *data)
 {
 	struct async *async = data;
 	intptr_t ret;
 
-	trace_printf("[run_thread] START\n");
+	trace_printf("[run_thread] START async=%p proc_in=%d proc_out=%d in=%d out=%d\n",
+	            async, async->proc_in, async->proc_out, async->in, async->out);
 
 	if (async->isolate_sigpipe) {
 		sigset_t mask;
@@ -699,8 +747,20 @@ static void *run_thread(void *data)
 	}
 
 	pthread_setspecific(async_key, async);
-	trace_printf("[run_thread] calling async->proc\n");
+	trace_printf("[run_thread] calling async->proc async=%p in=%d out=%d\n",
+	            async, async->proc_in, async->proc_out);
 	ret = async->proc(async->proc_in, async->proc_out, async->data);
+	
+	/* Close worker fds so parent sees EOF */
+	if (async->proc_out >= 0) {
+		close(async->proc_out);
+		trace_printf("[run_thread] closed proc_out=%d\n", async->proc_out);
+	}
+	if (async->proc_in >= 0) {
+		close(async->proc_in);
+		trace_printf("[run_thread] closed proc_in=%d\n", async->proc_in);
+	}
+	
 	trace_printf("[run_thread] EXIT: ret=%d\n", (int)ret);
 	return (void *)ret;
 }
@@ -771,6 +831,7 @@ int start_async(struct async *async)
 	int fdin[2], fdout[2];
 	int proc_in, proc_out;
 
+	trace_printf("[start_async] ENTRY async=%p in=%d out=%d\n", async, async->in, async->out);
 	need_in = async->in < 0;
 	if (need_in) {
 		if (pipe(fdin) < 0) {
@@ -825,14 +886,29 @@ int start_async(struct async *async)
 		pthread_key_create(&async_die_counter, NULL);
 		set_die_routine(die_async);
 		set_die_is_recursing_routine(async_die_is_recursing);
+		/* Register cleanup to free pthread keys on exit */
+		atexit(cleanup_async_keys);
 	}
 
+	/*
+	 * AMIGA/pthread: Unlike fork(), pthreads share the same fd table.
+	 * We do NOT close the worker pipe ends here because that would
+	 * close them for the thread too. Instead:
+	 * - Thread closes proc_in/proc_out in run_thread() after proc returns
+	 * - Parent closes them in finish_async() after pthread_join()
+	 */
 	if (proc_in >= 0)
 		set_cloexec(proc_in);
 	if (proc_out >= 0)
 		set_cloexec(proc_out);
+	
 	async->proc_in = proc_in;
 	async->proc_out = proc_out;
+	
+	/* Save the write-end for parent to close in finish_async */
+	if (need_out)
+		async->_amiga_proc_out_write = fdout[1];
+	
 	{
 		trace_printf("[start_async] pthread_create\n");
 		int err = pthread_create(&async->tid, NULL, run_thread, async);
@@ -842,6 +918,7 @@ int start_async(struct async *async)
 		}
 		trace_printf("[start_async] pthread_create done\n");
 	}
+
 	return 0;
 
 error:
@@ -866,21 +943,7 @@ int finish_async(struct async *async)
 		_error("pthread_join failed");
 	
 	trace_printf("[finish_async] after pthread_join, ret=%d\n", (int)(intptr_t)ret);
-	
-#ifdef __amigaos4__
-	/* AMIGA: Give thread time to fully clean up before closing FDs */
-	usleep(50000); /* 50ms */
-	trace_printf("[finish_async] after sleep\n");
-#endif
-	
-	/* Close write-end of pipe AFTER thread completes */
-	if (async->_amiga_proc_out_write >= 0) {
-		trace_printf("[finish_async] closing _amiga_proc_out_write=%d\n", async->_amiga_proc_out_write);
-		close(async->_amiga_proc_out_write);
-		async->_amiga_proc_out_write = -1;
-	}
-	
-	trace_printf("[finish_async] EXIT\n");
+	trace_printf("[finish_async] EXIT (fds already closed by thread)\n");
 	invalidate_lstat_cache();
 	return (int)(intptr_t)ret;
 }
@@ -1031,6 +1094,43 @@ int pipe_command(struct child_process *cmd,
 
 	if (start_command(cmd) < 0)
 		return -1;
+
+	/* AmigaOS4: avoid poll()/nonblock; do a simple blocking write/read. */
+	int rv = 0;
+
+	if (in) {
+		size_t off = 0;
+		while (off < in_len) {
+			ssize_t w = write(cmd->in, in + off, in_len - off);
+			if (w < 0) {
+				if (errno == EINTR)
+					continue;
+				rv = -1;
+				break;
+			}
+			off += (size_t)w;
+		}
+		close(cmd->in);
+	}
+
+	if (out && rv == 0) {
+		if (strbuf_read(out, cmd->out, 8192) < 0)
+			rv = -1;
+		close(cmd->out);
+	}
+
+	if (err && rv == 0) {
+		if (strbuf_read(err, cmd->err, 8192) < 0)
+			rv = -1;
+		close(cmd->err);
+	}
+
+	if (rv < 0) {
+		finish_command(cmd); /* discard exit code */
+		return -1;
+	}
+
+	return finish_command(cmd);
 
 	if (in) {
 		if (enable_pipe_nonblock(cmd->in) < 0) {

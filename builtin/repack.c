@@ -292,6 +292,11 @@ static void prepare_pack_objects(struct child_process *cmd,
 		strvec_push(&cmd->args,  "--local");
 	if (args->quiet)
 		strvec_push(&cmd->args,  "--quiet");
+#ifdef GIT_AMIGAOS4_NATIVE
+	/* AmigaOS4: Force quiet mode to avoid stdout/stderr mixing with spawnvpe() */
+	else
+		strvec_push(&cmd->args, "--quiet");
+#endif
 	if (delta_base_offset)
 		strvec_push(&cmd->args,  "--delta-base-offset");
 	strvec_push(&cmd->args, out);

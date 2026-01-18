@@ -1,0 +1,437 @@
+;******************************************************************************
+;* Git for AmigaOS 4 - Installer Script
+;* $VER: Install-Git 2.45.0 (10.01.2026)
+;******************************************************************************
+
+(procedure MAKE_LINK #link-name #link-target
+    (set #local-link   (tackon @git-dir #link-name))
+    (set #local-target (tackon @git-dir #link-target))
+    (run ("MakeLink %s %s SOFT" #local-link #local-target)
+         (safe)
+    )
+)
+
+(procedure CREATE_GIT_LINKS
+    (working "Creating symbolic links...")
+    
+    ; Links to git
+    (MAKE_LINK "git-mailsplit" "git")
+    (MAKE_LINK "git-merge-base" "git")
+    (MAKE_LINK "git-merge-file" "git")
+    (MAKE_LINK "git-merge-index" "git")
+    (MAKE_LINK "git-merge-ours" "git")
+    (MAKE_LINK "git-merge-recursive" "git")
+    (MAKE_LINK "git-merge-tree" "git")
+    (MAKE_LINK "git-mktree" "git")
+    (MAKE_LINK "git-mktag" "git")
+    (MAKE_LINK "git-multi-pack-index" "git")
+    (MAKE_LINK "git-name-rev" "git")
+    (MAKE_LINK "git-pack-objects" "git")
+    (MAKE_LINK "git-pack-redundant" "git")
+    (MAKE_LINK "git-pack-refs" "git")
+    (MAKE_LINK "git-patch-id" "git")
+    (MAKE_LINK "git-diff-tree" "git")
+    (MAKE_LINK "git-credential-store" "git")
+    (MAKE_LINK "git-describe" "git")
+    (MAKE_LINK "git-diagnose" "git")
+    (MAKE_LINK "git-diff-files" "git")
+    (MAKE_LINK "git-diff-index" "git")
+    (MAKE_LINK "git-fast-export" "git")
+    (MAKE_LINK "git-fast-import" "git")
+    (MAKE_LINK "git-fetch-pack" "git")
+    (MAKE_LINK "git-fmt-merge-msg" "git")
+    (MAKE_LINK "git-for-each-ref" "git")
+    (MAKE_LINK "git-for-each-repo" "git")
+    (MAKE_LINK "git-fsmonitor--daemon" "git")
+    (MAKE_LINK "git-get-tar-commit-id" "git")
+    (MAKE_LINK "git-hash-object" "git")
+    (MAKE_LINK "git-help" "git")
+    (MAKE_LINK "git-hook" "git")
+    (MAKE_LINK "git-index-pack" "git")
+    (MAKE_LINK "git-init-db" "git")
+    (MAKE_LINK "git-interpret-trailers" "git")
+    (MAKE_LINK "git-ls-files" "git")
+    (MAKE_LINK "git-ls-remote" "git")
+    (MAKE_LINK "git-ls-tree" "git")
+    (MAKE_LINK "git-replace" "git")
+    (MAKE_LINK "git-rerere" "git")
+    (MAKE_LINK "git-remote-fd" "git")
+    (MAKE_LINK "git-remote-ext" "git")
+    (MAKE_LINK "git-read-tree" "git")
+    (MAKE_LINK "git-prune-packed" "git")
+    (MAKE_LINK "git-prune" "git")
+    (MAKE_LINK "git-backfill" "git")
+    (MAKE_LINK "git-bugreport" "git")
+    (MAKE_LINK "git-cat-file" "git")
+    (MAKE_LINK "git-check-attr" "git")
+    (MAKE_LINK "git-check-ignore" "git")
+    (MAKE_LINK "git-check-mailmap" "git")
+    (MAKE_LINK "git-check-ref-format" "git")
+    (MAKE_LINK "git-checkout--worker" "git")
+    (MAKE_LINK "git-checkout-index" "git")
+    (MAKE_LINK "git-column" "git")
+    (MAKE_LINK "git-commit-graph" "git")
+    (MAKE_LINK "git-commit-tree" "git")
+    (MAKE_LINK "git-count-objects" "git")
+    (MAKE_LINK "git-credential" "git")
+    (MAKE_LINK "git-credential-cache" "git")
+
+    ; Links to git-remote-http
+    (MAKE_LINK "git-remote-ftp" "git-remote-http")
+    (MAKE_LINK "git-remote-ftps" "git-remote-http")
+    (MAKE_LINK "git-remote-https" "git-remote-http")
+
+    ; More links to git
+    (MAKE_LINK "git-write-tree" "git")
+    (MAKE_LINK "git-worktree" "git")
+    (MAKE_LINK "git-verify-pack" "git")
+    (MAKE_LINK "git-var" "git")
+    (MAKE_LINK "git-update-server-info" "git")
+    (MAKE_LINK "git-unpack-file" "git")
+    (MAKE_LINK "git-unpack-objects" "git")
+    (MAKE_LINK "git-symbolic-ref" "git")
+    (MAKE_LINK "git-submodule--helper" "git")
+    (MAKE_LINK "git-credential-cache--daemon" "git")
+    (MAKE_LINK "git-mailinfo" "git")
+    (MAKE_LINK "git-remote" "git")
+    (MAKE_LINK "git-repack" "git")
+    (MAKE_LINK "git-reset" "git")
+    (MAKE_LINK "git-restore" "git")
+    (MAKE_LINK "git-revert" "git")
+    (MAKE_LINK "git-rm" "git")
+    (MAKE_LINK "git-shortlog" "git")
+    (MAKE_LINK "git-show" "git")
+    (MAKE_LINK "git-show-branch" "git")
+    (MAKE_LINK "git-show-ref" "git")
+    (MAKE_LINK "git-stage" "git")
+    (MAKE_LINK "git-stash" "git")
+    (MAKE_LINK "git-status" "git")
+    (MAKE_LINK "git-switch" "git")
+    (MAKE_LINK "git-tag" "git")
+    (MAKE_LINK "git-update-index" "git")
+    (MAKE_LINK "git-update-ref" "git")
+    (MAKE_LINK "git-upload-archive" "git")
+    (MAKE_LINK "git-upload-pack" "git")
+    (MAKE_LINK "git-verify-commit" "git")
+    (MAKE_LINK "git-verify-tag" "git")
+    (MAKE_LINK "git-version" "git")
+    (MAKE_LINK "git-whatchanged" "git")
+    (MAKE_LINK "git-stripspace" "git")
+    (MAKE_LINK "git-clone" "git")
+    (MAKE_LINK "git-commit" "git")
+    (MAKE_LINK "git-config" "git")
+    (MAKE_LINK "git-diff" "git")
+    (MAKE_LINK "git-difftool" "git")
+    (MAKE_LINK "git-fetch" "git")
+    (MAKE_LINK "git-format-patch" "git")
+    (MAKE_LINK "git-fsck" "git")
+    (MAKE_LINK "git-fsck-objects" "git")
+    (MAKE_LINK "git-gc" "git")
+    (MAKE_LINK "git-grep" "git")
+    (MAKE_LINK "git-init" "git")
+    (MAKE_LINK "git-log" "git")
+    (MAKE_LINK "git-maintenance" "git")
+    (MAKE_LINK "git-merge" "git")
+    (MAKE_LINK "git-merge-subtree" "git")
+    (MAKE_LINK "git-mv" "git")
+    (MAKE_LINK "git-notes" "git")
+    (MAKE_LINK "git-pull" "git")
+    (MAKE_LINK "git-push" "git")
+    (MAKE_LINK "git-range-diff" "git")
+    (MAKE_LINK "git-rebase" "git")
+    (MAKE_LINK "git-receive-pack" "git")
+    (MAKE_LINK "git-reflog" "git")
+    (MAKE_LINK "git-am" "git")
+    (MAKE_LINK "git-annotate" "git")
+    (MAKE_LINK "git-apply" "git")
+    (MAKE_LINK "git-archive" "git")
+    (MAKE_LINK "git-bisect" "git")
+    (MAKE_LINK "git-blame" "git")
+    (MAKE_LINK "git-branch" "git")
+    (MAKE_LINK "git-bundle" "git")
+    (MAKE_LINK "git-checkout" "git")
+    (MAKE_LINK "git-cherry" "git")
+    (MAKE_LINK "git-cherry-pick" "git")
+    (MAKE_LINK "git-clean" "git")
+    (MAKE_LINK "git-sparse-checkout" "git")
+    (MAKE_LINK "git-show-index" "git")
+    (MAKE_LINK "git-send-pack" "git")
+    (MAKE_LINK "git-rev-parse" "git")
+    (MAKE_LINK "git-rev-list" "git")
+    (MAKE_LINK "git-replay" "git")
+)
+
+(procedure INSTALL_LIBRARIES
+ 	(if (= (exists @default-dest-libs) 0)
+         (makedir @default-dest-libs)
+	)
+	(copyfiles
+		(prompt "Libraries installation")
+		(help @copyfiles-help)
+		(source "Installer-Files/LIBS")
+		(choices "clib4.library")
+		(dest @default-dest-libs)
+		(confirm)
+	)
+)
+
+(complete 0)
+(set #app-name "Git")
+(set #app-version "2.45.0")
+(set #min-os-version 53)
+(set #env_trace             1)
+(set #env_trace_packet      2)
+(set #env_trace_performance 4)
+
+;******************************************************************************
+;* Welcome message
+;******************************************************************************
+
+(welcome "Welcome to the " #app-name " " #app-version " installer.\n\n"
+         "This will install Git version control system on your AmigaOS 4 system.\n\n"
+         "Git is a distributed version control system used by millions of developers worldwide.")
+
+(complete 10)
+
+;******************************************************************************
+;* Check OS version
+;******************************************************************************
+
+(if (< (/ (getversion "exec.library" (resident)) 65536) #min-os-version)
+    (abort "Git requires AmigaOS 4.1 or higher!\n"
+           "Your system has OS version " (/ (getversion "exec.library" (resident)) 65536))
+)
+
+;******************************************************************************
+;* Ask for installation directory
+;******************************************************************************
+
+(set #dest-dir
+    (askdir
+        (prompt "Please select the directory where you want to install Git.\n\n"
+                "A drawer called 'Git' will be created there if it doesn't exist.")
+        (help "This is the directory where Git will be installed. "
+              "A new drawer 'Git' will be created here.")
+        (default "SDK:")
+    )
+)
+
+(complete 30)
+
+(set @git-dir (tackon #dest-dir "Git"))
+
+;******************************************************************************
+;* Check if this is an update or new installation
+;******************************************************************************
+
+(set #is-update (exists @git-dir (noreq)))
+
+(if #is-update
+    (
+        (message "An existing Git installation has been detected at:\n\n"
+                 @git-dir "\n\n"
+                 "This will UPDATE your existing installation.\n\n"
+                 "Your existing files will be overwritten.")
+        (set #install-type "UPDATE")
+    )
+    (
+        (message "This will install Git " #app-version " to:\n\n"
+                 @git-dir "\n\n"
+                 "This is a NEW installation.\n\n"
+                 "You will be offered to install clib4.library and to set optional Git trace environment variables.")
+        (set #install-type "NEW")
+    )
+)
+
+(set @default-dest-libs (tackon @git-dir "LIBS"))
+
+;******************************************************************************
+;* Create installation directory
+;******************************************************************************
+
+(makedir @git-dir
+    (prompt "Creating Git directory...")
+    (help @makedir-help)
+    (infos)
+)
+
+(complete 40)
+
+;******************************************************************************
+;* Copy all files from installer-files
+;******************************************************************************
+
+(copyfiles
+    (prompt "Installing Git files...")
+    (help "Copying all Git files to the installation directory.")
+    (source "Installer-Files/")
+    (dest @git-dir)
+    (all)
+    (infos)
+)
+
+(complete 50)
+
+; Explicitly copy extra trees
+(copyfiles (source "Installer-Files/contrib/")  (dest (tackon @git-dir "contrib"))   (all) (infos))
+(copyfiles (source "Installer-Files/gitweb/")   (dest (tackon @git-dir "gitweb"))    (all) (infos))
+(copyfiles (source "Installer-Files/locale/")   (dest (tackon @git-dir "locale"))    (all) (infos))
+(copyfiles (source "Installer-Files/templates/") (dest (tackon @git-dir "templates")) (all) (infos))
+
+(complete 70)
+
+(INSTALL_LIBRARIES)
+
+(complete 80)
+
+(CREATE_GIT_LINKS)
+
+(complete 85)
+
+;******************************************************************************
+;* Optional: select Git trace env vars to add to User-Startup (expert)
+;******************************************************************************
+(set #trace-lines-1 "")
+(set #trace-lines-2 "")
+(set #trace-lines-3 "")
+
+(if (= #install-type "NEW")
+    (
+        (set #trace-selection
+            (askoptions
+                (prompt "Select which Git trace env vars to add to User-Startup (multiple selection allowed)")
+                (help "Choose any combination of GIT_TRACE, GIT_TRACE_PACKET, GIT_TRACE_PERFORMANCE.")
+                (choices "GIT_TRACE" "GIT_TRACE_PACKET" "GIT_TRACE_PERFORMANCE")
+                (default 0)
+            )
+        )
+
+        ; If new install and any selection, write them now to User-Startup
+        (if (= (bitand #trace-selection #env_trace) #env_trace)
+            (set #trace-lines-1 (cat "SetEnv GIT_TRACE 1\n"))
+        )
+        (if (= (bitand #trace-selection #env_trace_packet) #env_trace_packet)
+            (set #trace-lines-2 (cat "SetEnv GIT_TRACE_PACKET 1\n"))
+        )
+        (if (= (bitand #trace-selection #env_trace_performance) #env_trace_performance)
+            (set #trace-lines-3 (cat "SetEnv GIT_TRACE_PERFORMANCE 1\n"))
+        )
+    )
+)
+
+(complete 90)
+
+;******************************************************************************
+;* Add GIT: assign and optional trace SetEnv to User-Startup (only for new installations)
+;******************************************************************************
+
+(if (= #install-type "NEW")
+    (
+        (set #startup-command 
+            (cat 
+                "Assign >NIL: GIT: \"" @git-dir "\"\n"
+                "Path >NIL: \"" @git-dir "\" ADD\n"
+                #trace-lines-1
+                #trace-lines-2
+                #trace-lines-3
+            )
+        )
+        (startup "GIT-INSTALL"
+            (prompt "Adding GIT assign and optional trace vars to User-Startup...")
+            (help "Creates the GIT: assign and appends chosen trace SetEnv lines.")
+            (command #startup-command)
+        )
+    )
+    (
+        (message "This is an update - User-Startup will not be modified.\n\n"
+                 "The GIT: assign should already be configured from your previous installation.")
+    )
+)
+
+(complete 95)
+
+;******************************************************************************
+;* Create README with usage instructions
+;******************************************************************************
+
+(set #readme-text
+    (cat "Git " #app-version " for AmigaOS 4\n"
+         "================================\n\n"
+         "Installation completed successfully!\n\n"
+         "Git has been installed to: " @git-dir "\n"
+         "GIT: assign points to: " @git-dir "\n\n"
+         "USAGE:\n"
+         "------\n"
+         "From a shell, type 'git' to see available commands.\n"
+         "Type 'git help <command>' for help on a specific command.\n\n"
+         "FIRST STEPS:\n"
+         "-----------\n"
+         "1. Configure your identity:\n"
+         "   git config --global user.name \"Your Name\"\n"
+         "   git config --global user.email \"your.email@example.com\"\n\n"
+         "2. Create a new repository:\n"
+         "   cd WORK:MyProject\n"
+         "   git init\n\n"
+         "3. Clone an existing repository:\n"
+         "   git clone https://github.com/user/repo.git\n\n"
+         "For more information, visit: https://git-scm.com/\n\n"
+         "AMIGAOS 4 NOTES:\n"
+         "---------------\n"
+         "- Thin-pack is disabled for fetch/pull operations\n"
+         "- Use 'git clone' and 'git pull' for remote repositories\n"
+         "- 'git push' works with HTTPS and SSH protocols\n"
+         "- Make sure clib4.library is in LIBS:\n\n"
+         "Enjoy using Git on AmigaOS 4!\n"
+    )
+)
+
+(set #readme-text-final
+    (cat "Git " #app-version " for AmigaOS 4\n"
+         "================================\n\n"
+         "Installation completed successfully!\n\n"
+         "Git has been installed to: " @git-dir "\n"
+         "GIT: assign points to: " @git-dir "\n\n"
+    )
+)
+
+(textfile
+    (prompt "Creating README file...")
+    (help "This creates a README with usage instructions.")
+    (dest (tackon @git-dir "README"))
+    (append #readme-text)
+)
+
+; Show README content before finishing
+(message #readme-text-final)
+
+(complete 100)
+
+;******************************************************************************
+;* Completion
+;******************************************************************************
+
+(if (= #install-type "NEW")
+    (set #complete-msg
+        (cat "Git " #app-version " has been successfully installed to:\n\n"
+             @git-dir "\n\n"
+             "The GIT: assign has been added to your User-Startup.\n\n"
+             "Please read the README file for usage instructions.\n\n"
+             "You may need to reboot or type:\n"
+             "Assign GIT: " @git-dir "\n\n"
+             "to make the GIT: assign available immediately.\n\n"
+             "Thank you for using Git on AmigaOS 4!"
+        )
+    )
+    (set #complete-msg
+        (cat "Git " #app-version " has been successfully updated at:\n\n"
+             @git-dir "\n\n"
+             "Your existing User-Startup configuration has been preserved.\n\n"
+             "Please read the README file for any new features or changes.\n\n"
+             "Thank you for using Git on AmigaOS 4!"
+        )
+    )
+)
+
+(complete #complete-msg)
+
+(exit (quiet))

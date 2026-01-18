@@ -60,6 +60,7 @@ ifeq ($(uname_S),AmigaOS4)
 	CSPRNG_METHOD = arc4random
 	NO_IPV6 = YesPlease
 	NO_NSEC = YesPlease
+	DEFAULT_HELP_FORMAT = man
 endif
 ifeq ($(uname_S),Linux)
 	HAVE_ALLOCA_H = YesPlease
@@ -359,7 +360,6 @@ ifeq ($(uname_S),AIX)
 	FILENO_IS_A_MACRO = UnfortunatelyYes
 	NEED_ACCESS_ROOT_HANDLER = UnfortunatelyYes
         ifeq ($(shell expr "$(uname_V)" : '[1234]'),1)
-		NO_PTHREADS = YesPlease
         else
 		PTHREAD_LIBS = -lpthread
         endif
@@ -768,7 +768,6 @@ ifeq ($(uname_S),QNX)
 	NO_MEMMEM = YesPlease
 	NO_MKDTEMP = YesPlease
 	NO_NSEC = YesPlease
-	NO_PTHREADS = YesPlease
 	NO_STRCASESTR = YesPlease
 	NO_STRLCPY = YesPlease
 endif

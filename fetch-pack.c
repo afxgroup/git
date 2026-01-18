@@ -852,10 +852,10 @@ static int everything_local(struct fetch_pack_args *args,
 
 static int sideband_demux(int in UNUSED, int out, void *data)
 {
-	int *xd = data;
 	int ret;
-
-	ret = recv_sideband("fetch-pack", xd[0], out);
+	
+	ret = recv_sideband("fetch-pack", in, out);
+	
 	return ret;
 }
 
@@ -935,20 +935,26 @@ static int get_pack(struct fetch_pack_args *args,
 		 */
 		demux.proc = sideband_demux;
 		demux.data = xd;
+		demux.in = -1;
 		demux.out = -1;
 		demux.isolate_sigpipe = 1;
-		demux._amiga_proc_out_write = -1;  /* Initialize to -1 */
-		/* AMIGA: Duplicate xd[0] to avoid conflicts with stdio FDs */
-		trace_printf("[get_pack] before dup: xd[0]=%d\n", xd[0]);
-		int xd_dup = dup(xd[0]);
-		if (xd_dup < 0)
-			die_errno(_("cannot duplicate socket fd"));
-		trace_printf("[get_pack] after dup: xd_dup=%d, original xd[0]=%d\n", xd_dup, xd[0]);
-		/* Don't close xd[0] - something else might still reference it */
-		xd[0] = xd_dup;
+		/* AMIGA: Feed the demux thread from xd[0] directly.
+		 * Using dup() here can pick surprising fd numbers and complicate debugging.
+		 */
+		trace_printf("[get_pack] AMIGA: demux.in = dup(xd[0]) (original xd[0]=%d)\n", xd[0]);
+		demux.in = dup(xd[0]);
+		if (demux.in < 0)
+			die_errno(_("dup(xd[0]) failed"));
+		trace_printf("[get_pack] AMIGA: demux.in=%d after dup\n", demux.in);
 		if (start_async(&demux))
 			die(_("fetch-pack: unable to fork off sideband demultiplexer"));
-		trace_printf("[get_pack] after start_async: demux.out=%d, xd[0]=%d\n", demux.out, xd[0]);
+		trace_printf("[get_pack] after start_async: demux.out=%d, demux.in=%d\n", demux.out, demux.in);
+		/* AMIGA/pthread: Don't close demux.in - thread needs it as proc_in.
+		 * Thread will close it when done. 
+		 * Also don't close xd[0] - the caller (do_fetch_pack_v2) still needs it
+		 * for packet_reader to read delimiter after get_pack() returns.
+		 * Thread uses demux.in (dup of xd[0]) instead. */
+		trace_printf("[get_pack] parent keeps xd[0]=%d open, thread uses demux.in=%d\n", xd[0], demux.in);
 	}
 	else
 		demux.out = xd[0];
@@ -976,7 +982,7 @@ static int get_pack(struct fetch_pack_args *args,
 	    : 0)
 		fsck_objects = 1;
 
-#ifdef __amigaos4__
+#ifdef GIT_AMIGAOS4_NATIVE
 	/* AMIGA: Force use of unpack-objects instead of index-pack to avoid delta resolution issues */
 	int amiga_force_unpack = 1;
 	trace_printf("[get_pack] AMIGA: forcing unpack-objects instead of index-pack\n");
@@ -990,20 +996,18 @@ static int get_pack(struct fetch_pack_args *args,
 		cmd_name = "index-pack";
 		strvec_push(&cmd.args, cmd_name);
 		strvec_push(&cmd.args, "--stdin");
-		/* AMIGA: Skip -v to prevent stdout buffer deadlock */
-		/* if (!args->quiet && !args->no_progress)
-			strvec_push(&cmd.args, "-v"); */
+#ifdef GIT_AMIGAOS4_NATIVE
 		/* AMIGA: Always enable --fix-thin since server sends thin pack anyway */
 		strvec_push(&cmd.args, "--fix-thin");
 		trace_printf("[get_pack] AMIGA: enabled --fix-thin to handle thin pack from server\n");
-#ifdef __amigaos4__
+
 		/* AMIGA: Force single-threaded to debug delta resolution */
 		strvec_push(&cmd.args, "--threads=1");
 		trace_printf("[get_pack] AMIGA: forcing single-threaded index-pack\n");
 #endif
 		if ((do_keep || index_pack_args) && (args->lock_pack || unpack_limit))
 			add_index_pack_keep_option(&cmd.args);
-#ifdef __amigaos4__
+#ifdef GIT_AMIGAOS4_NATIVE
 		/* AMIGA: Temporarily disable check-self-contained for debugging */
 		args->check_self_contained_and_connected = 0;
 		trace_printf("[get_pack] AMIGA: disabled --check-self-contained-and-connected\n");
@@ -1083,6 +1087,13 @@ static int get_pack(struct fetch_pack_args *args,
 
 	trace_printf("[get_pack] after finish_async\n");
 
+	/* AMIGA: Close demux.out since unpack-objects has finished reading from it */
+	if (use_sideband && demux.out >= 0) {
+		trace_printf("[get_pack] closing demux.out=%d\n", demux.out);
+		close(demux.out);
+		demux.out = -1;
+	}
+
 	if (!ret || (args->check_self_contained_and_connected && ret == 1))
 		args->self_contained_and_connected =
 			args->check_self_contained_and_connected &&
@@ -1093,7 +1104,7 @@ static int get_pack(struct fetch_pack_args *args,
 	trace_printf("[get_pack] after self_contained check\n");
 
 	/* Read index-pack output AFTER process has finished */
-#ifdef __amigaos4__
+#ifdef GIT_AMIGAOS4_NATIVE
 	/* AMIGA: unpack-objects doesn't produce lockfile output, skip this section */
 	if (do_keep && (pack_lockfiles || fsck_objects) && !amiga_force_unpack) {
 #else
@@ -1213,7 +1224,7 @@ static struct ref *do_fetch_pack(struct fetch_pack_args *args,
 		print_verbose(args, _("Server supports %s"), "thin-pack");
 	else
 		args->use_thin_pack = 0;
-#ifdef __amigaos4__
+#ifdef GIT_AMIGAOS4_NATIVE
 	/* AMIGA: Force disable thin-pack regardless of server support */
 	args->use_thin_pack = 0;
 	trace_printf("[do_fetch_pack] AMIGA: forced args->use_thin_pack = 0\n");
@@ -1417,7 +1428,7 @@ static int send_fetch_request(struct fetch_negotiator *negotiator, int fd_out,
 
 	write_fetch_command_and_capabilities(&req_buf, args->server_options);
 
-#ifndef __amigaos4__
+#ifndef GIT_AMIGAOS4_NATIVE
 	if (args->use_thin_pack)
 		packet_buf_write(&req_buf, "thin-pack");
 #else
@@ -1732,7 +1743,7 @@ static struct ref *do_fetch_pack_v2(struct fetch_pack_args *args,
 	else
 		fetch_negotiator_init(r, negotiator);
 
-#ifdef __amigaos4__
+#ifdef GIT_AMIGAOS4_NATIVE
 	/* AMIGA: Force disable thin-pack for protocol v2 */
 	args->use_thin_pack = 0;
 	trace_printf("[do_fetch_pack_v2] AMIGA: forced args->use_thin_pack = 0\n");

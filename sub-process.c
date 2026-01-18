@@ -70,7 +70,7 @@ static void subprocess_exit_handler(struct child_process *process)
 	trace_printf("[subprocess_exit_handler] process->in: %d - process->out %d\n", process->in, process->out);
 	sigchain_push(SIGPIPE, SIG_IGN);
 	/* Closing the pipe signals the subprocess to initiate a shutdown. */
-#ifndef __amigaos4__
+#ifndef GIT_AMIGAOS4_NATIVE
 	close(process->in);
 	close(process->out);
 #endif

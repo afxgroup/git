@@ -117,7 +117,7 @@ static struct diff_filespec *noindex_filespec(const char *name, int mode,
 	struct diff_filespec *s;
 
 	if (!name)
-#ifndef __amigaos4__
+#ifndef GIT_AMIGAOS4_NATIVE
 		name = "/dev/null";
 #else
 		name = "NIL:";

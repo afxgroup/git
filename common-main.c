@@ -7,7 +7,7 @@
 #include "strbuf.h"
 #include "trace2.h"
 
-#ifdef __amigaos4__
+#ifdef GIT_AMIGAOS4_NATIVE
 __attribute__ ((used)) static const char *version = "$VER: git " G_VERSION " for AmigaOS4 (" G_DATE ")";
 __attribute__ ((used)) static const char *sc = "$STACK: 3512000";
 #endif

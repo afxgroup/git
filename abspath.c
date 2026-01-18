@@ -96,7 +96,7 @@ static char *strbuf_realpath_1(struct strbuf *resolved, const char *path,
 	strbuf_addstr(&remaining, path);
 	get_root_part(resolved, &remaining);
 
-#ifndef __amigaos4__
+#ifndef GIT_AMIGAOS4_NATIVE
 	if (!resolved->len) {
 #else
 	if (!resolved->len && !strchr(path, ':')) { // TODO - check if we can do this in a different way
@@ -125,7 +125,7 @@ static char *strbuf_realpath_1(struct strbuf *resolved, const char *path,
 		}
 
 		/* append the next component and resolve resultant path */
-#ifndef __amigaos4__
+#ifndef GIT_AMIGAOS4_NATIVE
 		if (!is_dir_sep(resolved->buf[resolved->len - 1]))
 #else
 		if (!is_dir_sep(resolved->buf[resolved->len - 1]) && strchr(resolved->buf, ':') && resolved->buf[resolved->len - 1] != ':')

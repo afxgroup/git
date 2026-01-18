@@ -458,7 +458,7 @@ typedef uintmax_t timestamp_t;
 #include <paths.h>
 #endif
 #ifndef _PATH_DEFPATH
-#ifndef __amigaos4__
+#ifndef GIT_AMIGAOS4_NATIVE
 #define _PATH_DEFPATH "/usr/local/bin:/usr/bin:/bin"
 #else
 #define _PATH_DEFPATH "C:;SDK:C"
@@ -1390,7 +1390,7 @@ int git_regcomp(regex_t *preg, const char *pattern, int cflags);
 #ifdef USE_ST_TIMESPEC
 #define ST_CTIME_NSEC(st) ((unsigned int)((st).st_ctimespec.tv_nsec))
 #define ST_MTIME_NSEC(st) ((unsigned int)((st).st_mtimespec.tv_nsec))
-#elif defined(__amigaos4__)
+#elif defined(GIT_AMIGAOS4_NATIVE)
 #define ST_CTIME_NSEC(st) ((unsigned int)((st).st_ctime))
 #define ST_MTIME_NSEC(st) ((unsigned int)((st).st_mtime))
 #else
@@ -1444,7 +1444,7 @@ void bug_fl(const char *file, int line, const char *fmt, ...);
 #endif
 
 #ifndef SHELL_PATH
-#ifndef __amigaos4__
+#ifndef GIT_AMIGAOS4_NATIVE
 # define SHELL_PATH "/bin/sh"
 #else
 # define SHELL_PATH "run"
@@ -1586,7 +1586,7 @@ static inline void *container_of_or_null_offset(void *ptr, size_t offset)
 	((uintptr_t)&(ptr)->member - (uintptr_t)(ptr))
 #endif /* !__GNUC__ */
 
-#ifdef __amigaos4__
+#ifdef GIT_AMIGAOS4_NATIVE
 static inline pid_t getpgid(pid_t pid)
 { return pid == 0 ? getpid() : pid; }
 #endif

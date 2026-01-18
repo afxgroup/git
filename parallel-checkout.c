@@ -517,7 +517,7 @@ static void finish_workers(struct pc_worker *workers, int num_workers)
 	for (i = 0; i < num_workers; i++) {
 		trace_printf("[finish_workers] finish worker: %d\n", i);
 		struct child_process *cp = &workers[i].cp;
-#ifndef __amigaos4__
+#ifndef GIT_AMIGAOS4_NATIVE
 		if (cp->in >= 0)
 			close(cp->in);
 		if (cp->out >= 0)

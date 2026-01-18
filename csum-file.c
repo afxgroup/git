@@ -140,7 +140,7 @@ struct hashfile *hashfd_check(const char *name)
 	int sink, check;
 	struct hashfile *f;
 
-#ifndef __amigaos4__
+#ifndef GIT_AMIGAOS4_NATIVE
 	sink = xopen("/dev/null", O_WRONLY);
 #else
 	sink = xopen("NIL:", O_WRONLY);

@@ -39,7 +39,7 @@
 #include "ws.h"
 #include "write-or-die.h"
 
-#ifdef __amigaos4__
+#ifdef GIT_AMIGAOS4_NATIVE
 #undef ETC_GITCONFIG
 #define ETC_GITCONFIG "Git:.gitconfig"
 #endif
@@ -2050,7 +2050,7 @@ void git_global_config_paths(char **user_out, char **xdg_out)
 	char *xdg_config = NULL;
 
 	if (!user_config) {
-#ifndef __amigaos4__
+#ifndef GIT_AMIGAOS4_NATIVE
 		user_config = interpolate_path("~/.gitconfig", 0);
 		xdg_config = xdg_config_home("config");
 #else
@@ -3515,7 +3515,7 @@ int git_config_set_multivar_in_file_gently(const char *config_filename,
 		contents = NULL;
 	}
 
-#ifdef __amigaos4__
+#ifdef GIT_AMIGAOS4_NATIVE
 	remove(config_filename);
 #endif
 	if (commit_lock_file(&lock) < 0) {

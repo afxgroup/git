@@ -1825,7 +1825,7 @@ const char *resolve_gitdir_gently(const char *suspect, int *return_error_code)
 /* if any standard file descriptor is missing open it to /dev/null */
 void sanitize_stdfds(void)
 {
-#ifndef __amigaos4__
+#ifndef GIT_AMIGAOS4_NATIVE
 	int fd = xopen("/dev/null", O_RDWR);
 #else
 	int fd = xopen("NIL:", O_RDWR);

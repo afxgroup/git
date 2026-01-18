@@ -9,7 +9,11 @@
 int pager_use_color = 1;
 
 #ifndef DEFAULT_PAGER
+#ifndef GIT_AMIGAOS4_NATIVE
 #define DEFAULT_PAGER "less"
+#else
+#define DEFAULT_PAGER "cat"
+#endif
 #endif
 
 static struct child_process pager_process;

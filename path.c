@@ -1480,7 +1480,7 @@ int looks_like_command_line_option(const char *str)
 
 char *xdg_config_home_for(const char *subdir, const char *filename)
 {
-#ifndef __amigaos4__
+#ifndef GIT_AMIGAOS4_NATIVE
 	const char *home, *config_home;
 
 	assert(subdir);
