@@ -61,6 +61,8 @@ ifeq ($(uname_S),AmigaOS4)
 	NO_IPV6 = YesPlease
 	NO_NSEC = YesPlease
 	DEFAULT_HELP_FORMAT = man
+	# Use ISO encodings instead of UTF-8 for .mo files (better Amiga compatibility)
+	USE_ISO_ENCODING = YesPlease
 endif
 ifeq ($(uname_S),Linux)
 	HAVE_ALLOCA_H = YesPlease

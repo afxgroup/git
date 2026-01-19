@@ -3047,7 +3047,11 @@ endif
 
 po/build/locale/%/LC_MESSAGES/git.mo: po/%.po
 	$(call mkdir_p_parent_template)
+ifdef USE_ISO_ENCODING
+	$(QUIET_MSGFMT)$(SHELL_PATH) contrib/amiga/msgfmt-with-encoding.sh $< $@
+else
 	$(QUIET_MSGFMT)$(MSGFMT) -o $@ $<
+endif
 
 LIB_PERL := $(wildcard perl/Git.pm perl/Git/*.pm perl/Git/*/*.pm perl/Git/*/*/*.pm)
 LIB_PERL_GEN := $(patsubst perl/%.pm,perl/build/lib/%.pm,$(LIB_PERL))

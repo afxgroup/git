@@ -165,13 +165,75 @@
  	(if (= (exists @default-dest-libs) 0)
          (makedir @default-dest-libs)
 	)
-	(copyfiles
-		(prompt "Libraries installation")
-		(help @copyfiles-help)
-		(source "Installer-Files/LIBS")
-		(choices "clib4.library")
-		(dest @default-dest-libs)
-		(confirm)
+	
+	(set #clib4-dest (tackon @default-dest-libs "clib4.library"))
+	(set #clib4-source "Installer-Files/LIBS/clib4.library")
+	(set #should-install 1)
+	
+	; Get version and size of the new clib4.library from installer files
+	(set #new-version (getversion #clib4-source))
+	(set #new-version-num (/ #new-version 65536))
+	(set #new-revision-num (- #new-version (* #new-version-num 65536)))
+	(set #new-size (getsize #clib4-source))
+	
+	; Check if clib4.library already exists
+	(if (exists #clib4-dest)
+		(
+			(set #existing-version (getversion #clib4-dest))
+			(set #version-num (/ #existing-version 65536))
+			(set #revision-num (- #existing-version (* #version-num 65536)))
+			(set #existing-size (getsize #clib4-dest))
+			
+			; Check if installed version is older than new version
+			(if (earlier #clib4-dest #clib4-source)
+				(set #age-info " (installed version is older)")
+				(set #age-info " (installed version is newer or same age)")
+			)
+			
+			(set #should-install
+				(askbool
+					(prompt (cat "An existing clib4.library has been found:\n\n"
+					             "Installed version: " #version-num "." #revision-num " (" #existing-size " bytes)\n"
+					             "New version: " #new-version-num "." #new-revision-num " (" #new-size " bytes)\n"
+					             #age-info "\n"
+					             "Location: " #clib4-dest "\n\n"
+					             "A backup copy will be saved as clib4.library.bak\n\n"
+					             "Do you want to replace the installed version with the new one?"))
+					(help "Select 'Yes' to replace the existing library with the new one, "
+					      "or 'No' to keep your current version. "
+					      "The old version will be backed up before replacement.")
+					(default 0)
+				)
+			)
+		)
+	)
+	
+	(if #should-install
+		(
+			; Create backup of existing library if it exists
+			(if (exists #clib4-dest)
+				(
+					(set #clib4-backup (cat #clib4-dest ".bak"))
+					(copyfiles
+						(prompt "Creating backup of existing clib4.library...")
+						(help "Backing up the current library before installing the new one.")
+						(source #clib4-dest)
+						(dest #clib4-backup)
+						(optional "nofail")
+					)
+				)
+			)
+			
+			(copyfiles
+				(prompt "Installing clib4.library...")
+				(help "Copying clib4.library to the LIBS directory.")
+				(source "Installer-Files/LIBS")
+				(choices "clib4.library")
+				(dest @default-dest-libs)
+				(confirm)
+			)
+		)
+		(message "Skipping clib4.library installation - keeping existing version.")
 	)
 )
 
@@ -243,7 +305,7 @@
     )
 )
 
-(set @default-dest-libs (tackon @git-dir "LIBS"))
+(set @default-dest-libs "LIBS:")
 
 ;******************************************************************************
 ;* Create installation directory
@@ -265,9 +327,19 @@
     (prompt "Installing Git files...")
     (help "Copying all Git files to the installation directory.")
     (source "Installer-Files/")
+    (choices 
+            "AMIGA-KNOWN-ISSUES.txt" 
+            "curl-ca-bundle.crt" 
+            "git" 
+            "git-commands.guide" 
+            "git-commands.guide.info" 
+            "git-remote-http" 
+            "git-shell"
+            "LGPL-2.1"
+            "OpenGuide.rexx"
+            "scalar"
+    )
     (dest @git-dir)
-    (all)
-    (infos)
 )
 
 (complete 50)
@@ -385,15 +457,6 @@
     )
 )
 
-(set #readme-text-final
-    (cat "Git " #app-version " for AmigaOS 4\n"
-         "================================\n\n"
-         "Installation completed successfully!\n\n"
-         "Git has been installed to: " @git-dir "\n"
-         "GIT: assign points to: " @git-dir "\n\n"
-    )
-)
-
 (textfile
     (prompt "Creating README file...")
     (help "This creates a README with usage instructions.")
@@ -401,24 +464,16 @@
     (append #readme-text)
 )
 
-; Show README content before finishing
-(message #readme-text-final)
-
-(complete 100)
-
 ;******************************************************************************
 ;* Completion
 ;******************************************************************************
-
 (if (= #install-type "NEW")
     (set #complete-msg
-        (cat "Git " #app-version " has been successfully installed to:\n\n"
-             @git-dir "\n\n"
-             "The GIT: assign has been added to your User-Startup.\n\n"
-             "Please read the README file for usage instructions.\n\n"
-             "You may need to reboot or type:\n"
-             "Assign GIT: " @git-dir "\n\n"
-             "to make the GIT: assign available immediately.\n\n"
+        (cat "Git " #app-version " has been successfully installed.\n"
+             "The GIT: assign has been added to your User-Startup.\n"
+            "Git has been installed to: " @git-dir "\n"
+            "GIT: assign points to: " @git-dir "\n\n"
+             "Please read the README file for usage instructions.\n"
              "Thank you for using Git on AmigaOS 4!"
         )
     )
@@ -432,6 +487,24 @@
     )
 )
 
-(complete #complete-msg)
+(message #complete-msg)
+
+(complete 100)
+
+;******************************************************************************
+;* Apply GIT: assign and path immediately
+;******************************************************************************
+
+(set #temp-script "T:git-install-apply.cmd")
+
+(textfile
+    (dest #temp-script)
+    (append (cat "Assign >NIL: GIT: \"" @git-dir "\"\n"))
+    (append (cat "Path >NIL: \"" @git-dir "\" ADD\n"))
+)
+
+(run (cat "Execute " #temp-script) (safe))
+
+(delete #temp-script (safe))
 
 (exit (quiet))

@@ -1,4 +1,4 @@
-Git for AmigaOS 4 – current limitations and tips
+Git for AmigaOS 4 - current limitations and tips
 ================================================
 
 Known issues
