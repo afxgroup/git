@@ -749,8 +749,8 @@ static void *run_thread(void *data)
 	pthread_setspecific(async_key, async);
 	trace_printf("[run_thread] calling async->proc async=%p in=%d out=%d\n",
 	            async, async->proc_in, async->proc_out);
-	ret = async->proc(async->proc_in, async->proc_out, async->data);
 	
+	ret = async->proc(async->proc_in, async->proc_out, async->data);
 	/* Close worker fds so parent sees EOF */
 	if (async->proc_out >= 0) {
 		close(async->proc_out);
@@ -761,7 +761,10 @@ static void *run_thread(void *data)
 		trace_printf("[run_thread] closed proc_in=%d\n", async->proc_in);
 	}
 	
-	trace_printf("[run_thread] EXIT: ret=%d\n", (int)ret);
+	/* AmigaOS: pthread_join doesn't return thread result correctly, save it */
+	async->thread_result = (int)ret;
+	
+	trace_printf("[run_thread] EXIT: ret=%d (saved in async->thread_result)\n", (int)ret);
 	return (void *)ret;
 }
 
@@ -909,6 +912,9 @@ int start_async(struct async *async)
 	if (need_out)
 		async->_amiga_proc_out_write = fdout[1];
 	
+	/* Initialize thread_result to error value */
+	async->thread_result = -1;
+	
 	{
 		trace_printf("[start_async] pthread_create\n");
 		int err = pthread_create(&async->tid, NULL, run_thread, async);
@@ -937,15 +943,20 @@ error:
 int finish_async(struct async *async)
 {
 	trace_printf("[finish_async] TID=%d\n", async->tid);
-	void *ret = (void *)(intptr_t)(-1);
+	int join_result;
 
-	if (pthread_join(async->tid, &ret))
-		_error("pthread_join failed");
+	join_result = pthread_join(async->tid, NULL);
+	trace_printf("[finish_async] pthread_join returned %d\n", join_result);
 	
-	trace_printf("[finish_async] after pthread_join, ret=%d\n", (int)(intptr_t)ret);
+	if (join_result)
+		_error("pthread_join failed with error %d", join_result);
+	
+	/* AmigaOS: pthread_join doesn't return thread result correctly, read from async->thread_result */
+	int ret = async->thread_result;
+	trace_printf("[finish_async] thread_result=%d\n", ret);
 	trace_printf("[finish_async] EXIT (fds already closed by thread)\n");
 	invalidate_lstat_cache();
-	return (int)(intptr_t)ret;
+	return ret;
 }
 
 int async_with_fork(void)
