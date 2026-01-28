@@ -1,0 +1,11 @@
+8.Work:TestGit> git submodule add https://github.com/google/gumbo-parser.git external/gumbo-parser
+Cloning into 'Work:TestGit/external/gumbo-parser'...
+remote: Enumerating objects: 1906, done.
+remote: Counting objects: 100% (309/309), done.
+remote: Compressing objects: 100% (71/71), done.
+remote: Total 1906 (delta 256), reused 240 (delta 238), pack-reused 1597 (from 1)
+Unpacking objects: 100% (1906/1906), 3.91 MiB | 121.00 KiB/s, done.
+fatal: not a git repository: Work:TestGit/external/gumbo-parser/../../.git/modules/external/gumbo-parser
+git failed returncode 128
+git-submodule failed returncode 128
+8.Work:TestGit> 

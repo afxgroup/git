@@ -335,6 +335,7 @@
             "git-commands.guide.info" 
             "git-remote-http" 
             "git-shell"
+            "git-submodule"
             "LGPL-2.1"
             "OpenGuide.rexx"
             "scalar"

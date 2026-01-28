@@ -705,7 +705,7 @@ SCRIPT_SH += git-merge-resolve.sh
 SCRIPT_SH += git-mergetool.sh
 SCRIPT_SH += git-quiltimport.sh
 SCRIPT_SH += git-request-pull.sh
-SCRIPT_SH += git-submodule.sh
+#SCRIPT_SH += git-submodule.sh
 SCRIPT_SH += git-web--browse.sh
 
 SCRIPT_LIB += git-mergetool--lib
@@ -768,6 +768,7 @@ PROGRAM_OBJS += http-backend.o
 PROGRAM_OBJS += imap-send.o
 PROGRAM_OBJS += sh-i18n--envsubst.o
 PROGRAM_OBJS += shell.o
+PROGRAM_OBJS += amiga-submodule.o
 .PHONY: program-objs
 program-objs: $(PROGRAM_OBJS)
 
@@ -1360,7 +1361,7 @@ endif
 # tweaked by config.* below as well as the command-line, both of
 # which'll override these defaults.
 # Older versions of GCC may require adding "-std=gnu99" at the end.
-CFLAGS = -mcrt=clib4 -mstrict-align -gstabs -O3 -Wall -DG_DATE=\"$(shell date +%Y.%m.%d)\" -DG_VERSION=\"$(GIT_VERSION)\"
+CFLAGS = -mcrt=clib4 -mstrict-align -gstabs -O3 -Wall -DG_DATE=\"$(shell date +%d.%m.%Y)\" -DG_VERSION=\"$(GIT_VERSION)\"
 LDFLAGS = -mcrt=clib4
 #CC_LD_DYNPATH = -Wl,-rpath,
 BASIC_CFLAGS = -I.
@@ -2821,6 +2822,12 @@ headless-git.o: compat/win32/headless.c GIT-CFLAGS
 
 headless-git$X: headless-git.o git.res GIT-LDFLAGS
 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) $(ALL_LDFLAGS) -mwindows -o $@ $< git.res
+
+git-submodule$X: amiga-submodule.o GIT-LDFLAGS $(GITLIBS)
+	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(ALL_LDFLAGS) $(filter %.o,$^) $(LIBS)
+
+# Prevent the pattern rule from creating git-amiga-submodule
+.INTERMEDIATE: git-amiga-submodule$X
 
 git-%$X: %.o GIT-LDFLAGS $(GITLIBS)
 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(ALL_LDFLAGS) $(filter %.o,$^) $(LIBS)

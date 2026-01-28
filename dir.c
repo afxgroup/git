@@ -4039,12 +4039,22 @@ void connect_work_tree_and_git_dir(const char *work_tree_,
 	git_dir = real_pathdup(git_dir_, 1);
 	work_tree = real_pathdup(work_tree_, 1);
 
+#ifdef __amigaos4__
+	/* On AmigaOS, use absolute paths instead of relative paths
+	 * because volume-based paths (Work:) don't work correctly with
+	 * relative path calculations (../../ patterns) */
+	/* Write .git file */
+	write_file(gitfile_sb.buf, "gitdir: %s", git_dir);
+	/* Update core.worktree setting */
+	git_config_set_in_file(cfg_sb.buf, "core.worktree", work_tree);
+#else
 	/* Write .git file */
 	write_file(gitfile_sb.buf, "gitdir: %s",
 		   relative_path(git_dir, work_tree, &rel_path));
 	/* Update core.worktree setting */
 	git_config_set_in_file(cfg_sb.buf, "core.worktree",
 			       relative_path(work_tree, git_dir, &rel_path));
+#endif
 
 	strbuf_release(&gitfile_sb);
 	strbuf_release(&cfg_sb);
