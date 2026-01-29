@@ -777,6 +777,9 @@ X =
 
 PROGRAMS += $(patsubst %.o,git-%$X,$(PROGRAM_OBJS))
 
+# Add git-submodule explicitly (built from amiga-submodule.o)
+PROGRAMS += git-submodule$X
+
 TEST_BUILTINS_OBJS += test-advise.o
 TEST_BUILTINS_OBJS += test-bitmap.o
 TEST_BUILTINS_OBJS += test-bloom.o
