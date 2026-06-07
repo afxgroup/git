@@ -36,6 +36,11 @@ const char *git_editor(void)
 	if (!editor)
 		editor = getenv("EDITOR");
 
+#ifdef GIT_AMIGAOS4_NATIVE
+	if (!editor)
+		editor = "ED";
+#endif
+
 	if (!editor && terminal_is_dumb)
 		return NULL;
 

@@ -10,6 +10,8 @@ uname_O := $(shell sh -c 'uname -o 2>/dev/null || echo not')
 uname_R := $(shell sh -c 'uname -r 2>/dev/null || echo not')
 uname_V := $(shell sh -c 'uname -v 2>/dev/null || echo not')
 
+uname_S := AmigaOS4
+
 ifneq ($(findstring MINGW,$(uname_S)),)
 	uname_S := MINGW
 endif
@@ -45,6 +47,37 @@ ifeq ($(uname_S),OSF1)
 	SOCKLEN_T = int
 	NO_STRTOULL = YesPlease
 	NO_NSEC = YesPlease
+endif
+ifeq ($(uname_S),AmigaOS4)
+	prefix = PROGDIR:
+	bindir = PROGDIR:
+	mandir = PROGDIR:man
+	infodir = PROGDIR:info
+	gitexecdir = PROGDIR:
+	sharedir = PROGDIR:share
+	localedir = PROGDIR:locale
+	template_dir = PROGDIR:templates
+	htmldir = PROGDIR:doc/git-doc
+	ETC_GITCONFIG = PROGDIR:.gitconfig
+	ETC_GITATTRIBUTES = PROGDIR:.gitattributes
+	CFLAGS = -mcrt=clib4 -mstrict-align -gstabs -O3 -Wall -DG_DATE=\"$(shell date +%d.%m.%Y)\" -DG_VERSION=\"$(GIT_VERSION)\"
+	LDFLAGS = -mcrt=clib4 -Wl,--allow-multiple-definition
+	NO_STRLCPY = YesPlease
+	LIBC_CONTAINS_LIBINTL = YesPlease
+	HAVE_CLOCK_GETTIME = YesPlease
+	HAVE_CLOCK_MONOTONIC = YesPlease
+	HAVE_GETDELIM = YesPlease
+	NO_REGEX = NeedsStartEnd
+	NO_POSIX_GOODIES = UnfortunatelyYes
+	CSPRNG_METHOD = arc4random
+	NO_IPV6 = YesPlease
+	NO_NSEC = YesPlease
+	INTERNAL_QSORT = YesPlease
+	NO_MMAP = YesPlease
+	CURL_LDFLAGS = libgit.a -lcurl -lssl -lcrypto -lbrotlidec -lbrotlicommon -lpsl -lidn2 -lnghttp2 -lunistring
+	DEFAULT_HELP_FORMAT = man
+	# Use ISO encodings instead of UTF-8 for .mo files (better Amiga compatibility)
+	USE_ISO_ENCODING = YesPlease
 endif
 ifeq ($(uname_S),Linux)
 	HAVE_ALLOCA_H = YesPlease

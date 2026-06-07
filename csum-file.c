@@ -152,7 +152,11 @@ struct hashfile *hashfd_check(const struct git_hash_algo *algop,
 	int sink, check;
 	struct hashfile *f;
 
+#ifndef GIT_AMIGAOS4_NATIVE
 	sink = xopen("/dev/null", O_WRONLY);
+#else
+	sink = xopen("NIL:", O_WRONLY);
+#endif
 	check = xopen(name, O_RDONLY);
 	f = hashfd(algop, sink, name);
 	f->check_fd = check;

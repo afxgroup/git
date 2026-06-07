@@ -360,6 +360,12 @@ struct async {
 	pthread_t tid;
 	int proc_in;
 	int proc_out;
+#ifdef GIT_AMIGAOS4_NATIVE
+	/* AmigaOS4: Save write-end of pipe to close after pthread_join */
+	int _amiga_proc_out_write;
+	/* AmigaOS4: pthread_join doesn't return thread result correctly, store it here */
+	volatile int thread_result;
+#endif
 #endif
 	int isolate_sigpipe;
 };

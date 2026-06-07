@@ -2581,7 +2581,11 @@ static int open_cached_dir(struct cached_dir *cdir,
 	cdir->untracked = untracked;
 	if (valid_cached_dir(dir, untracked, istate, path, check_only))
 		return 0;
+#ifndef GIT_AMIGAOS4_NATIVE
 	c_path = path->len ? path->buf : ".";
+#else
+	c_path = path->len ? path->buf : "";
+#endif
 	cdir->fdir = opendir(c_path);
 	if (!cdir->fdir)
 		warning_errno(_("could not open directory '%s'"), c_path);
@@ -4127,11 +4131,21 @@ void connect_work_tree_and_git_dir(const char *work_tree_,
 	work_tree = real_pathdup(work_tree_, 1);
 
 	/* Write .git file */
+#ifdef __amigaos4__
+	/* On AmigaOS, use absolute paths instead of relative paths
+	 * because volume-based paths (Work:) don't work correctly with
+	 * relative path calculations (../../ patterns) */
+	write_file(gitfile_sb.buf, "gitdir: %s", git_dir);
+	/* Update core.worktree setting */
+	repo_config_set_in_file(the_repository, cfg_sb.buf, "core.worktree",
+				work_tree);
+#else
 	write_file(gitfile_sb.buf, "gitdir: %s",
 		   relative_path(git_dir, work_tree, &rel_path));
 	/* Update core.worktree setting */
 	repo_config_set_in_file(the_repository, cfg_sb.buf, "core.worktree",
 				relative_path(work_tree, git_dir, &rel_path));
+#endif
 
 	strbuf_release(&gitfile_sb);
 	strbuf_release(&cfg_sb);

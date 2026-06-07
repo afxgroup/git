@@ -27,6 +27,8 @@
 #include "url.h"
 #include "write-or-die.h"
 
+#include "trace.h"
+
 static struct remote *remote;
 /* always ends with a trailing slash */
 static struct strbuf url = STRBUF_INIT;
@@ -1551,11 +1553,94 @@ static int stateless_connect(const char *service_name)
 	return 0;
 }
 
+#ifdef GIT_AMIGAOS4_NATIVE
+static int read_command_from_git(struct strbuf *buf)
+{
+	strbuf_reset(buf);
+
+	/*
+	 * AmigaOS4/clib4: single-byte read() uses WaitForChar() internally,
+	 * which never unblocks when the pipe write-end is closed — AmigaOS
+	 * PIPE: device does not signal EOF through WaitForChar.  Multi-byte
+	 * read() (N >= 2) uses DOSRead() directly and returns 0 immediately
+	 * for a closed empty pipe, giving reliable EOF detection.
+	 *
+	 * Strategy: try a 2-byte read to avoid the WaitForChar path.  Keep a
+	 * one-character push-back slot for when we get 2 bytes at once.  When
+	 * clib4 returns ENOENT (pipe open but no data available yet), fall
+	 * back to the normal 1-byte WaitForChar-backed read so we block
+	 * correctly until the next character arrives.
+	 */
+	static char pb_ch;	/* push-back character */
+	static int  pb_valid;	/* non-zero when pb_ch holds a character */
+
+	while (1) {
+		char ch;
+		ssize_t n;
+
+		if (pb_valid) {
+			ch = pb_ch;
+			pb_valid = 0;
+			n = 1;
+		} else {
+			char tmp[2];
+
+			do {
+				n = read(0, tmp, 2);
+			} while (n < 0 && errno == EINTR);
+
+			if (n < 0 && errno == ENOENT) {
+				/*
+				 * clib4: pipe open but no data yet.
+				 * Block via WaitForChar until a byte arrives.
+				 */
+				do {
+					n = read(0, &ch, 1);
+				} while (n < 0 && errno == EINTR);
+			} else if (n > 0) {
+				ch = tmp[0];
+				if (n == 2) {
+					pb_ch    = tmp[1];
+					pb_valid = 1;
+				}
+				n = 1;
+			}
+			/* n == 0: EOF — DOSRead returned 0 for closed pipe */
+		}
+
+		if (n < 0)
+			die_errno("remote-curl: read(stdin) failed");
+		if (n == 0)
+			return EOF;
+
+		if (ch == '\n')
+			return 0;
+		if (ch != '\r')
+			strbuf_addch(buf, ch);
+	}
+}
+#endif
+
 int cmd_main(int argc, const char **argv)
 {
 	struct strbuf buf = STRBUF_INIT;
 	int nongit;
 	int ret = 1;
+	const char *helper_in_env = getenv("GIT_AMIGA_HELPER_IN_FD");
+	const char *helper_out_env = getenv("GIT_AMIGA_HELPER_OUT_FD");
+
+#ifdef GIT_AMIGAOS4_NATIVE
+	if (helper_in_env && *helper_in_env) {
+		int fd = atoi(helper_in_env);
+		if (fd >= 0 && fd != 0 && dup2(fd, 0) < 0)
+			die_errno("remote-curl: cannot map helper stdin fd");
+	}
+	if (helper_out_env && *helper_out_env) {
+		int fd = atoi(helper_out_env);
+		if (fd >= 0 && fd != 1 && dup2(fd, 1) < 0)
+			die_errno("remote-curl: cannot map helper stdout fd");
+	}
+#endif
 
 	setup_git_directory_gently(&nongit);
 	if (argc < 2) {
@@ -1582,25 +1667,41 @@ int cmd_main(int argc, const char **argv)
 	 * are all just copies of the same actual executable.
 	 */
 	trace2_cmd_name("remote-curl");
+	trace_printf("[remote-curl] start argc=%d isatty(0)=%d isatty(1)=%d isatty(2)=%d env_in=%s env_out=%s\n",
+		     argc, isatty(0), isatty(1), isatty(2),
+		     helper_in_env ? helper_in_env : "(null)",
+		     helper_out_env ? helper_out_env : "(null)");
+	trace_printf("[remote-curl] before remote_get('%s')\n", argv[1]);
 
 	remote = remote_get(argv[1]);
+	trace_printf("[remote-curl] after remote_get\n");
 
 	if (argc > 2) {
+		trace_printf("[remote-curl] using explicit URL arg\n");
 		end_url_with_slash(&url, argv[2]);
 	} else {
+		trace_printf("[remote-curl] using remote->url[0]\n");
 		end_url_with_slash(&url, remote->url.v[0]);
 	}
+	trace_printf("[remote-curl] url=%s\n", url.buf);
 
+	trace_printf("[remote-curl] before http_init\n");
 	http_init(remote, url.buf, 0);
+	trace_printf("[remote-curl] after http_init\n");
 
 	do {
 		const char *arg;
 
+		#ifdef GIT_AMIGAOS4_NATIVE
+		if (read_command_from_git(&buf) == EOF) {
+		#else
 		if (strbuf_getline_lf(&buf, stdin) == EOF) {
+		#endif
 			if (ferror(stdin))
 				error(_("remote-curl: error reading command stream from git"));
 			goto cleanup;
 		}
+		trace_printf("[remote-curl] command: %s\n", buf.buf);
 		if (buf.len == 0)
 			break;
 		if (starts_with(buf.buf, "fetch ")) {

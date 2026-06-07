@@ -148,7 +148,11 @@ static struct diff_filespec *noindex_filespec(const struct git_hash_algo *algop,
 	struct diff_filespec *s;
 
 	if (!name)
+#ifndef GIT_AMIGAOS4_NATIVE
 		name = "/dev/null";
+#else
+		name = "NIL:";
+#endif
 	s = alloc_filespec(name);
 	fill_filespec(s, null_oid(algop), 0, mode);
 	if (special == SPECIAL_STDIN)

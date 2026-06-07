@@ -7,6 +7,7 @@
 #include "gettext.h"
 #include "help.h"
 #include "object-file.h"
+#include "odb.h"
 #include "pager.h"
 #include "read-cache-ll.h"
 #include "run-command.h"
@@ -745,6 +746,21 @@ static void strip_extension(struct strvec *args)
 #define strip_extension(cmd)
 #endif
 
+#ifdef GIT_AMIGAOS4_NATIVE
+static void cleanup_git_resources(void)
+{
+	/* AmigaOS4: Free global resources before exit to avoid memory leaks */
+	if (the_repository && the_repository->gitdir) {
+		if (the_repository->index) {
+			discard_index(the_repository->index);
+			FREE_AND_NULL(the_repository->index);
+		}
+		if (the_repository->objects)
+			odb_close(the_repository->objects);
+	}
+}
+#endif
+
 static void handle_builtin(struct strvec *args)
 {
 	const char *cmd;
@@ -780,6 +796,9 @@ static void handle_builtin(struct strvec *args)
 		ret = run_builtin(builtin, args->nr, argv_copy, the_repository);
 		strvec_clear(args);
 		free(argv_copy);
+#ifdef GIT_AMIGAOS4_NATIVE
+		cleanup_git_resources();
+#endif
 		exit(ret);
 	}
 }
@@ -807,6 +826,8 @@ static void execv_dashed_external(const char **argv)
 	 * events, so we do not need to report exec/exec_result events here.
 	 */
 	trace_argv_printf(cmd.args.v, "trace: exec:");
+	trace_printf("[execv_dashed_external] fd diagnostic: isatty(0)=%d isatty(1)=%d isatty(2)=%d\n",
+		     isatty(0), isatty(1), isatty(2));
 
 	/*
 	 * If we fail because the command is not found, it is
@@ -821,10 +842,17 @@ static void execv_dashed_external(const char **argv)
 	 * generic string as our trace2 command verb to indicate that we
 	 * launched a dashed command.
 	 */
-	if (status >= 0)
+	if (status >= 0) {
+#ifdef GIT_AMIGAOS4_NATIVE
+		cleanup_git_resources();
+#endif
 		exit(status);
-	else if (errno != ENOENT)
+	} else if (errno != ENOENT) {
+#ifdef GIT_AMIGAOS4_NATIVE
+		cleanup_git_resources();
+#endif
 		exit(128);
+	}
 }
 
 static int is_deprecated_command(const char *cmd)
@@ -959,6 +987,9 @@ int cmd_main(int argc, const char **argv)
 		printf(_("usage: %s\n\n"), git_usage_string);
 		list_common_cmds_help();
 		printf("\n%s\n", _(git_more_info_string));
+#ifdef GIT_AMIGAOS4_NATIVE
+		cleanup_git_resources();
+#endif
 		exit(1);
 	}
 
@@ -989,6 +1020,9 @@ int cmd_main(int argc, const char **argv)
 					  "'%s' is not a git command\n"),
 				cmd, args.v[0]);
 			strvec_clear(&args);
+#ifdef GIT_AMIGAOS4_NATIVE
+			cleanup_git_resources();
+#endif
 			exit(1);
 		}
 		if (!done_help) {

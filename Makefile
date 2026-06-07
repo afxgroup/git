@@ -661,8 +661,8 @@ perllibdir_relative = $(patsubst $(prefix)/%,%,$(perllibdir))
 export prefix bindir sharedir sysconfdir perllibdir localedir
 
 # Set our default programs
-CC = cc
-AR = ar
+CC = ppc-amigaos-gcc
+AR = ppc-amigaos-ar
 RM = rm -f
 DIFF = diff
 TAR = tar
@@ -684,7 +684,7 @@ OBJCOPY = objcopy
 export TCL_PATH TCLTK_PATH
 
 # Set our default LIBS variables
-PTHREAD_LIBS = -lpthread
+PTHREAD_LIBS = -lrtmp -lcrypto -latomic -lpthread -ldebug
 
 # Guard against environment variables
 BUILTIN_OBJS =
@@ -698,6 +698,7 @@ FUZZ_OBJS =
 FUZZ_PROGRAMS =
 GIT_OBJS =
 LIB_OBJS =
+NO_SETITIMER = YesPlease
 LIBGIT_PUB_OBJS =
 SCALAR_OBJS =
 OBJECTS =
@@ -732,7 +733,7 @@ SCRIPT_SH += git-merge-resolve.sh
 SCRIPT_SH += git-mergetool.sh
 SCRIPT_SH += git-quiltimport.sh
 SCRIPT_SH += git-request-pull.sh
-SCRIPT_SH += git-submodule.sh
+#SCRIPT_SH += git-submodule.sh
 SCRIPT_SH += git-web--browse.sh
 
 SCRIPT_LIB += git-mergetool--lib
@@ -790,17 +791,20 @@ EXTRA_PROGRAMS =
 # ... and all the rest that could be moved out of bindir to gitexecdir
 PROGRAMS += $(EXTRA_PROGRAMS)
 
-PROGRAM_OBJS += daemon.o
+#PROGRAM_OBJS += daemon.o
 PROGRAM_OBJS += http-backend.o
 PROGRAM_OBJS += imap-send.o
 PROGRAM_OBJS += sh-i18n--envsubst.o
 PROGRAM_OBJS += shell.o
+PROGRAM_OBJS += amiga-submodule.o
 .PHONY: program-objs
 program-objs: $(PROGRAM_OBJS)
 
 # Binary suffix, set to .exe for Windows builds
 X =
 
+# Add git-submodule explicitly (built from amiga-submodule.o)
+PROGRAMS += git-submodule$X
 PROGRAMS += $(patsubst %.o,git-%$X,$(PROGRAM_OBJS))
 
 TEST_BUILTINS_OBJS += test-advise.o
@@ -1299,7 +1303,7 @@ LIB_OBJS += rerere.o
 LIB_OBJS += reset.o
 LIB_OBJS += resolve-undo.o
 LIB_OBJS += revision.o
-LIB_OBJS += run-command.o
+LIB_OBJS += run-command-amiga.o
 LIB_OBJS += send-pack.o
 LIB_OBJS += sequencer.o
 LIB_OBJS += serve.o
@@ -2999,6 +3003,11 @@ headless-git$X: headless-git.o git.res GIT-LDFLAGS
 git-%$X: %.o GIT-LDFLAGS $(GITLIBS)
 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(ALL_LDFLAGS) $(filter %.o,$^) $(LIBS)
 
+git-submodule$X: amiga-submodule.o GIT-LDFLAGS $(GITLIBS)
+	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(ALL_LDFLAGS) $(filter %.o,$^) $(LIBS)
+# Prevent the pattern rule from creating git-amiga-submodule
+.INTERMEDIATE: git-amiga-submodule$X
+
 git-imap-send$X: imap-send.o $(IMAP_SEND_BUILDDEPS) GIT-LDFLAGS $(GITLIBS)
 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(ALL_LDFLAGS) $(filter %.o,$^) \
 		$(IMAP_SEND_LDFLAGS) $(LIBS)
@@ -3218,7 +3227,11 @@ endif
 
 po/build/locale/%/LC_MESSAGES/git.mo: po/%.po
 	$(call mkdir_p_parent_template)
+ifdef USE_ISO_ENCODING
+	$(QUIET_MSGFMT)$(SHELL_PATH) contrib/amiga/msgfmt-with-encoding.sh $< $@
+else
 	$(QUIET_MSGFMT)$(MSGFMT) -o $@ $<
+endif
 
 LIB_PERL := $(wildcard perl/Git.pm perl/Git/*.pm perl/Git/*/*.pm perl/Git/*/*/*.pm)
 LIB_PERL_GEN := $(patsubst perl/%.pm,perl/build/lib/%.pm,$(LIB_PERL))

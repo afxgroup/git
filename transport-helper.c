@@ -21,12 +21,15 @@
 #include "protocol.h"
 #include "packfile.h"
 
+#include "trace.h"
+
 static int debug;
 
 struct helper_data {
 	char *name;
 	struct child_process *helper;
 	FILE *out;
+	int out_fd;
 	unsigned fetch : 1,
 		import : 1,
 		bidi_import : 1,
@@ -68,6 +71,7 @@ static void sendline(struct helper_data *helper, struct strbuf *buffer)
 		die_errno(_("full write to remote helper failed"));
 }
 
+#ifndef GIT_AMIGAOS4_NATIVE
 static int recvline_fh(FILE *helper, struct strbuf *buffer)
 {
 	strbuf_reset(buffer);
@@ -83,19 +87,71 @@ static int recvline_fh(FILE *helper, struct strbuf *buffer)
 		fprintf(stderr, "Debug: Remote helper: <- %s\n", buffer->buf);
 	return 0;
 }
+#endif /* !GIT_AMIGAOS4_NATIVE */
 
 static int recvline(struct helper_data *helper, struct strbuf *buffer)
 {
+#ifdef GIT_AMIGAOS4_NATIVE
+	/*
+	 * AmigaOS4/clib4: avoid stdio(FILE*) buffering on helper pipes and read
+	 * protocol lines from raw fd with a bounded wait.
+	 */
+	strbuf_reset(buffer);
+	if (debug)
+		fprintf(stderr, "Debug: Remote helper: Waiting...\n");
+
+	/*
+	 * AmigaOS4/clib4: poll() does not detect POLLIN on pipe fds —
+	 * use plain blocking read() which works correctly.
+	 */
+	while (1) {
+		char ch;
+		ssize_t n;
+
+		do {
+			n = read(helper->out_fd, &ch, 1);
+		} while (n < 0 && errno == EINTR);
+
+		if (n < 0)
+			die_errno("read from remote helper failed");
+
+		if (n == 0) {
+			if (debug)
+				fprintf(stderr, "Debug: Remote helper quit.\n");
+			return 1;
+		}
+
+		if (ch == '\n')
+			break;
+		if (ch != '\r')
+			strbuf_addch(buffer, ch);
+	}
+
+	if (debug)
+		fprintf(stderr, "Debug: Remote helper: <- %s\n", buffer->buf);
+	return 0;
+#else
 	return recvline_fh(helper->out, buffer);
+#endif
 }
 
 static int write_constant_gently(int fd, const char *str)
 {
 	if (debug)
 		fprintf(stderr, "Debug: Remote helper: -> %s", str);
+
+#ifdef GIT_AMIGAOS4_NATIVE
+	{
+		/* AmigaOS4/clib4: poll(POLLOUT) on pipe fds is unreliable; use write_in_full. */
+		if (write_in_full(fd, str, strlen(str)) < 0)
+			return -1;
+		return 0;
+	}
+#else
 	if (write_in_full(fd, str, strlen(str)) < 0)
 		return -1;
 	return 0;
+#endif
 }
 
 static void write_constant(int fd, const char *str)
@@ -119,7 +175,8 @@ static void do_take_over(struct transport *transport)
 	struct helper_data *data;
 	data = (struct helper_data *)transport->data;
 	transport_take_over(transport, data->helper);
-	fclose(data->out);
+	if (data->out)
+		fclose(data->out);
 	free(data->name);
 	free(data);
 }
@@ -131,7 +188,6 @@ static struct child_process *get_helper(struct transport *transport)
 	struct helper_data *data = transport->data;
 	struct strbuf buf = STRBUF_INIT;
 	struct child_process *helper;
-	int duped;
 	int code;
 
 	if (data->helper)
@@ -156,7 +212,9 @@ static struct child_process *get_helper(struct transport *transport)
 
 	helper->clean_on_exit = 1;
 	helper->wait_after_clean = 1;
+	trace_printf("[transport-helper] get_helper: starting helper '%s'\n", helper->args.v[0]);
 	code = start_command(helper);
+	trace_printf("[transport-helper] get_helper: start_command returned %d (errno=%d)\n", code, errno);
 	if (code < 0 && errno == ENOENT)
 		die(_("unable to find remote helper for '%s'"), data->name);
 	else if (code != 0)
@@ -172,15 +230,27 @@ static struct child_process *get_helper(struct transport *transport)
 	 * Do this with duped fd because fclose() will close the fd,
 	 * and stuff like taking over will require the fd to remain.
 	 */
-	duped = dup(helper->out);
-	if (duped < 0)
-		die_errno(_("can't dup helper output fd"));
-	data->out = xfdopen(duped, "r");
+	data->out_fd = helper->out;
+#ifndef GIT_AMIGAOS4_NATIVE
+	{
+		int duped = dup(helper->out);
+		if (duped < 0)
+			die_errno(_("can't dup helper output fd"));
+		data->out = xfdopen(duped, "r");
+	}
+#else
+	data->out = NULL;
+#endif
+
+	trace_printf("[transport-helper] get_helper: helper fds in=%d out=%d out_fd=%d\n",
+		     helper->in, helper->out, data->out_fd);
 
 	sigchain_push(SIGPIPE, SIG_IGN);
+	trace_printf("[transport-helper] get_helper: sending capabilities\n");
 	if (write_constant_gently(helper->in, "capabilities\n") < 0)
 		die("remote helper '%s' aborted session", data->name);
 	sigchain_pop(SIGPIPE);
+	trace_printf("[transport-helper] get_helper: capabilities sent, waiting reply\n");
 
 	while (1) {
 		const char *capname, *arg;
@@ -266,7 +336,8 @@ static int disconnect_helper(struct transport *transport)
 		}
 		close(data->helper->in);
 		close(data->helper->out);
-		fclose(data->out);
+		if (data->out)
+			fclose(data->out);
 		res = finish_command(data->helper);
 		FREE_AND_NULL(data->name);
 		FREE_AND_NULL(data->helper);
@@ -581,10 +652,15 @@ static int run_connect(struct transport *transport, struct strbuf *cmdbuf)
 {
 	struct helper_data *data = transport->data;
 	int ret = 0;
+#ifndef GIT_AMIGAOS4_NATIVE
 	int duped;
 	FILE *input;
 	struct child_process *helper;
+#endif
 
+#ifdef GIT_AMIGAOS4_NATIVE
+	get_helper(transport);
+#else
 	helper = get_helper(transport);
 
 	/*
@@ -598,10 +674,21 @@ static int run_connect(struct transport *transport, struct strbuf *cmdbuf)
 		die_errno(_("can't dup helper output fd"));
 	input = xfdopen(duped, "r");
 	setvbuf(input, NULL, _IONBF, 0);
+#endif
 
 	sendline(data, cmdbuf);
+#ifdef GIT_AMIGAOS4_NATIVE
+	/*
+	 * AmigaOS4/clib4: avoid dup()/xfdopen()/fclose() on helper pipes —
+	 * closing a dup'd pipe handle can confuse the AmigaOS PIPE: device
+	 * and corrupt subsequent reads.  Use the raw-fd recvline() instead.
+	 */
+	if (recvline(data, cmdbuf))
+		exit(128);
+#else
 	if (recvline_fh(input, cmdbuf))
 		exit(128);
+#endif
 
 	if (!strcmp(cmdbuf->buf, "")) {
 		data->no_disconnect_req = 1;
@@ -618,7 +705,9 @@ static int run_connect(struct transport *transport, struct strbuf *cmdbuf)
 		    cmdbuf->buf);
 	}
 
+#ifndef GIT_AMIGAOS4_NATIVE
 	fclose(input);
+#endif
 	return ret;
 }
 

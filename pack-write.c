@@ -473,6 +473,7 @@ char *index_pack_lockfile(struct repository *r, int ip_out, int *is_well_formed)
 {
 	char packname[GIT_MAX_HEXSZ + 6];
 	const int len = r->hash_algo->hexsz + 6;
+	ssize_t read_result;
 
 	/*
 	 * The first thing we expect from index-pack's output
@@ -481,7 +482,43 @@ char *index_pack_lockfile(struct repository *r, int ip_out, int *is_well_formed)
 	 * case, we need it to remove the corresponding .keep file
 	 * later on.  If we don't get that then tough luck with it.
 	 */
-	if (read_in_full(ip_out, packname, len) == len && packname[len-1] == '\n') {
+#ifdef GIT_AMIGAOS4_NATIVE
+	/*
+	 * AmigaOS4/clib4: the child process initialization may write a few
+	 * stray bytes (e.g. a CSI terminal sequence) to its stdout before
+	 * index-pack's final() writes the real "keep\t..." or "pack\t..."
+	 * header.  Scan past any leading garbage bytes until we see 'k' or
+	 * 'p' (the first byte of a valid response), then read the rest.
+	 */
+	{
+		unsigned char b;
+		ssize_t n;
+		int skipped = 0;
+		while (1) {
+			n = read_in_full(ip_out, &b, 1);
+			if (n != 1)
+				goto amiga_read_failed;
+			if (b == 'k' || b == 'p')
+				break;
+			skipped++;
+		}
+		if (skipped)
+			fprintf(stderr, "[index_pack_lockfile] skipped %d leading garbage byte(s)\n", skipped);
+		packname[0] = (char)b;
+		read_result = read_in_full(ip_out, packname + 1, len - 1);
+		if (read_result == len - 1)
+			read_result = len;  /* total bytes filled */
+		else
+			read_result += 1;   /* partial: bytes filled including first */
+	}
+	goto amiga_check;
+amiga_read_failed:
+	read_result = 0;
+amiga_check:
+#else
+	read_result = read_in_full(ip_out, packname, len);
+#endif
+	if (read_result == len && packname[len-1] == '\n') {
 		const char *name;
 
 		if (is_well_formed)

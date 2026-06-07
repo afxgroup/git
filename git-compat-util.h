@@ -206,7 +206,11 @@ static inline const char *precompose_string_if_needed(const char *in)
 #include <paths.h>
 #endif
 #ifndef _PATH_DEFPATH
+#ifndef GIT_AMIGAOS4_NATIVE
 #define _PATH_DEFPATH "/usr/local/bin:/usr/bin:/bin"
+#else
+#define _PATH_DEFPATH "C:;SDK:C"
+#endif
 #endif
 
 #ifndef platform_core_config
@@ -1022,7 +1026,11 @@ void bug_fl(const char *file, int line, const char *fmt, ...);
 #endif
 
 #ifndef SHELL_PATH
+#ifndef GIT_AMIGAOS4_NATIVE
 # define SHELL_PATH "/bin/sh"
+#else
+# define SHELL_PATH "run"
+#endif
 #endif
 
 /*

@@ -345,6 +345,9 @@ int rename_tempfile(struct tempfile **tempfile_p, const char *path)
 		return -1;
 	}
 
+#ifdef GIT_AMIGAOS4_NATIVE
+	remove(path);
+#endif
 	if (rename(tempfile->filename.buf, path)) {
 		int save_errno = errno;
 		delete_tempfile(tempfile_p);

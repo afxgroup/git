@@ -428,7 +428,11 @@ static unsigned long linelen(const char *buffer, unsigned long size)
 
 static int is_dev_null(const char *str)
 {
+#ifndef GIT_AMIGAOS4_NATIVE
 	return skip_prefix(str, "/dev/null", &str) && isspace(*str);
+#else
+	return skip_prefix(str, "NIL:", &str) && isspace(*str);
+#endif
 }
 
 #define TERM_SPACE	1

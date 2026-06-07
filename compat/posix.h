@@ -87,6 +87,10 @@
 #define GIT_WINDOWS_NATIVE
 #endif
 
+#ifdef __amigaos4__
+#define GIT_AMIGAOS4_NATIVE
+#endif
+
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/stat.h>
@@ -483,6 +487,9 @@ int git_qsort_s(void *base, size_t nmemb, size_t size,
 #ifdef USE_ST_TIMESPEC
 #define ST_CTIME_NSEC(st) ((unsigned int)((st).st_ctimespec.tv_nsec))
 #define ST_MTIME_NSEC(st) ((unsigned int)((st).st_mtimespec.tv_nsec))
+#elif defined(GIT_AMIGAOS4_NATIVE)
+#define ST_CTIME_NSEC(st) ((unsigned int)((st).st_ctime))
+#define ST_MTIME_NSEC(st) ((unsigned int)((st).st_mtime))
 #else
 #define ST_CTIME_NSEC(st) ((unsigned int)((st).st_ctim.tv_nsec))
 #define ST_MTIME_NSEC(st) ((unsigned int)((st).st_mtim.tv_nsec))
@@ -535,6 +542,11 @@ int git_access(const char *path, int mode);
 #  endif
 #  define access(path, mode) git_access(path, mode)
 # endif
+#endif
+
+#ifdef GIT_AMIGAOS4_NATIVE
+static inline pid_t getpgid(pid_t pid)
+{ return pid == 0 ? getpid() : pid; }
 #endif
 
 #endif /* COMPAT_POSIX_H */

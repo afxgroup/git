@@ -1552,9 +1552,14 @@ char *xdg_config_home_for(const char *subdir, const char *filename)
 	if (config_home && *config_home)
 		return mkpathdup("%s/%s/%s", config_home, subdir, filename);
 
+#ifndef GIT_AMIGAOS4_NATIVE
 	home = getenv("HOME");
 	if (home)
 		return mkpathdup("%s/.config/%s/%s", home, subdir, filename);
+#else
+	home = "Git:";
+	return mkpathdup("%s.config/%s/%s", home, subdir, filename);
+#endif
 
 	return NULL;
 }

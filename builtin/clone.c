@@ -48,6 +48,10 @@
 #include "bundle.h"
 #include "bundle-uri.h"
 
+#ifdef GIT_AMIGAOS4_NATIVE
+#include <proto/dos.h>
+#endif
+
 /*
  * Overall FIXMEs:
  *  - respect DB_ENVIRONMENT for .git/objects.
@@ -147,10 +151,16 @@ static char *get_repo_path(const char *repo, int *is_bundle)
 	const char *raw;
 	char *canon;
 
+#ifdef GIT_AMIGAOS4_NATIVE
+	APTR old_window_pointer = IDOS->SetProcWindow((CONST_APTR) -1);
+#endif
 	strbuf_addstr(&path, repo);
 	raw = get_repo_path_1(&path, is_bundle);
 	canon = raw ? absolute_pathdup(raw) : NULL;
 	strbuf_release(&path);
+#ifdef GIT_AMIGAOS4_NATIVE
+	IDOS->SetProcWindow(old_window_pointer);
+#endif
 	return canon;
 }
 

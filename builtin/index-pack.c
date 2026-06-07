@@ -2081,6 +2081,15 @@ int cmd_index_pack(int argc,
 	parse_pack_objects(pack_hash);
 	if (report_end_of_input)
 		write_in_full(2, "\0", 1);
+#ifdef GIT_AMIGAOS4_NATIVE_NOT_SURE
+	/* Diagnostic: force flush of output file before reading back via pread.
+	 * AmigaOS DOS handler may have buffered writes not yet committed. */
+	if (output_fd >= 0) {
+		fprintf(stderr, "DEBUG: fsync(output_fd=%d) before resolve_deltas\n", output_fd);
+		if (fsync(output_fd) < 0)
+			fprintf(stderr, "DEBUG: fsync failed: %s\n", strerror(errno));
+	}
+#endif
 	resolve_deltas(&opts);
 	conclude_pack(fix_thin_pack, curr_pack, pack_hash);
 	free(ofs_deltas);
