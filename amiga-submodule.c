@@ -5,6 +5,8 @@
  * It parses arguments and delegates to git-submodule--helper builtin command.
  */
 
+#define USE_THE_REPOSITORY_VARIABLE
+
 #include "git-compat-util.h"
 #include "config.h"
 #include "run-command.h"
@@ -41,7 +43,7 @@ int cmd_main(int argc, const char **argv)
 	const char *command = NULL;
 	const char *prefix;
 	
-	prefix = setup_git_directory();
+	prefix = setup_git_directory(the_repository);
 	
 	/* Set GIT_PROTOCOL_FROM_USER=0 as done in the shell script */
 	setenv("GIT_PROTOCOL_FROM_USER", "0", 1);

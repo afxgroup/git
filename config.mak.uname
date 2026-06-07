@@ -74,6 +74,7 @@ ifeq ($(uname_S),AmigaOS4)
 	NO_NSEC = YesPlease
 	INTERNAL_QSORT = YesPlease
 	NO_MMAP = YesPlease
+	NO_RUST = YesPlease
 	CURL_LDFLAGS = libgit.a -lcurl -lssl -lcrypto -lbrotlidec -lbrotlicommon -lpsl -lidn2 -lnghttp2 -lunistring
 	DEFAULT_HELP_FORMAT = man
 	# Use ISO encodings instead of UTF-8 for .mo files (better Amiga compatibility)
