@@ -54,7 +54,7 @@ static int paint_down_to_common(struct repository *r,
 				struct commit *one, int n,
 				struct commit **twos,
 				timestamp_t min_generation,
-				int ignore_missing_commits,
+				enum merge_base_flags mb_flags,
 				struct commit_list **result)
 {
 	struct prio_queue queue = { compare_commits_by_gen_then_commit_date };
@@ -97,6 +97,14 @@ static int paint_down_to_common(struct repository *r,
 			if (!(commit->object.flags & RESULT)) {
 				commit->object.flags |= RESULT;
 				tail = commit_list_append(commit, tail);
+				/*
+				 * The queue is generation-ordered; no
+				 * remaining common ancestor can be a
+				 * descendant of this one.
+				 */
+				if (!(mb_flags & MERGE_BASE_FIND_ALL) &&
+				    generation < GENERATION_NUMBER_INFINITY)
+					break;
 			}
 			/* Mark parents of a found merge stale */
 			flags |= STALE;
@@ -118,7 +126,7 @@ static int paint_down_to_common(struct repository *r,
 				 * corrupt commits would already have been
 				 * dispatched with a `die()`.
 				 */
-				if (ignore_missing_commits)
+				if (mb_flags & MERGE_BASE_IGNORE_MISSING_COMMITS)
 					return 0;
 				return error(_("could not parse commit %s"),
 					     oid_to_hex(&p->object.oid));
@@ -136,6 +144,7 @@ static int paint_down_to_common(struct repository *r,
 static int merge_bases_many(struct repository *r,
 			    struct commit *one, int n,
 			    struct commit **twos,
+			    enum merge_base_flags mb_flags,
 			    struct commit_list **result)
 {
 	struct commit_list *list = NULL, **tail = result;
@@ -165,7 +174,7 @@ static int merge_bases_many(struct repository *r,
 				     oid_to_hex(&twos[i]->object.oid));
 	}
 
-	if (paint_down_to_common(r, one, n, twos, 0, 0, &list)) {
+	if (paint_down_to_common(r, one, n, twos, 0, mb_flags, &list)) {
 		commit_list_free(list);
 		return -1;
 	}
@@ -246,7 +255,8 @@ static int remove_redundant_no_gen(struct repository *r,
 				min_generation = curr_generation;
 		}
 		if (paint_down_to_common(r, array[i], filled,
-					 work, min_generation, 0, &common)) {
+					 work, min_generation,
+					 MERGE_BASE_FIND_ALL, &common)) {
 			clear_commit_marks(array[i], all_flags);
 			clear_commit_marks_many(filled, work, all_flags);
 			commit_list_free(common);
@@ -425,6 +435,7 @@ static int get_merge_bases_many_0(struct repository *r,
 				  size_t n,
 				  struct commit **twos,
 				  int cleanup,
+				  enum merge_base_flags mb_flags,
 				  struct commit_list **result)
 {
 	struct commit_list *list, **tail = result;
@@ -432,7 +443,7 @@ static int get_merge_bases_many_0(struct repository *r,
 	size_t cnt, i;
 	int ret;
 
-	if (merge_bases_many(r, one, n, twos, result) < 0)
+	if (merge_bases_many(r, one, n, twos, mb_flags, result) < 0)
 		return -1;
 	for (i = 0; i < n; i++) {
 		if (one == twos[i])
@@ -475,16 +486,18 @@ int repo_get_merge_bases_many(struct repository *r,
 			      struct commit **twos,
 			      struct commit_list **result)
 {
-	return get_merge_bases_many_0(r, one, n, twos, 1, result);
+	return get_merge_bases_many_0(r, one, n, twos, 1,
+				     MERGE_BASE_FIND_ALL, result);
 }
 
 int repo_get_merge_bases_many_dirty(struct repository *r,
 				    struct commit *one,
 				    size_t n,
 				    struct commit **twos,
+				    enum merge_base_flags mb_flags,
 				    struct commit_list **result)
 {
-	return get_merge_bases_many_0(r, one, n, twos, 0, result);
+	return get_merge_bases_many_0(r, one, n, twos, 0, mb_flags, result);
 }
 
 int repo_get_merge_bases(struct repository *r,
@@ -492,7 +505,8 @@ int repo_get_merge_bases(struct repository *r,
 			 struct commit *two,
 			 struct commit_list **result)
 {
-	return get_merge_bases_many_0(r, one, 1, &two, 1, result);
+	return get_merge_bases_many_0(r, one, 1, &two, 1,
+				     MERGE_BASE_FIND_ALL, result);
 }
 
 /*
@@ -537,6 +551,10 @@ int repo_in_merge_bases_many(struct repository *r, struct commit *commit,
 	struct commit_list *bases = NULL;
 	int ret = 0, i;
 	timestamp_t generation, max_generation = GENERATION_NUMBER_ZERO;
+	enum merge_base_flags mb_flags = MERGE_BASE_FIND_ALL;
+
+	if (ignore_missing_commits)
+		mb_flags |= MERGE_BASE_IGNORE_MISSING_COMMITS;
 
 	if (repo_parse_commit(r, commit))
 		return ignore_missing_commits ? 0 : -1;
@@ -555,7 +573,7 @@ int repo_in_merge_bases_many(struct repository *r, struct commit *commit,
 
 	if (paint_down_to_common(r, commit,
 				 nr_reference, reference,
-				 generation, ignore_missing_commits, &bases))
+				 generation, mb_flags, &bases))
 		ret = -1;
 	else if (commit->object.flags & PARENT2)
 		ret = 1;
@@ -1125,7 +1143,6 @@ void ahead_behind(struct repository *r,
 
 struct commit_and_index {
 	struct commit *commit;
-	unsigned int index;
 	timestamp_t generation;
 };
 
@@ -1165,13 +1182,15 @@ void tips_reachable_from_bases(struct repository *r,
 
 	for (size_t i = 0; i < tips_nr; i++) {
 		commits[i].commit = tips[i];
-		commits[i].index = i;
 		commits[i].generation = commit_graph_generation(tips[i]);
 	}
 
 	/* Sort with generation number ascending. */
 	QSORT(commits, tips_nr, compare_commit_and_index_by_generation);
 	min_generation = commits[0].generation;
+
+	for (size_t i = 0; i < tips_nr; i++)
+		commits[i].commit->object.flags |= RESULT;
 
 	while (bases) {
 		repo_parse_commit(r, bases->item);
@@ -1183,20 +1202,16 @@ void tips_reachable_from_bases(struct repository *r,
 		int explored_all_parents = 1;
 		struct commit_list *p;
 		struct commit *c = stack->item;
-		timestamp_t c_gen = commit_graph_generation(c);
 
 		/* Does it match any of our tips? */
-		for (size_t j = min_generation_index; j < tips_nr; j++) {
-			if (c_gen < commits[j].generation)
-				break;
+		{
+			if (c->object.flags & RESULT) {
+				c->object.flags |= mark;
 
-			if (commits[j].commit == c) {
-				tips[commits[j].index]->object.flags |= mark;
-
-				if (j == min_generation_index) {
-					unsigned int k = j + 1;
+				if (commits[min_generation_index].commit->object.flags & mark) {
+					unsigned int k = min_generation_index + 1;
 					while (k < tips_nr &&
-					       (tips[commits[k].index]->object.flags & mark))
+					       (commits[k].commit->object.flags & mark))
 						k++;
 
 					/* Terminate early if all found. */
@@ -1232,6 +1247,8 @@ void tips_reachable_from_bases(struct repository *r,
 	}
 
 done:
+	for (size_t i = 0; i < tips_nr; i++)
+		commits[i].commit->object.flags &= ~RESULT;
 	free(commits);
 	repo_clear_commit_marks(r, SEEN);
 	commit_list_free(stack);
