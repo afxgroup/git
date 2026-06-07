@@ -502,8 +502,10 @@ char *index_pack_lockfile(struct repository *r, int ip_out, int *is_well_formed)
 				break;
 			skipped++;
 		}
+#if 0
 		if (skipped)
 			fprintf(stderr, "[index_pack_lockfile] skipped %d leading garbage byte(s)\n", skipped);
+#endif			
 		packname[0] = (char)b;
 		read_result = read_in_full(ip_out, packname + 1, len - 1);
 		if (read_result == len - 1)
