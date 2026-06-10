@@ -507,7 +507,6 @@ int start_command(struct child_process *cmd)
 	}
 
 	int fhin = 0, fhout = 1, fherr = 2;
-	int saved_stdin = -1, saved_stdout = -1, saved_stderr = -1;
 	int spawn_fhin = 0, spawn_fhout = 1, spawn_fherr = 2;
 	int use_helper_fd_env = 0;
 	char helper_in_buf[32], helper_out_buf[32];
@@ -632,53 +631,16 @@ int start_command(struct child_process *cmd)
 	}
 
 	/*
-	 * AmigaOS4/clib4: when stdio fds are above 2, spawnvpe may fail to wire
-	 * child stdio correctly. Temporarily remap parent 0/1/2 to the selected
-	 * fhin/fhout/fherr and restore right after spawn.
+	 * Pass fhin/fhout/fherr directly to spawnvpe — it maps them to
+	 * 0/1/2 in the child internally.  Do NOT dup2 them onto 0/1/2 in
+	 * the parent before the call: that would corrupt any concurrently
+	 * running async thread that is reading/writing fd 0/1 (e.g. the
+	 * sideband-demux thread started by send-pack before it spawns
+	 * pack-objects).
 	 */
-	if (fhin != 0) {
-		saved_stdin = dup(0);
-		if (saved_stdin < 0) {
-			failed_errno = errno;
-			error_errno("cannot save stdin before spawn");
-			goto fail_spawn;
-		}
-		if (dup2(fhin, 0) < 0) {
-			failed_errno = errno;
-			error_errno("cannot map stdin for spawn");
-			goto fail_restore_stdio;
-		}
-	}
-	if (fhout != 1) {
-		saved_stdout = dup(1);
-		if (saved_stdout < 0) {
-			failed_errno = errno;
-			error_errno("cannot save stdout before spawn");
-			goto fail_restore_stdio;
-		}
-		if (dup2(fhout, 1) < 0) {
-			failed_errno = errno;
-			error_errno("cannot map stdout for spawn");
-			goto fail_restore_stdio;
-		}
-	}
-	if (fherr != 2) {
-		saved_stderr = dup(2);
-		if (saved_stderr < 0) {
-			failed_errno = errno;
-			error_errno("cannot save stderr before spawn");
-			goto fail_restore_stdio;
-		}
-		if (dup2(fherr, 2) < 0) {
-			failed_errno = errno;
-			error_errno("cannot map stderr for spawn");
-			goto fail_restore_stdio;
-		}
-	}
-
-	spawn_fhin = 0;
-	spawn_fhout = 1;
-	spawn_fherr = 2;
+	spawn_fhin = fhin;
+	spawn_fhout = fhout;
+	spawn_fherr = fherr;
 
 	/*
 	 * For non-helper spawns with a stdin pipe: clib4's spawnvpe uses
@@ -704,48 +666,17 @@ int start_command(struct child_process *cmd)
 	if (need_in && !use_helper_fd_env)
 		unsetenv("GIT_AMIGA_CLOSE_FDS");
 
-	if (saved_stderr >= 0) {
-		dup2(saved_stderr, 2);
-		close(saved_stderr);
-		saved_stderr = -1;
-	}
-	if (saved_stdout >= 0) {
-		dup2(saved_stdout, 1);
-		close(saved_stdout);
-		saved_stdout = -1;
-	}
-	if (saved_stdin >= 0) {
-		dup2(saved_stdin, 0);
-		close(saved_stdin);
-		saved_stdin = -1;
-	}
+	/* (saved_stdin/stdout/stderr are -1; nothing to restore) */
 	/* nothing to clean up for helper fd env */
 	/* Skip the failure cleanup labels in the success path. */
 	goto after_amiga_fail;
 
-fail_restore_stdio:
-	if (saved_stderr >= 0) {
-		dup2(saved_stderr, 2);
-		close(saved_stderr);
-		saved_stderr = -1;
-	}
-	if (saved_stdout >= 0) {
-		dup2(saved_stdout, 1);
-		close(saved_stdout);
-		saved_stdout = -1;
-	}
-	if (saved_stdin >= 0) {
-		dup2(saved_stdin, 0);
-		close(saved_stdin);
-		saved_stdin = -1;
-	}
-
 fail_spawn:
-	if (fhin != 0)
+	if (fhin != cmd->in && fhin != 0)
 		close(fhin);
-	if (fhout != 1)
+	if (fhout != cmd->out && fhout != 1)
 		close(fhout);
-	if (fherr != 2)
+	if (fherr != cmd->err && fherr != 2)
 		close(fherr);
 	if (need_in)
 		close_pair(fdin);
@@ -778,11 +709,11 @@ after_amiga_fail:
 	strvec_clear(&nargv);
 	cmd->args.v = sargv;
 
-	if (fhin != 0)
+	if (fhin != cmd->in)
 		close(fhin);
-	if (fhout != 1)
+	if (fhout != cmd->out)
 		close(fhout);
-	if (fherr != 2)
+	if (fherr != cmd->err)
 		close(fherr);
 
 	if (cmd->pid < 0) {
