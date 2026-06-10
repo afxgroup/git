@@ -1266,6 +1266,11 @@ static int fetch(int nr_heads, struct ref **to_fetch)
 		return fetch_dumb(nr_heads, to_fetch);
 }
 
+#ifdef GIT_AMIGAOS4_NATIVE
+/* forward declaration — defined later in this file */
+static int read_command_from_git(struct strbuf *buf);
+#endif
+
 static void parse_fetch(struct strbuf *buf)
 {
 	struct ref **to_fetch = NULL;
@@ -1303,8 +1308,13 @@ static void parse_fetch(struct strbuf *buf)
 			die(_("http transport does not support %s"), buf->buf);
 
 		strbuf_reset(buf);
+#ifdef GIT_AMIGAOS4_NATIVE
+		if (read_command_from_git(buf) == EOF)
+			return;
+#else
 		if (strbuf_getline_lf(buf, stdin) == EOF)
 			return;
+#endif
 		if (!*buf->buf)
 			break;
 	} while (1);
@@ -1444,8 +1454,13 @@ static void parse_push(struct strbuf *buf)
 			die(_("http transport does not support %s"), buf->buf);
 
 		strbuf_reset(buf);
+#ifdef GIT_AMIGAOS4_NATIVE
+		if (read_command_from_git(buf) == EOF)
+			goto free_specs;
+#else
 		if (strbuf_getline_lf(buf, stdin) == EOF)
 			goto free_specs;
+#endif
 		if (!*buf->buf)
 			break;
 	} while (1);
