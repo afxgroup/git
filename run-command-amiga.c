@@ -438,8 +438,6 @@ int start_command(struct child_process *cmd)
 			str = "standard input";
 			goto fail_pipe;
 		}
-		fcntl(fdin[0], F_SETFL, fcntl(fdin[0], F_GETFL) & ~O_NONBLOCK);
-		fcntl(fdin[1], F_SETFL, fcntl(fdin[1], F_GETFL) & ~O_NONBLOCK);
 		cmd->in = fdin[1];
 	}
 
@@ -456,8 +454,6 @@ int start_command(struct child_process *cmd)
 			str = "standard output";
 			goto fail_pipe;
 		}
-		fcntl(fdout[0], F_SETFL, fcntl(fdout[0], F_GETFL) & ~O_NONBLOCK);
-		fcntl(fdout[1], F_SETFL, fcntl(fdout[1], F_GETFL) & ~O_NONBLOCK);
 		trace_printf("[start_command] created pipe: fdout[0]=%d (read), fdout[1]=%d (write)\n", 
 		             fdout[0], fdout[1]);
 		cmd->out = fdout[0];
@@ -918,8 +914,6 @@ int start_async(struct async *async)
 				close(async->out);
 			return error_errno("cannot create pipe");
 		}
-		fcntl(fdin[0], F_SETFL, fcntl(fdin[0], F_GETFL) & ~O_NONBLOCK);
-		fcntl(fdin[1], F_SETFL, fcntl(fdin[1], F_GETFL) & ~O_NONBLOCK);
 		async->in = fdin[1];
 	}
 
@@ -932,8 +926,6 @@ int start_async(struct async *async)
 				close(async->in);
 			return error_errno("cannot create pipe");
 		}
-		fcntl(fdout[0], F_SETFL, fcntl(fdout[0], F_GETFL) & ~O_NONBLOCK);
-		fcntl(fdout[1], F_SETFL, fcntl(fdout[1], F_GETFL) & ~O_NONBLOCK);
 		async->out = fdout[0];
 		/* Save write-end to close later in finish_async */
 		async->_amiga_proc_out_write = fdout[1];
