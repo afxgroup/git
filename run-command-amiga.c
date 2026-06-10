@@ -668,11 +668,11 @@ int start_command(struct child_process *cmd)
 	goto after_amiga_fail;
 
 fail_spawn:
-	if (fhin != cmd->in && fhin != 0)
+	if (fhin != 0)
 		close(fhin);
-	if (fhout != cmd->out && fhout != 1)
+	if (fhout != 1)
 		close(fhout);
-	if (fherr != cmd->err && fherr != 2)
+	if (fherr != 2)
 		close(fherr);
 	if (need_in)
 		close_pair(fdin);
@@ -705,11 +705,11 @@ after_amiga_fail:
 	strvec_clear(&nargv);
 	cmd->args.v = sargv;
 
-	if (fhin != cmd->in)
+	if (fhin != 0)
 		close(fhin);
-	if (fhout != cmd->out)
+	if (fhout != 1)
 		close(fhout);
-	if (fherr != cmd->err)
+	if (fherr != 2)
 		close(fherr);
 
 	if (cmd->pid < 0) {
