@@ -1641,22 +1641,6 @@ int cmd_main(int argc, const char **argv)
 	struct strbuf buf = STRBUF_INIT;
 	int nongit;
 	int ret = 1;
-	const char *helper_in_env = getenv("GIT_AMIGA_HELPER_IN_FD");
-	const char *helper_out_env = getenv("GIT_AMIGA_HELPER_OUT_FD");
-
-#ifdef GIT_AMIGAOS4_NATIVE
-	if (helper_in_env && *helper_in_env) {
-		int fd = atoi(helper_in_env);
-		if (fd >= 0 && fd != 0 && dup2(fd, 0) < 0)
-			die_errno("remote-curl: cannot map helper stdin fd");
-	}
-	if (helper_out_env && *helper_out_env) {
-		int fd = atoi(helper_out_env);
-		if (fd >= 0 && fd != 1 && dup2(fd, 1) < 0)
-			die_errno("remote-curl: cannot map helper stdout fd");
-	}
-#endif
-
 	setup_git_directory_gently(the_repository, &nongit);
 	if (argc < 2) {
 		error(_("remote-curl: usage: git remote-curl <remote> [<url>]"));
@@ -1682,10 +1666,8 @@ int cmd_main(int argc, const char **argv)
 	 * are all just copies of the same actual executable.
 	 */
 	trace2_cmd_name("remote-curl");
-	trace_printf("[remote-curl] start argc=%d isatty(0)=%d isatty(1)=%d isatty(2)=%d env_in=%s env_out=%s\n",
-		     argc, isatty(0), isatty(1), isatty(2),
-		     helper_in_env ? helper_in_env : "(null)",
-		     helper_out_env ? helper_out_env : "(null)");
+	trace_printf("[remote-curl] start argc=%d isatty(0)=%d isatty(1)=%d isatty(2)=%d\n",
+		     argc, isatty(0), isatty(1), isatty(2));
 	trace_printf("[remote-curl] before remote_get('%s')\n", argv[1]);
 
 	remote = remote_get(argv[1]);

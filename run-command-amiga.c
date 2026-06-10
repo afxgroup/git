@@ -509,7 +509,6 @@ int start_command(struct child_process *cmd)
 	int fhin = 0, fhout = 1, fherr = 2;
 	int spawn_fhin = 0, spawn_fhout = 1, spawn_fherr = 2;
 	int use_helper_fd_env = 0;
-	char helper_in_buf[32], helper_out_buf[32];
 
 	const char **sargv = cmd->args.v;
 	struct strvec nargv = STRVEC_INIT;
@@ -604,17 +603,14 @@ int start_command(struct child_process *cmd)
 	char **env_to_use;
 
 	if (use_helper_fd_env) {
-		snprintf(helper_in_buf, sizeof(helper_in_buf), "%d", fhin);
-		snprintf(helper_out_buf, sizeof(helper_out_buf), "%d", fhout);
-		strvec_pushf(&cmd->env, "GIT_AMIGA_HELPER_IN_FD=%s", helper_in_buf);
-		strvec_pushf(&cmd->env, "GIT_AMIGA_HELPER_OUT_FD=%s", helper_out_buf);
 		/*
 		 * clib4 uses cmd->env as the child's COMPLETE environment (not a
 		 * delta), so CLOSE_FDS must be included here for helper processes.
+		 * spawnvpe already wires fhin/fhout to 0/1 in the child, so no
+		 * need to pass GIT_AMIGA_HELPER_IN_FD / OUT_FD anymore.
 		 */
 		if (need_in)
 			strvec_pushf(&cmd->env, "GIT_AMIGA_CLOSE_FDS=%d", fdin[1]);
-		trace_printf("[start_command] helper fd env IN=%s OUT=%s\n", helper_in_buf, helper_out_buf);
 	}
 
 	/*
