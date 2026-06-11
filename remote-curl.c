@@ -1266,11 +1266,6 @@ static int fetch(int nr_heads, struct ref **to_fetch)
 		return fetch_dumb(nr_heads, to_fetch);
 }
 
-#ifdef GIT_AMIGAOS4_NATIVE
-/* forward declaration — defined later in this file */
-static int read_command_from_git(struct strbuf *buf);
-#endif
-
 static void parse_fetch(struct strbuf *buf)
 {
 	struct ref **to_fetch = NULL;
@@ -1308,13 +1303,8 @@ static void parse_fetch(struct strbuf *buf)
 			die(_("http transport does not support %s"), buf->buf);
 
 		strbuf_reset(buf);
-#ifdef GIT_AMIGAOS4_NATIVE
-		if (read_command_from_git(buf) == EOF)
-			return;
-#else
 		if (strbuf_getline_lf(buf, stdin) == EOF)
 			return;
-#endif
 		if (!*buf->buf)
 			break;
 	} while (1);
@@ -1454,13 +1444,8 @@ static void parse_push(struct strbuf *buf)
 			die(_("http transport does not support %s"), buf->buf);
 
 		strbuf_reset(buf);
-#ifdef GIT_AMIGAOS4_NATIVE
-		if (read_command_from_git(buf) == EOF)
-			goto free_specs;
-#else
 		if (strbuf_getline_lf(buf, stdin) == EOF)
 			goto free_specs;
-#endif
 		if (!*buf->buf)
 			break;
 	} while (1);
@@ -1568,74 +1553,6 @@ static int stateless_connect(const char *service_name)
 	return 0;
 }
 
-#ifdef GIT_AMIGAOS4_NATIVE
-static int read_command_from_git(struct strbuf *buf)
-{
-	strbuf_reset(buf);
-
-	/*
-	 * AmigaOS4/clib4: single-byte read() uses WaitForChar() internally,
-	 * which never unblocks when the pipe write-end is closed — AmigaOS
-	 * PIPE: device does not signal EOF through WaitForChar.  Multi-byte
-	 * read() (N >= 2) uses DOSRead() directly and returns 0 immediately
-	 * for a closed empty pipe, giving reliable EOF detection.
-	 *
-	 * Strategy: try a 2-byte read to avoid the WaitForChar path.  Keep a
-	 * one-character push-back slot for when we get 2 bytes at once.  When
-	 * clib4 returns ENOENT (pipe open but no data available yet), fall
-	 * back to the normal 1-byte WaitForChar-backed read so we block
-	 * correctly until the next character arrives.
-	 */
-	static char pb_ch;	/* push-back character */
-	static int  pb_valid;	/* non-zero when pb_ch holds a character */
-
-	while (1) {
-		char ch;
-		ssize_t n;
-
-		if (pb_valid) {
-			ch = pb_ch;
-			pb_valid = 0;
-			n = 1;
-		} else {
-			char tmp[2];
-
-			do {
-				n = read(0, tmp, 2);
-			} while (n < 0 && errno == EINTR);
-
-			if (n < 0 && errno == ENOENT) {
-				/*
-				 * clib4: pipe open but no data yet.
-				 * Block via WaitForChar until a byte arrives.
-				 */
-				do {
-					n = read(0, &ch, 1);
-				} while (n < 0 && errno == EINTR);
-			} else if (n > 0) {
-				ch = tmp[0];
-				if (n == 2) {
-					pb_ch    = tmp[1];
-					pb_valid = 1;
-				}
-				n = 1;
-			}
-			/* n == 0: EOF — DOSRead returned 0 for closed pipe */
-		}
-
-		if (n < 0)
-			die_errno("remote-curl: read(stdin) failed");
-		if (n == 0)
-			return EOF;
-
-		if (ch == '\n')
-			return 0;
-		if (ch != '\r')
-			strbuf_addch(buf, ch);
-	}
-}
-#endif
-
 int cmd_main(int argc, const char **argv)
 {
 	struct strbuf buf = STRBUF_INIT;
@@ -1689,11 +1606,7 @@ int cmd_main(int argc, const char **argv)
 	do {
 		const char *arg;
 
-		#ifdef GIT_AMIGAOS4_NATIVE
-		if (read_command_from_git(&buf) == EOF) {
-		#else
 		if (strbuf_getline_lf(&buf, stdin) == EOF) {
-		#endif
 			if (ferror(stdin))
 				error(_("remote-curl: error reading command stream from git"));
 			goto cleanup;

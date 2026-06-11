@@ -237,19 +237,7 @@ ssize_t xread(int fd, void *buf, size_t len)
 				continue;
 			if (handle_nonblock(fd, POLLIN, errno))
 				continue;
-#ifdef GIT_AMIGAOS4_NATIVE
-			/*
-			 * clib4: DOSRead() on a pipe returns -1/ENOENT when no
-			 * data is available yet (non-blocking multi-byte read).
-			 * A single-byte read() uses WaitForChar() internally and
-			 * blocks until data arrives.  Fall back so the caller
-			 * gets correct blocking behaviour even though fcntl()
-			 * O_NONBLOCK clearing does not reliably work on clib4 pipes.
-			 */
-			if (errno == ENOENT && len > 1)
-				nr = read(fd, buf, 1);
-			/* If the 1-byte fallback also fails, propagate the error */
-#endif
+
 		}
 		return nr;
 	}

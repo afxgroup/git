@@ -1870,21 +1870,6 @@ static struct ref *do_fetch_pack_v2(struct fetch_pack_args *args,
 			 * do a half-duplex shutdown to indicate that they can
 			 * hang up as soon as the pack is sent.
 			 */
-#ifdef GIT_AMIGAOS4_NATIVE
-			/*
-			 * AmigaOS PIPE: WaitForChar never returns when the write
-			 * end closes.  Write an explicit empty-line disconnect
-			 * signal before closing so that remote-curl's main loop
-			 * (which calls read_command_from_git after
-			 * stateless_connect returns) can exit cleanly.
-			 *
-			 * The pkt-line reader in stateless_connect consumes this
-			 * '\n' as the first byte of an incomplete 4-byte header;
-			 * the subsequent DOSRead for the remaining 3 bytes returns
-			 * 0 (closed pipe) → PACKET_READ_EOF → loop breaks safely.
-			 */
-			(void)write(fd[1], "\n", 1);
-#endif
 			close(fd[1]);
 			fd[1] = -1;
 
