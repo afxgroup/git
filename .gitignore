@@ -258,3 +258,7 @@ Release/
 /contrib/buildsystems/out
 /contrib/libgit-rs/target
 /contrib/libgit-sys/target
+clib4
+git_old
+/Git_Installer.lha
+/.amiga-dist/

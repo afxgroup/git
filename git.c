@@ -924,6 +924,11 @@ int cmd_main(int argc, const char **argv)
 		cmd = "git-help";
 	else {
 		const char *slash = find_last_dir_sep(cmd);
+#ifdef __amigaos4__
+		/* "GIT:git-upload-pack": the volume/assign part is a dir too */
+		if (!slash)
+			slash = strrchr(cmd, ':');
+#endif
 		if (slash)
 			cmd = slash + 1;
 	}

@@ -710,6 +710,17 @@ int url_is_local_not_ssh(const char *url)
 {
 	const char *colon = strchr(url, ':');
 	const char *slash = strchr(url, '/');
+#ifdef __amigaos4__
+	/*
+	 * "VOLUME:path" (RAM:repo, Work:src/repo, ...) looks like the scp-like
+	 * "host:path" ssh syntax; it is a local path when it exists.
+	 */
+	if (colon && (!slash || colon < slash) && !is_url(url)) {
+		struct stat st;
+		if (!stat(url, &st))
+			return 1;
+	}
+#endif
 	return !colon || (slash && slash < colon) ||
 		(has_dos_drive_prefix(url) && is_valid_path(url));
 }

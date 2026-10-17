@@ -618,22 +618,22 @@ include shared.mak
 #   perllibdir
 # This can help installing the suite in a relocatable way.
 
-prefix = $(HOME)
-bindir = $(prefix)/bin
-mandir = $(prefix)/share/man
-infodir = $(prefix)/share/info
-bash_completion_dir = $(prefix)/share/bash-completion/completions
-gitexecdir = libexec/git-core
-mergetoolsdir = $(gitexecdir)/mergetools
-sharedir = $(prefix)/share
+prefix = GIT:
+bindir = $(prefix)
+mandir = GIT:man
+infodir = GIT:info
+bash_completion_dir = GIT:bash-completion/completions
+gitexecdir = GIT:
+mergetoolsdir = $(gitexecdir)mergetools
+sharedir = GIT:share
 gitwebdir = $(sharedir)/gitweb
 gitwebstaticdir = $(gitwebdir)/static
 perllibdir = $(sharedir)/perl5
-localedir = $(sharedir)/locale
-template_dir = share/git-core/templates
-htmldir = $(prefix)/share/doc/git-doc
-ETC_GITCONFIG = $(sysconfdir)/gitconfig
-ETC_GITATTRIBUTES = $(sysconfdir)/gitattributes
+localedir = GIT:locale
+template_dir = GIT:templates
+htmldir = GIT:doc/git-doc
+ETC_GITCONFIG = GIT:.gitconfig
+ETC_GITATTRIBUTES = GIT:.gitattributes
 lib = lib
 # DESTDIR =
 pathsep = :
@@ -649,8 +649,8 @@ perllibdir_relative = $(patsubst $(prefix)/%,%,$(perllibdir))
 export prefix bindir sharedir sysconfdir perllibdir localedir
 
 # Set our default programs
-CC = cc
-AR = ar
+CC = ppc-amigaos-gcc
+AR = ppc-amigaos-ar
 RM = rm -f
 DIFF = diff
 TAR = tar
@@ -663,6 +663,7 @@ MSGCAT = msgcat
 MSGFMT = msgfmt
 MSGMERGE = msgmerge
 CURL_CONFIG = curl-config
+CURL_LDFLAGS = -lcurl
 GCOV = gcov
 STRIP = strip
 SPATCH = spatch
@@ -672,7 +673,7 @@ OBJCOPY = objcopy
 export TCL_PATH TCLTK_PATH
 
 # Set our default LIBS variables
-PTHREAD_LIBS = -lpthread
+PTHREAD_LIBS = -lrtmp -lssl -lcrypto -latomic -lpthread -ldebug
 
 # Guard against environment variables
 BUILTIN_OBJS =
@@ -720,7 +721,7 @@ SCRIPT_SH += git-merge-resolve.sh
 SCRIPT_SH += git-mergetool.sh
 SCRIPT_SH += git-quiltimport.sh
 SCRIPT_SH += git-request-pull.sh
-SCRIPT_SH += git-submodule.sh
+#SCRIPT_SH += git-submodule.sh
 SCRIPT_SH += git-web--browse.sh
 
 SCRIPT_LIB += git-mergetool--lib
@@ -778,18 +779,21 @@ EXTRA_PROGRAMS =
 # ... and all the rest that could be moved out of bindir to gitexecdir
 PROGRAMS += $(EXTRA_PROGRAMS)
 
-PROGRAM_OBJS += daemon.o
+#PROGRAM_OBJS += daemon.o
 PROGRAM_OBJS += http-backend.o
 PROGRAM_OBJS += imap-send.o
 PROGRAM_OBJS += sh-i18n--envsubst.o
 PROGRAM_OBJS += shell.o
+PROGRAM_OBJS += amiga-submodule.o
 .PHONY: program-objs
 program-objs: $(PROGRAM_OBJS)
 
 # Binary suffix, set to .exe for Windows builds
 X =
 
-PROGRAMS += $(patsubst %.o,git-%$X,$(PROGRAM_OBJS))
+# amiga-submodule.o builds git-submodule (replaces git-submodule.sh)
+PROGRAMS += $(patsubst %.o,git-%$X,$(filter-out amiga-submodule.o,$(PROGRAM_OBJS)))
+PROGRAMS += git-submodule$X
 
 TEST_BUILTINS_OBJS += test-advise.o
 TEST_BUILTINS_OBJS += test-bitmap.o
@@ -942,7 +946,10 @@ RUST_LIB = $(RUST_TARGET_DIR)/libgitcore.a
 endif
 
 GITLIBS = common-main.o $(LIB_FILE)
-EXTLIBS =
+# AmigaOS4: static dependencies of libcurl. They go in EXTLIBS (linked after
+# libgit.a) and not in CURL_LDFLAGS (linked before it): libidn2.a carries
+# gnulib's error(), which would otherwise be picked instead of git's.
+EXTLIBS = -lnghttp2 -lpsl -lidn2 -lunistring -lbrotlidec -lbrotlicommon -lzstd
 
 GIT_USER_AGENT = git/$(GIT_VERSION)
 
@@ -954,9 +961,9 @@ endif
 # tweaked by config.* below as well as the command-line, both of
 # which'll override these defaults.
 # Older versions of GCC may require adding "-std=gnu99" at the end.
-CFLAGS = -g -O2 -Wall
-LDFLAGS =
-CC_LD_DYNPATH = -Wl,-rpath,
+CFLAGS = -mcrt=clib4 -mstrict-align -gstabs -O3 -Wall -DG_DATE=\"$(shell date +%Y.%m.%d)\" -DG_VERSION=\"$(GIT_VERSION)\"
+LDFLAGS = -mcrt=clib4
+#CC_LD_DYNPATH = -Wl,-rpath,
 BASIC_CFLAGS = -I.
 BASIC_LDFLAGS =
 
@@ -1282,7 +1289,7 @@ LIB_OBJS += rerere.o
 LIB_OBJS += reset.o
 LIB_OBJS += resolve-undo.o
 LIB_OBJS += revision.o
-LIB_OBJS += run-command.o
+LIB_OBJS += run-command-amiga.o
 LIB_OBJS += send-pack.o
 LIB_OBJS += sequencer.o
 LIB_OBJS += serve.o
@@ -2934,6 +2941,9 @@ headless-git.o: compat/win32/headless.c GIT-CFLAGS
 headless-git$X: headless-git.o git.res GIT-LDFLAGS
 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) $(ALL_LDFLAGS) -mwindows -o $@ $< git.res
 
+git-submodule$X: amiga-submodule.o GIT-LDFLAGS $(GITLIBS)
+	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(ALL_LDFLAGS) $(filter %.o,$^) $(LIBS)
+
 git-%$X: %.o GIT-LDFLAGS $(GITLIBS)
 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(ALL_LDFLAGS) $(filter %.o,$^) $(LIBS)
 
@@ -3156,7 +3166,11 @@ endif
 
 po/build/locale/%/LC_MESSAGES/git.mo: po/%.po
 	$(call mkdir_p_parent_template)
+ifdef USE_ISO_ENCODING
+	$(QUIET_MSGFMT)$(SHELL_PATH) contrib/amiga/msgfmt-with-encoding.sh $< $@
+else
 	$(QUIET_MSGFMT)$(MSGFMT) -o $@ $<
+endif
 
 LIB_PERL := $(wildcard perl/Git.pm perl/Git/*.pm perl/Git/*/*.pm perl/Git/*/*/*.pm)
 LIB_PERL_GEN := $(patsubst perl/%.pm,perl/build/lib/%.pm,$(LIB_PERL))
@@ -3756,6 +3770,15 @@ artifacts-tar:: $(ALL_COMMANDS_TO_INSTALL) $(SCRIPT_LIB) $(OTHER_PROGRAMS) \
 	$(TAR) czf "$(ARTIFACTS_DIRECTORY)/artifacts.tar.gz" $^ templates/blt/
 .PHONY: artifacts-tar
 
+# AmigaOS 4 distribution archive (Installer script + files + clib4.library)
+CLIB4_LIBRARY = $(HOME)/Software/clib4/build/clib4.library
+AMIGA_CA_BUNDLE = /etc/ssl/certs/ca-certificates.crt
+AMIGA_DIST = Git_Installer.lha
+.PHONY: amiga-dist
+amiga-dist: all
+	$(SHELL_PATH) contrib/amiga/make-dist.sh "$(GIT_VERSION)" \
+		"$(CLIB4_LIBRARY)" "$(AMIGA_CA_BUNDLE)" "$(AMIGA_DIST)"
+
 htmldocs = git-htmldocs-$(GIT_VERSION)
 manpages = git-manpages-$(GIT_VERSION)
 .PHONY: dist-doc distclean
@@ -3821,7 +3844,7 @@ clean: profile-clean coverage-clean cocciclean
 	$(RM) $(test_bindir_programs)
 	$(RM) -r po/build/
 	$(RM) *.pyc *.pyo */*.pyc */*.pyo $(GENERATED_H) $(ETAGS_TARGET) tags cscope*
-	$(RM) -r .dist-tmp-dir .doc-tmp-dir
+	$(RM) -r .dist-tmp-dir .doc-tmp-dir .amiga-dist $(AMIGA_DIST)
 	$(RM) $(GIT_TARNAME).tar.gz
 	$(RM) $(htmldocs).tar.gz $(manpages).tar.gz
 	$(MAKE) -C Documentation/ clean

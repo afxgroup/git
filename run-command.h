@@ -357,6 +357,9 @@ struct async {
 	pthread_t tid;
 	int proc_in;
 	int proc_out;
+#ifdef __amigaos4__
+	int _amiga_proc_out_write;
+#endif	
 #endif
 	int isolate_sigpipe;
 };

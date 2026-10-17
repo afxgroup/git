@@ -37,7 +37,10 @@ enum help_format {
 	HELP_FORMAT_NONE,
 	HELP_FORMAT_MAN,
 	HELP_FORMAT_INFO,
-	HELP_FORMAT_WEB
+	HELP_FORMAT_WEB,
+#ifdef __amigaos4__
+	HELP_FORMAT_GUIDE,
+#endif
 };
 
 enum show_config_type {
@@ -210,6 +213,10 @@ static enum help_format parse_help_format(const char *format)
 		return HELP_FORMAT_INFO;
 	if (!strcmp(format, "web") || !strcmp(format, "html"))
 		return HELP_FORMAT_WEB;
+#ifdef __amigaos4__
+	if (!strcmp(format, "guide") || !strcmp(format, "rexx"))
+		return HELP_FORMAT_GUIDE;
+#endif
 	/*
 	 * Please update _repo_config() in git-completion.bash when you
 	 * add new help formats.
@@ -491,6 +498,22 @@ static void exec_viewer(const char *name, const char *page)
 		warning(_("'%s': unknown man viewer."), name);
 }
 
+#ifdef __amigaos4__
+/*
+ * Opens the node of the page (e.g. "git-add") in GIT:git-commands.guide
+ * with MultiView, through the ARexx script installed next to git.
+ */
+static void show_guide_page(const char *page)
+{
+	struct strbuf cmd = STRBUF_INIT;
+
+	strbuf_addf(&cmd, "Run >NIL: rx GIT:OpenGuide.rexx %s", page);
+	if (system(cmd.buf))
+		die(_("failed to open '%s' in GIT:git-commands.guide"), page);
+	strbuf_release(&cmd);
+}
+#endif
+
 static void show_man_page(const char *page)
 {
 	struct man_viewer_list *viewer;
@@ -615,6 +638,11 @@ static void no_help_format(const char *opt_mode, enum help_format fmt)
 	case HELP_FORMAT_WEB:
 		opt_fmt = "--web";
 		break;
+#ifdef __amigaos4__
+	case HELP_FORMAT_GUIDE:
+		opt_fmt = "-c help.format=guide";
+		break;
+#endif
 	default:
 		BUG("unreachable");
 	}
@@ -728,6 +756,11 @@ int cmd_help(int argc,
 	case HELP_FORMAT_WEB:
 		show_html_page(page);
 		break;
+#ifdef __amigaos4__
+	case HELP_FORMAT_GUIDE:
+		show_guide_page(page);
+		break;
+#endif
 	}
 
 	free(command);

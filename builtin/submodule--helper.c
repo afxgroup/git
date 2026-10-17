@@ -343,9 +343,19 @@ static void runcommand_in_submodule_cb(const struct cache_entry *list_item,
 		 * existing PATH variable. Hence, to avoid that, we expose
 		 * path via the args strvec and not via env.
 		 */
+#ifdef __amigaos4__
+		/*
+		 * There is no POSIX shell to run "path=...; <command>":
+		 * the command is run directly, so pass path in the
+		 * environment like the other variables.
+		 */
+		strvec_pushf(&cp.env, "path=%s", path);
+		strvec_push(&cp.args, info->argv[0]);
+#else
 		sq_quote_buf(&sb, path);
 		strvec_pushf(&cp.args, "path=%s; %s",
 			     sb.buf, info->argv[0]);
+#endif
 		strbuf_release(&sb);
 		free(toplevel);
 	} else {
@@ -2519,7 +2529,12 @@ static int ensure_core_worktree(const char *path)
 		cfg_file = repo_git_path(&subrepo, "config");
 
 		abs_path = absolute_pathdup(path);
+#ifdef __amigaos4__
+		/* "../" does not work on volume paths: see dir.c */
+		rel_path = abs_path;
+#else
 		rel_path = relative_path(abs_path, subrepo.gitdir, &sb);
+#endif
 
 		repo_config_set_in_file(the_repository, cfg_file, "core.worktree", rel_path);
 

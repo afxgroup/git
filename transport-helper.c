@@ -20,6 +20,7 @@
 #include "transport-internal.h"
 #include "protocol.h"
 #include "packfile.h"
+#include "trace.h"
 
 static int debug;
 
@@ -154,7 +155,11 @@ static struct child_process *get_helper(struct transport *transport)
 
 	helper->trace2_child_class = helper->args.v[0]; /* "remote-<name>" */
 
+	trace_printf("[get_helper] BEFORE start_command\n");
+	fflush(stderr);
 	code = start_command(helper);
+	trace_printf("[get_helper] start_command returned: %d\n", code);
+	fflush(stderr);
 	if (code < 0 && errno == ENOENT)
 		die(_("unable to find remote helper for '%s'"), data->name);
 	else if (code != 0)
@@ -164,6 +169,8 @@ static struct child_process *get_helper(struct transport *transport)
 	data->no_disconnect_req = 0;
 	refspec_init_fetch(&data->rs);
 
+	trace_printf("[get_helper] about to dup helper->out=%d\n", helper->out);
+	fflush(stderr);
 	/*
 	 * Open the output as FILE* so strbuf_getline_*() family of
 	 * functions can be used.
@@ -171,13 +178,22 @@ static struct child_process *get_helper(struct transport *transport)
 	 * and stuff like taking over will require the fd to remain.
 	 */
 	duped = dup(helper->out);
+	trace_printf("[get_helper] dup returned: %d\n", duped);
+	fflush(stderr);
 	if (duped < 0)
 		die_errno(_("can't dup helper output fd"));
 	data->out = xfdopen(duped, "r");
+	trace_printf("[get_helper] xfdopen succeeded\n");
+	fflush(stderr);
 
 	sigchain_push(SIGPIPE, SIG_IGN);
+	trace_printf("[get_helper] writing 'capabilities\\n' to helper->in=%d\n", helper->in);
+	fflush(stderr);
 	if (write_constant_gently(helper->in, "capabilities\n") < 0)
 		die("remote helper '%s' aborted session", data->name);
+	trace_printf("[get_helper] write succeeded, now reading response\n");
+	fflush(stderr);
+
 	sigchain_pop(SIGPIPE);
 
 	while (1) {

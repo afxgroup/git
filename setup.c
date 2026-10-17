@@ -1776,11 +1776,27 @@ const char *enter_repo(const char *path, unsigned flags)
 			return NULL;
 	}
 
+#ifdef __amigaos4__
+	/* "." is not the current directory on AmigaOS: use its real name */
+	{
+		static struct strbuf cwd = STRBUF_INIT;
+
+		strbuf_reset(&cwd);
+		if (strbuf_getcwd(&cwd))
+			return NULL;
+		if (is_git_directory(cwd.buf)) {
+			set_git_dir(cwd.buf, 0);
+			check_repository_format(NULL);
+			return path;
+		}
+	}
+#else
 	if (is_git_directory(".")) {
 		set_git_dir(".", 0);
 		check_repository_format(NULL);
 		return path;
 	}
+#endif
 
 	return NULL;
 }

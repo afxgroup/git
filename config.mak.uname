@@ -60,6 +60,15 @@ ifeq ($(uname_S),AmigaOS4)
 	CSPRNG_METHOD = arc4random
 	NO_IPV6 = YesPlease
 	NO_SETITIMER = YesPlease
+	# There is no "less" on AmigaOS; "cat" means no pager (core.pager or
+	# GIT_PAGER can still name one)
+	DEFAULT_PAGER = cat
+	# "git help <cmd>" / "git <cmd> --help" open GIT:git-commands.guide
+	DEFAULT_HELP_FORMAT = guide
+	# Use ISO encodings instead of UTF-8 for .mo files (better Amiga compatibility)
+	USE_ISO_ENCODING = YesPlease
+	# Release version shown by "git version" (instead of git describe)
+	GIT_VERSION = 2.52
 endif
 ifeq ($(uname_S),Linux)
 	HAVE_ALLOCA_H = YesPlease

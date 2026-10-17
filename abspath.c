@@ -302,7 +302,12 @@ void strbuf_add_absolute_path(struct strbuf *sb, const char *path)
 {
 	if (!*path)
 		die("The empty string is not a valid path");
+#ifndef __amigaos4__
 	if (!is_absolute_path(path)) {
+#else
+	/* "VOLUME:path" is already absolute */
+	if (!is_absolute_path(path) && !strchr(path, ':')) {
+#endif
 		struct stat cwd_stat, pwd_stat;
 		size_t orig_len = sb->len;
 		char *cwd = xgetcwd();
@@ -316,7 +321,13 @@ void strbuf_add_absolute_path(struct strbuf *sb, const char *path)
 			strbuf_addstr(sb, pwd);
 		else
 			strbuf_addstr(sb, cwd);
+#ifndef __amigaos4__
 		if (sb->len > orig_len && !is_dir_sep(sb->buf[sb->len - 1]))
+#else
+		/* "RAM Disk:" + "repo", not "RAM Disk:/repo" (the parent of the root) */
+		if (sb->len > orig_len && !is_dir_sep(sb->buf[sb->len - 1]) &&
+		    sb->buf[sb->len - 1] != ':')
+#endif
 			strbuf_addch(sb, '/');
 		free(cwd);
 	}

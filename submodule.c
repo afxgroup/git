@@ -497,7 +497,11 @@ void prepare_submodule_repo_env(struct strvec *out)
 
 static void prepare_submodule_repo_env_in_gitdir(struct strvec *out)
 {
+#ifndef __amigaos4__	
 	prepare_other_repo_env(out, ".");
+#else
+	prepare_other_repo_env(out, "CURRDIR:");
+#endif	
 }
 
 /*

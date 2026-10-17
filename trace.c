@@ -52,7 +52,12 @@ static int get_trace_fd(struct trace_key *key, const char *override_envvar)
 		key->fd = STDERR_FILENO;
 	else if (strlen(trace) == 1 && isdigit(*trace))
 		key->fd = atoi(trace);
+#ifdef __amigaos4__
+	/* AmigaOS: "VOLUME:path" is an absolute path too */
+	else if (is_absolute_path(trace) || strchr(trace, ':')) {
+#else
 	else if (is_absolute_path(trace)) {
+#endif
 		int fd = open(trace, O_WRONLY | O_APPEND | O_CREAT, 0666);
 		if (fd == -1) {
 			warning("could not open '%s' for tracing: %s",
