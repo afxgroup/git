@@ -1,0 +1,83 @@
+Git for AmigaOS 4 - changelog
+=============================
+
+Version 2.52 (2026-10-17)
+-------------------------
+
+Based on Git 2.52.
+
+New
+~~~
+- git submodule works. "git submodule" is built from a small C wrapper
+  (git-submodule) instead of the shell script, which AmigaOS cannot run.
+  add, init, update, status, foreach, summary, sync and deinit are
+  supported, and clone --recurse-submodules works for one level of
+  submodules.
+- Help opens in AmigaGuide. "git help <command>" and
+  "git <command> --help" open the command's page in
+  GIT:git-commands.guide with MultiView. "git <command> -h" still
+  prints the short usage on the console.
+- Local repositories can be used with a RAM: path, for example
+  "git clone RAM:repo copy", and with an absolute path with a volume
+  name, for example "git clone VOL:path copy".
+- The builtin commands (git-add, git-status, git-upload-pack, ...) run
+  when they are started by name from the shell or from another Git
+  command, as long as the GIT: assign points to the Git directory.
+
+Fixes
+~~~~~
+- Clone, fetch and pull over HTTPS no longer fail with
+  "read error: No such file or directory" or "invalid index-pack output".
+- git no longer waits for a "Please insert volume https:" requester.
+  DOS requesters are switched off while Git runs.
+- Git no longer changes GIT_DIR in the shell environment; variables set
+  for a Git child process are restored when it ends.
+- Submodules created by "git submodule add" use absolute paths in their
+  .git file and in core.worktree, so update, foreach and sync find them.
+- Redirected output (for example "git log >file") no longer contains
+  the terminal control sequence that asked for the window size.
+- The default pager is "cat", because AmigaOS has no "less". You can
+  still choose a pager with core.pager or GIT_PAGER.
+- Translations are written with ISO-8859-15 encoding, so accented
+  characters are shown correctly in the AmigaOS console.
+- "git version" shows the release number (2.52) without the build
+  suffix.
+
+Installer (Git_Installer.lha)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- The installer script shows version 2.52 and creates the links for
+  all builtin commands, including git-add, git-diff-pairs,
+  git-last-modified, git-refs and git-repo.
+- The template directory installed in GIT:templates contains the
+  compiled templates (hooks, info/exclude, description), so the
+  "templates not found" warning no longer appears.
+- clib4.library is updated to the version that includes the changes
+  listed below. The installer offers to back up the existing copy.
+
+clib4.library changes that Git depends on
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- Handles on PIPE: devices are marked as pipes, so reading them works
+  in child processes.
+- fclose() on a file descriptor returned by dup() no longer closes the
+  original descriptor.
+- waitpid(), pthread_create() and setitimer() call
+  WaitForChildExit()/CheckForChildExit() only on dos.library 54 or
+  later. On older systems (for example dos.library 53.158) they use a
+  fallback, so they no longer cause a Guru 000C8007.
+- WNOHANG returns 0 while a child is still running.
+- Each process has its own list of memory-mapped files, so a child
+  that exits no longer frees the pack files of its parent.
+- spawnvpe() and spawnvpe_fork() set PROGDIR: to the real directory of
+  the program, keep the command name the child was started with, and
+  restore the caller's local variables after the child is created.
+
+Known issues
+~~~~~~~~~~~~
+- An occasional hang has been seen when a Git command starts a
+  helper process. It was not reproduced reliably: if a command stops
+  responding, please report it with the output of "GIT_TRACE=1".
+- git clone --recurse-submodules fails when a submodule of a
+  submodule is not reachable. The error message is printed, but the
+  clone is not complete.
+- The known limitations in AMIGA-KNOWN-ISSUES.txt still apply:
+  performance, UTF-8 file names and case-insensitive file systems.
